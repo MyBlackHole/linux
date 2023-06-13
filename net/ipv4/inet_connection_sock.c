@@ -1268,6 +1268,8 @@ int inet_csk_listen_start(struct sock *sk)
 	if (unlikely(err))
 		return err;
 
+    // 这里的nr_table_entries即为调整过后的backlog
+	// 但是在此函数内部会进一步将nr_table_entries = min(backlog,sysctl_max_syn_backlog)这个逻辑
 	reqsk_queue_alloc(&icsk->icsk_accept_queue);
 
 	sk->sk_ack_backlog = 0;
@@ -1277,19 +1279,27 @@ int inet_csk_listen_start(struct sock *sk)
 	 * but this transition is still not validated by get_port().
 	 * It is OK, because this socket enters to hash table only
 	 * after validation is complete.
+     * 设置socket为listen状态
 	 */
 	inet_sk_state_store(sk, TCP_LISTEN);
+    // 检测端口
 	err = sk->sk_prot->get_port(sk, inet->inet_num);
 	if (!err) {
 		inet->inet_sport = htons(inet->inet_num);
 
+        // 清除 dst cache
 		sk_dst_reset(sk);
+
+        // 将当前sock链入listening_hash
+		// 这样，当SYN到来的时候就能通过__inet_lookup_listen函数找到这个listen中的sock
 		err = sk->sk_prot->hash(sk);
 
 		if (likely(!err))
 			return 0;
 	}
 
+    // 端口已经被占用，返回错误码-EADDRINUSE
+    // 设置 socket 为 TCP_CLOSE 状态
 	inet_sk_set_state(sk, TCP_CLOSE);
 	return err;
 }

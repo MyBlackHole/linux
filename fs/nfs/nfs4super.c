@@ -307,6 +307,7 @@ static int __init init_nfs_v4(void)
 #ifdef CONFIG_NFS_V4_2
 	nfs42_ssc_register_ops();
 #endif
+    // 注册 nfs v4
 	register_nfs_version(&nfs_v4);
 	return 0;
 out2:

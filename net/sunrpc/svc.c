@@ -449,6 +449,7 @@ __svc_init_bc(struct svc_serv *serv)
 
 /*
  * Create an RPC service
+ * 创建一个RPC服务
  */
 static struct svc_serv *
 __svc_create(struct svc_program *prog, struct svc_stat *stats,
@@ -1286,6 +1287,7 @@ EXPORT_SYMBOL_GPL(svc_generic_init_request);
 
 /*
  * Common routine for processing the RPC request.
+ * 处理 rpc 请求通用例程
  */
 static int
 svc_process_common(struct svc_rqst *rqstp)
@@ -1301,14 +1303,17 @@ svc_process_common(struct svc_rqst *rqstp)
 	__be32			*p;
 
 	/* Will be turned off only when NFSv4 Sessions are used */
+    /* 只有在使用 NFSv4 会话时才会关闭 */
 	set_bit(RQ_USEDEFERRAL, &rqstp->rq_flags);
 	clear_bit(RQ_DROPME, &rqstp->rq_flags);
 
 	/* Construct the first words of the reply: */
+    /* 构造回复的第一个词 */
 	svcxdr_init_encode(rqstp);
 	xdr_stream_encode_be32(xdr, rqstp->rq_xid);
 	xdr_stream_encode_be32(xdr, rpc_reply);
 
+    // 解析 RPC
 	p = xdr_inline_decode(&rqstp->rq_arg_stream, XDR_UNIT * 4);
 	if (unlikely(!p))
 		goto err_short_len;
@@ -1321,7 +1326,10 @@ svc_process_common(struct svc_rqst *rqstp)
 	rqstp->rq_vers = be32_to_cpup(p++);
 	rqstp->rq_proc = be32_to_cpup(p);
 
+    // 每个端口上可以注册多种RPC服务，这些RPC服务的处理程序构成了一个链表，
+    // 遍历链表中的每一种处理程序，检查是否支持接收到的RPC请求。
 	for (progp = serv->sv_program; progp; progp = progp->pg_next)
+        // 比较程序编号，如果编号相等就表示找到处理程序了
 		if (rqstp->rq_prog == progp->pg_prog)
 			break;
 
@@ -1329,9 +1337,14 @@ svc_process_common(struct svc_rqst *rqstp)
 	 * Decode auth data, and add verifier to reply buffer.
 	 * We do this before anything else in order to get a decent
 	 * auth verifier.
+     *
+     * 解码授权数据，并将验证器添加到回复缓冲区
+     * 我们在做任何其他事情之前这样做是为了获得一个体面的授权验证者。
 	 */
 	auth_res = svc_authenticate(rqstp);
 	/* Also give the program a chance to reject this call: */
+    // 判定是否拒绝 RPC 请求
+    // 身份验证
 	if (auth_res == SVC_OK && progp)
 		auth_res = progp->pg_authenticate(rqstp);
 	trace_svc_authenticate(rqstp, auth_res);
@@ -1355,7 +1368,10 @@ svc_process_common(struct svc_rqst *rqstp)
 		goto err_system_err;
 	}
 
+    // progp 就是找到的处理程序。如果遍历到链表结尾也没有找到编号相等的处理程序，
+    // 则表示服务器不能处理这个请求。这种情况下，由于已经遍历到链表结尾，progp就是NULL。
 	if (progp == NULL)
+        // 没有例程, 退出
 		goto err_bad_prog;
 
 	switch (progp->pg_init_request(rqstp, progp, &process)) {
@@ -1375,8 +1391,10 @@ svc_process_common(struct svc_rqst *rqstp)
 		goto err_bad_proc;
 
 	/* Syntactic check complete */
+	/* 语法检查完成 */
 	if (serv->sv_stats)
 		serv->sv_stats->rpccnt++;
+
 	trace_svc_process(rqstp, progp->pg_name);
 
 	aoffset = xdr_stream_pos(xdr);
@@ -1499,9 +1517,13 @@ err_system_err:
  * svc_process - Execute one RPC transaction
  * @rqstp: RPC transaction context
  *
+ * Process the RPC request.
+ * 处理 RPC 请求
+ * rqstp:rpc 事务上下文
  */
 void svc_process(struct svc_rqst *rqstp)
 {
+    // 这是一块缓存，这块缓存用来存放RPC应答消息，现在还没有分配内存。
 	struct kvec		*resv = &rqstp->rq_res.head[0];
 	__be32 *p;
 
@@ -1516,6 +1538,7 @@ void svc_process(struct svc_rqst *rqstp)
 	 * Initially it has just one page
 	 */
 	rqstp->rq_next_page = &rqstp->rq_respages[1];
+    // 为 RPC 应答消息分配内存
 	resv->iov_base = page_address(rqstp->rq_respages[0]);
 	resv->iov_len = 0;
 	rqstp->rq_res.pages = rqstp->rq_next_page;
@@ -1526,16 +1549,25 @@ void svc_process(struct svc_rqst *rqstp)
 	rqstp->rq_res.tail[0].iov_base = NULL;
 	rqstp->rq_res.tail[0].iov_len = 0;
 
+    // 准备一个 rq_arg_stream
 	svcxdr_init_decode(rqstp);
+
+    // 解析 PRC 报文
 	p = xdr_inline_decode(&rqstp->rq_arg_stream, XDR_UNIT * 2);
 	if (unlikely(!p))
 		goto out_drop;
+    // 判定是不是 rpc 请求
+    // 按照RPC报文格式，这是RPC消息的XID。
 	rqstp->rq_xid = *p++;
 	if (unlikely(*p != rpc_call))
 		goto out_baddir;
 
+    // 现在可以确定这是一个RPC请求报文了，调用svc_process_common()进行处理，这是RPC请求的主处理函数，并且会填充RPC应答报文
+    // 返回值1表示处理过程正常，已经正常填充了RPC应答消息，可以发送给客户端了
+    // 返回值0表示RPC请求报文格式异常，直接丢弃这个报文
 	if (!svc_process_common(rqstp))
 		goto out_drop;
+    // 发送RPC应答消息的报文
 	svc_send(rqstp);
 	return;
 
@@ -1545,6 +1577,7 @@ out_baddir:
 	if (rqstp->rq_server->sv_stats)
 		rqstp->rq_server->sv_stats->rpcbadfmt++;
 out_drop:
+    // 丢弃 RPC 报文
 	svc_drop(rqstp);
 }
 

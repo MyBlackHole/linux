@@ -766,6 +766,7 @@ int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
  * Adjust the number of threads and return the new number of threads.
  * This is also the function that starts the server if necessary, if
  * this is the first time nrservs is nonzero.
+ * 调整线程数并返回新的线程数。 如果这是第一次 nrservs 非零，这也是必要时启动服务器的函数。
  */
 int
 nfsd_svc(int nrservs, struct net *net, const struct cred *cred, const char *scope)
@@ -905,6 +906,7 @@ nfsd_init_request(struct svc_rqst *rqstp,
 
 /*
  * This is the NFS server kernel thread
+ * 这是 NFS 服务器内核线程
  */
 static int
 nfsd(void *vrqstp)

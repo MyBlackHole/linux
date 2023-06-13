@@ -100,9 +100,11 @@ __init int net_sysctl_init(void)
 	 * registering "/proc/sys/net" as an empty directory not in a
 	 * network namespace.
 	 */
+    // 注册网络内核
 	net_header = register_sysctl_sz("net", empty, 0);
 	if (!net_header)
 		goto out;
+    // 注册网络内核操作
 	ret = register_pernet_subsys(&sysctl_pernet_ops);
 	if (ret)
 		goto out1;

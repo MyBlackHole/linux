@@ -66,6 +66,7 @@ struct path;
 #define MNT_UMOUNT		0x8000000
 #define MNT_ONRB		0x10000000
 
+// 描述一个独立文件系统的挂在信息
 struct vfsmount {
 	struct dentry *mnt_root;	/* root of the mounted tree */
 	struct super_block *mnt_sb;	/* pointer to superblock */

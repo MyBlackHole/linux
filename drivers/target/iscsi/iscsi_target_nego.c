@@ -792,6 +792,7 @@ static int iscsi_target_do_authentication(
 		return iscsi_target_check_for_existing_instances(
 				conn, login);
 	case 2:
+        // ISCSI_ERR_LOGIN_AUTH_FAILED
 		pr_err("Security negotiation"
 			" failed.\n");
 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
@@ -883,6 +884,7 @@ static int iscsi_target_handle_csg_zero(
 
 		goto do_auth;
 	} else if (!payload_length) {
+        // ISCSI_ERR_LOGIN_AUTH_FAILED
 		pr_err("Initiator sent zero length security payload,"
 		       " login failed\n");
 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
@@ -909,6 +911,7 @@ static int iscsi_target_handle_csg_zero(
 
 		if (auth_required) {
 			if (!strncmp(param->value, NONE, 4)) {
+                // ISCSI_ERR_LOGIN_AUTH_FAILED
 				pr_err("Initiator sent AuthMethod=None but"
 				       " Target is enforcing iSCSI Authentication,"
 				       " login failed.\n");
@@ -995,6 +998,7 @@ static int iscsi_target_handle_csg_one(struct iscsit_conn *conn, struct iscsi_lo
 	}
 
 	if (!iscsi_conn_authenticated(conn, login)) {
+        // ISCSI_ERR_LOGIN_AUTH_FAILED
 		pr_err("Initiator is requesting CSG: 1, has not been"
 		       " successfully authenticated, and the Target is"
 		       " enforcing iSCSI Authentication, login failed.\n");
@@ -1304,6 +1308,7 @@ get_target:
 	sess->se_sess->se_node_acl = core_tpg_check_initiator_node_acl(
 			&conn->tpg->tpg_se_tpg, i_buf);
 	if (!sess->se_sess->se_node_acl) {
+        // ISCSI_ERR_LOGIN_AUTH_FAILED
 		pr_err("iSCSI Initiator Node: %s is not authorized to"
 			" access iSCSI target portal group: %hu.\n",
 				i_buf, conn->tpg->tpgt);

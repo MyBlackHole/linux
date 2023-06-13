@@ -445,6 +445,7 @@ static int nfs4_setlease(struct file *file, int arg, struct file_lease **lease,
 	return nfs4_proc_setlease(file, arg, lease, priv);
 }
 
+// v4 file_operations
 const struct file_operations nfs4_file_operations = {
 	.read_iter	= nfs_file_read,
 	.write_iter	= nfs_file_write,

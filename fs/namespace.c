@@ -1114,6 +1114,7 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 	mnt->mnt_parent		= mnt;
 
 	lock_mount_hash();
+    // 加到挂载实例列表
 	list_add_tail(&mnt->mnt_instance, &mnt->mnt.mnt_sb->s_mounts);
 	unlock_mount_hash();
 	return &mnt->mnt;
@@ -1125,6 +1126,7 @@ struct vfsmount *fc_mount(struct fs_context *fc)
 	int err = vfs_get_tree(fc);
 	if (!err) {
 		up_write(&fc->root->d_sb->s_umount);
+        // 创建挂载
 		return vfs_create_mount(fc);
 	}
 	return ERR_PTR(err);
@@ -1142,6 +1144,7 @@ struct vfsmount *vfs_kern_mount(struct file_system_type *type,
 	if (!type)
 		return ERR_PTR(-EINVAL);
 
+    // 初始化挂载上下文
 	fc = fs_context_for_mount(type, flags);
 	if (IS_ERR(fc))
 		return ERR_CAST(fc);

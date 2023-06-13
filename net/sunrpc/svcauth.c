@@ -86,6 +86,7 @@ enum svc_auth_status svc_authenticate(struct svc_rqst *rqstp)
 	if (xdr_stream_decode_u32(&rqstp->rq_arg_stream, &flavor) < 0)
 		return SVC_GARBAGE;
 
+    // 获取认证方式对应的 auth_ops
 	aops = svc_get_auth_ops(flavor);
 	if (aops == NULL) {
 		rqstp->rq_auth_stat = rpc_autherr_badcred;
@@ -95,7 +96,10 @@ enum svc_auth_status svc_authenticate(struct svc_rqst *rqstp)
 	rqstp->rq_auth_slack = 0;
 	init_svc_cred(&rqstp->rq_cred);
 
+    // 认证方式的操作函数集合 
 	rqstp->rq_authop = aops;
+    // 调用具体认证方式中的accept()函数解析RPC报文中的认证信息。  
+    // 每种认证方式都有自己的处理函数。  
 	return aops->accept(rqstp);
 }
 EXPORT_SYMBOL_GPL(svc_authenticate);

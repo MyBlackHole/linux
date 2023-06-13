@@ -97,6 +97,7 @@ static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 #endif
 };
 
+// nfsctl 事务写入
 static ssize_t nfsctl_transaction_write(struct file *file, const char __user *buf, size_t size, loff_t *pos)
 {
 	ino_t ino =  file_inode(file)->i_ino;
@@ -365,6 +366,7 @@ static ssize_t write_filehandle(struct file *file, char *buf, size_t size)
 
 /*
  * write_threads - Start NFSD, or report the current number of running threads
+ * write_threads - 启动 NFSD，或者报告当前正在运行的线程数
  *
  * Input:
  *			buf:		ignored
@@ -2259,6 +2261,7 @@ static int __init init_nfsd(void)
 	retval = nfsd4_create_laundry_wq();
 	if (retval)
 		goto out_free_cld;
+    // 注册 nfsd 文件系统
 	retval = register_filesystem(&nfsd_fs_type);
 	if (retval)
 		goto out_free_all;

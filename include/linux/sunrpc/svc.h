@@ -221,8 +221,8 @@ struct svc_rqst {
 						 */
 	ktime_t			rq_stime;	/* start time */
 
-	struct cache_req	rq_chandle;	/* handle passed to caches for 
-						 * request delaying 
+	struct cache_req	rq_chandle;	/* handle passed to caches for
+						 * request delaying
 						 */
 	/* Catering to nfsd */
 	struct auth_domain *	rq_client;	/* RPC peer info */
@@ -331,14 +331,23 @@ struct svc_process_info {
  * List of RPC programs on the same transport endpoint
  */
 struct svc_program {
+    // 指向了下一套处理程序，可以将多套处理程序注册在同一个端口上
 	struct svc_program *	pg_next;	/* other programs (same xprt) */
+    // RPC程序编号
 	u32			pg_prog;	/* program number */
+    // 这是最低版本
 	unsigned int		pg_lovers;	/* lowest version */
+    // 这是最高版本
 	unsigned int		pg_hivers;	/* highest version */
+    // 服务程序中版本的数量
 	unsigned int		pg_nvers;	/* number of versions */
+    // 这是各个版本处理程序的指针
 	const struct svc_version **pg_vers;	/* version array */
+    // RPC服务名称
 	char *			pg_name;	/* service name */
+    // 属于某个类别，同类别的RPC服务共享相同的认证方式
 	char *			pg_class;	/* class name: services sharing authentication */
+	// 这是RPC处理程序中验证用户信息的函数
 	enum svc_auth_status	(*pg_authenticate)(struct svc_rqst *rqstp);
 	__be32			(*pg_init_request)(struct svc_rqst *,
 						   const struct svc_program *,
@@ -354,13 +363,19 @@ struct svc_program {
  * RPC program version
  */
 struct svc_version {
+    // 版本编号
 	u32			vs_vers;	/* version number */
+    // 这个版本中RPC例程的数量
 	u32			vs_nproc;	/* number of procedures */
+    // 这里包含了各个RPC例程的处理函数，这里不是一个例程，
+    // 这个版本中所有例程的处理函数都在这里，各个例程按顺序排列。
 	const struct svc_procedure *vs_proc;	/* per-procedure info */
 	unsigned long __percpu	*vs_count;	/* call counts */
+    // 这也是从组装应答消息相关的缓存的一个长度
 	u32			vs_xdrsize;	/* xdrsize needed for this version */
 
 	/* Don't register with rpcbind */
+    // 如果这个值为1，就说明虽然定义了这个版本的处理例程，但是不对外提供服务
 	bool			vs_hidden;
 
 	/* Don't care if the rpcbind registration fails */
@@ -370,6 +385,8 @@ struct svc_version {
 	bool			vs_need_cong_ctrl;
 
 	/* Dispatch function */
+    // 这是RPC请求的处理函数，简单来说就是依次调用svc_procedure中的pc_decode、pc_func、pc_encode函数.
+    // NFS中这个函数是nfsd_dispatch().
 	int			(*vs_dispatch)(struct svc_rqst *rqstp);
 };
 
@@ -378,19 +395,30 @@ struct svc_version {
  */
 struct svc_procedure {
 	/* process the request: */
+    // 这是RPC请求的处理函数
 	__be32			(*pc_func)(struct svc_rqst *);
 	/* XDR decode args: */
+    // 这是RPC请求的解码函数，RPC报文的内容是pc_func的参数，
+    // 这个函数负责解析这些内容
 	bool			(*pc_decode)(struct svc_rqst *rqstp,
 					     struct xdr_stream *xdr);
 	/* XDR encode result: */
+    // 这是RPC请求的编码函数，服务器端需要将pc_func的处理结果封装到
+    // RPC应答报文中，这就是封装函数
 	bool			(*pc_encode)(struct svc_rqst *rqstp,
 					     struct xdr_stream *xdr);
 	/* XDR free result: */
+    // 这是释放内存的一个函数，因为pc_func可能需要分配额外的内存
 	void			(*pc_release)(struct svc_rqst *);
+    // 这是RPC请求报文中数据的长度
 	unsigned int		pc_argsize;	/* argument struct size */
 	unsigned int		pc_argzero;	/* how much of argument to clear */
+    // 这是RPC应答报文中数据的长度
 	unsigned int		pc_ressize;	/* result struct size */
+    // 这是缓存类型，NFS中某些请求可以缓存处理结果。当再次接收到相同的请求后，
+    // 就不处理了，直接将缓存中的数据返回给客户端就可以了。
 	unsigned int		pc_cachetype;	/* cache info (NFS) */
+    // 这是调整RPC应答消息缓存的一个数据量
 	unsigned int		pc_xdrressize;	/* maximum size of XDR reply */
 	const char *		pc_name;	/* for display */
 };
@@ -484,6 +512,7 @@ static inline void svcxdr_init_decode(struct svc_rqst *rqstp)
 /**
  * svcxdr_init_encode - Prepare an xdr_stream for svc Reply encoding
  * @rqstp: controlling server RPC transaction context
+ * svcxdr_init_encode - 为 svc 回复编码准备一个 xdr_stream
  *
  */
 static inline void svcxdr_init_encode(struct svc_rqst *rqstp)

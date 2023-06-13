@@ -2501,6 +2501,7 @@ struct process_timer {
 	struct task_struct *task;
 };
 
+// 将此进程重新唤醒
 static void process_timeout(struct timer_list *t)
 {
 	struct process_timer *timeout = from_timer(timeout, t, timer);
@@ -2576,8 +2577,10 @@ signed long __sched schedule_timeout(signed long timeout)
 	expire = timeout + jiffies;
 
 	timer.task = current;
+    // 设定超时的回掉函数为process_timeout
 	timer_setup_on_stack(&timer.timer, process_timeout, 0);
 	__mod_timer(&timer.timer, expire, MOD_TIMER_NOTPENDING);
+    // 切换进程
 	schedule();
 	del_timer_sync(&timer.timer);
 
@@ -2587,6 +2590,7 @@ signed long __sched schedule_timeout(signed long timeout)
 	timeout = expire - jiffies;
 
  out:
+    // 返回经过了多长事件
 	return timeout < 0 ? 0 : timeout;
 }
 EXPORT_SYMBOL(schedule_timeout);

@@ -6687,6 +6687,8 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 			 * Where __schedule() and ttwu() have matching control dependencies.
 			 *
 			 * After this, schedule() must not care about p->state any more.
+             *
+             * 从运行列表移除当前进程
 			 */
 			deactivate_task(rq, prev, DEQUEUE_SLEEP | DEQUEUE_NOCLOCK);
 

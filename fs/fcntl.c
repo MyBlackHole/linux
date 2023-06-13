@@ -78,7 +78,9 @@ static int setfl(int fd, struct file * filp, unsigned int arg)
 		if (error > 0)
 			error = 0;
 	}
+    // 自旋锁获取
 	spin_lock(&filp->f_lock);
+    // 修改标识
 	filp->f_flags = (arg & SETFL_MASK) | (filp->f_flags & ~SETFL_MASK);
 	filp->f_iocb_flags = iocb_flags(filp);
 	spin_unlock(&filp->f_lock);

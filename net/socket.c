@@ -420,6 +420,7 @@ static int sockfs_init_fs_context(struct fs_context *fc)
 	return 0;
 }
 
+// socket 文件系统挂载描述指针
 static struct vfsmount *sock_mnt __read_mostly;
 
 static struct file_system_type sock_fs_type = {
@@ -624,6 +625,8 @@ static const struct inode_operations sockfs_inode_ops = {
  *	Allocate a new inode and socket object. The two are bound together
  *	and initialised. The socket is then returned. If we are out of inodes
  *	NULL is returned. This functions uses GFP_KERNEL internally.
+ *
+ *	分配初始化 socket, sockfs_inode_ops
  */
 
 struct socket *sock_alloc(void)
@@ -631,6 +634,7 @@ struct socket *sock_alloc(void)
 	struct inode *inode;
 	struct socket *sock;
 
+    // 通过超级快申请索引
 	inode = new_inode_pseudo(sock_mnt->mnt_sb);
 	if (!inode)
 		return NULL;
@@ -1063,6 +1067,7 @@ static inline int sock_recvmsg_nosec(struct socket *sock, struct msghdr *msg,
  */
 int sock_recvmsg(struct socket *sock, struct msghdr *msg, int flags)
 {
+    // hook socket recvmsg
 	int err = security_socket_recvmsg(sock, msg, msg_data_left(msg), flags);
 
 	return err ?: sock_recvmsg_nosec(sock, msg, flags);
@@ -1506,6 +1511,7 @@ int __sock_create(struct net *net, int family, int type, int protocol,
 
 	/*
 	 *      Check protocol is in range
+     *      验证网络协议族
 	 */
 	if (family < 0 || family >= NPROTO)
 		return -EAFNOSUPPORT;
@@ -1523,6 +1529,7 @@ int __sock_create(struct net *net, int family, int type, int protocol,
 		family = PF_PACKET;
 	}
 
+    // hook socket create
 	err = security_socket_create(family, type, protocol, kern);
 	if (err)
 		return err;
@@ -1531,6 +1538,8 @@ int __sock_create(struct net *net, int family, int type, int protocol,
 	 *	Allocate the socket and allow the family to set things up. if
 	 *	the protocol is 0, the family is instructed to select an appropriate
 	 *	default.
+     *
+     *	创建 sock
 	 */
 	sock = sock_alloc();
 	if (!sock) {
@@ -1715,6 +1724,7 @@ int __sys_socket(int family, int type, int protocol)
 	return sock_map_fd(sock, flags & (O_CLOEXEC | O_NONBLOCK));
 }
 
+// socket 系统调用
 SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
 {
 	return __sys_socket(family, type, protocol);
@@ -3260,11 +3270,13 @@ bool sock_is_registered(int family)
 	return family < NPROTO && rcu_access_pointer(net_families[family]);
 }
 
+// sock 初始化
 static int __init sock_init(void)
 {
 	int err;
 	/*
 	 *      Initialize the network sysctl infrastructure.
+     *      初始化 sysctl 网络设施
 	 */
 	err = net_sysctl_init();
 	if (err)
@@ -3281,9 +3293,11 @@ static int __init sock_init(void)
 
 	init_inodecache();
 
+    // 注册 sock 文件系统类型
 	err = register_filesystem(&sock_fs_type);
 	if (err)
 		goto out;
+    // 挂载 sock 文件系统类型
 	sock_mnt = kern_mount(&sock_fs_type);
 	if (IS_ERR(sock_mnt)) {
 		err = PTR_ERR(sock_mnt);
@@ -3294,6 +3308,7 @@ static int __init sock_init(void)
 	 */
 
 #ifdef CONFIG_NETFILTER
+    // 网络过滤器初始化
 	err = netfilter_init();
 	if (err)
 		goto out;

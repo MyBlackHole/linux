@@ -1228,6 +1228,9 @@ static const struct rpc_call_ops rpc_default_ops = {
 /**
  * rpc_run_task - Allocate a new RPC task, then run rpc_execute against it
  * @task_setup_data: pointer to task initialisation data
+ *
+ * rpc_run_task - 分配一个新的 RPC 任务，然后对其运行 rpc_execute
+ * @task_setup_data: 指向任务初始化数据的指针
  */
 struct rpc_task *rpc_run_task(const struct rpc_task_setup *task_setup_data)
 {

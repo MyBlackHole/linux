@@ -1011,6 +1011,12 @@ out:
  * NOTE: Upon exit of this function the task is guaranteed to be
  *	 released. In particular note that tk_release() will have
  *	 been called, so your task memory may have been freed.
+ *
+ * 这可能会被递归调用，例如 异步 NFS 任务更新
+ * 属性并发现必须刷新脏页。
+ *注意：退出此功能后，任务保证是
+ * 发布。 特别注意 tk_release() 将有
+ * 已被调用，因此您的任务内存可能已被释放。
  */
 void rpc_execute(struct rpc_task *task)
 {
