@@ -53,6 +53,8 @@ enum {
  *
  * Each nfsd_net runs a nfs4_laundromat workqueue job when necessary to clean
  * up expired clients and delegations within the container.
+ *
+ * nfsd 容器
  */
 struct nfsd_net {
 	struct cld_net *cld_net;

@@ -449,7 +449,7 @@ __svc_init_bc(struct svc_serv *serv)
 
 /*
  * Create an RPC service
- * 创建一个RPC服务
+ * 创建一个 RPC serv 服务
  */
 static struct svc_serv *
 __svc_create(struct svc_program *prog, struct svc_stat *stats,
@@ -468,8 +468,7 @@ __svc_create(struct svc_program *prog, struct svc_stat *stats,
 	if (bufsize > RPCSVC_MAXPAYLOAD)
 		bufsize = RPCSVC_MAXPAYLOAD;
 	serv->sv_max_payload = bufsize? bufsize : 4096;
-	serv->sv_max_mesg  = roundup(serv->sv_max_payload + PAGE_SIZE, PAGE_SIZE);
-	serv->sv_threadfn = threadfn;
+	serv->sv_max_mesg  = roundup(serv->sv_max_payload + PAGE_SIZE, PAGE_SIZE); serv->sv_threadfn = threadfn;
 	xdrsize = 0;
 	while (prog) {
 		prog->pg_lovers = prog->pg_nvers-1;
@@ -542,6 +541,8 @@ EXPORT_SYMBOL_GPL(svc_create);
  * @threadfn: a function to service RPC requests for @prog
  *
  * Returns an instantiated struct svc_serv object or NULL.
+ *
+ * 创建服务 pool
  */
 struct svc_serv *svc_create_pooled(struct svc_program *prog,
 				   struct svc_stat *stats,
@@ -765,6 +766,8 @@ found_pool:
 	goto retry;
 }
 
+/* create new threads */
+// 创建线程
 static int
 svc_start_kthreads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
 {

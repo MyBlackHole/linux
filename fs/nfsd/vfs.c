@@ -1268,6 +1268,9 @@ bool nfsd_read_splice_ok(struct svc_rqst *rqstp)
  *
  * Returns nfs_ok on success, otherwise an nfserr stat value is
  * returned.
+ *
+ * 读取文件数据
+ * 返回实际读取字节数
  */
 __be32 nfsd_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
 		 loff_t offset, unsigned long *count, u32 *eof)

@@ -1059,6 +1059,8 @@ static const struct svc_procedure nfsd_procedures3[22] = {
 
 static DEFINE_PER_CPU_ALIGNED(unsigned long,
 			      nfsd_count3[ARRAY_SIZE(nfsd_procedures3)]);
+
+// nfs 3 rpc 服务服务
 const struct svc_version nfsd_version3 = {
 	.vs_vers	= 3,
 	.vs_nproc	= ARRAY_SIZE(nfsd_procedures3),

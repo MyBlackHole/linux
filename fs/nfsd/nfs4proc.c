@@ -3695,6 +3695,7 @@ static const char *nfsd4_op_name(unsigned opnum)
 }
 
 static const struct svc_procedure nfsd_procedures4[2] = {
+    // 空处理
 	[NFSPROC4_NULL] = {
 		.pc_func = nfsd4_proc_null,
 		.pc_decode = nfssvc_decode_voidarg,
@@ -3722,6 +3723,8 @@ static const struct svc_procedure nfsd_procedures4[2] = {
 
 static DEFINE_PER_CPU_ALIGNED(unsigned long,
 			      nfsd_count4[ARRAY_SIZE(nfsd_procedures4)]);
+
+// nfs 4 rpc 服务服务
 const struct svc_version nfsd_version4 = {
 	.vs_vers		= 4,
 	.vs_nproc		= ARRAY_SIZE(nfsd_procedures4),

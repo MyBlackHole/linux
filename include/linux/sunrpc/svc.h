@@ -163,6 +163,8 @@ extern u32 svc_max_payload(const struct svc_rqst *rqstp);
 /*
  * The context of a single thread, including the request currently being
  * processed.
+ * 单个线程的上下文
+ * 当前的请求处理
  */
 struct svc_rqst {
 	struct list_head	rq_all;		/* all threads list */
@@ -361,21 +363,22 @@ struct svc_program {
 
 /*
  * RPC program version
+ * rpc 程序版本
  */
 struct svc_version {
-    // 版本编号
+	// 版本编号
 	u32			vs_vers;	/* version number */
-    // 这个版本中RPC例程的数量
+	// 这个版本中RPC例程的数量
 	u32			vs_nproc;	/* number of procedures */
-    // 这里包含了各个RPC例程的处理函数，这里不是一个例程，
-    // 这个版本中所有例程的处理函数都在这里，各个例程按顺序排列。
+	// 这里包含了各个RPC例程的处理函数，这里不是一个例程，
+	// 这个版本中所有例程的处理函数都在这里，各个例程按顺序排列。
 	const struct svc_procedure *vs_proc;	/* per-procedure info */
 	unsigned long __percpu	*vs_count;	/* call counts */
-    // 这也是从组装应答消息相关的缓存的一个长度
+	// 这也是从组装应答消息相关的缓存的一个长度
 	u32			vs_xdrsize;	/* xdrsize needed for this version */
 
 	/* Don't register with rpcbind */
-    // 如果这个值为1，就说明虽然定义了这个版本的处理例程，但是不对外提供服务
+	// 如果这个值为1，就说明虽然定义了这个版本的处理例程，但是不对外提供服务
 	bool			vs_hidden;
 
 	/* Don't care if the rpcbind registration fails */
@@ -385,13 +388,16 @@ struct svc_version {
 	bool			vs_need_cong_ctrl;
 
 	/* Dispatch function */
-    // 这是RPC请求的处理函数，简单来说就是依次调用svc_procedure中的pc_decode、pc_func、pc_encode函数.
-    // NFS中这个函数是nfsd_dispatch().
+	// 这是RPC请求的处理函数，简单来说就是依次调用svc_procedure中的pc_decode、pc_func、pc_encode函数.
+	// NFS中这个函数是nfsd_dispatch().
+	// 这是RPC请求的处理函数，简单来说就是依次调用 svc_procedure 中的 pc_decode、pc_func、pc_encode 函数.
+	// NFS 中这个函数是 nfsd_dispatch().
 	int			(*vs_dispatch)(struct svc_rqst *rqstp);
 };
 
 /*
  * RPC procedure info
+ * rpc 过程信息
  */
 struct svc_procedure {
 	/* process the request: */

@@ -1250,6 +1250,8 @@ struct super_block {
 	 * Keep s_fs_info, s_time_gran, s_fsnotify_mask, and
 	 * s_fsnotify_info together for cache efficiency. They are frequently
 	 * accessed and rarely modified.
+     *
+     * 文件系统私有数据
 	 */
 	void			*s_fs_info;	/* Filesystem private info */
 

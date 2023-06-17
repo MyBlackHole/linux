@@ -637,6 +637,7 @@ void nfsd_shutdown_threads(struct net *net)
 	}
 
 	/* Kill outstanding nfsd threads */
+    // 结束未结束的 nfsd 线程
 	svc_set_num_threads(serv, NULL, 0);
 	nfsd_destroy_serv(net);
 	mutex_unlock(&nfsd_mutex);
@@ -647,6 +648,7 @@ bool i_am_nfsd(void)
 	return kthread_func(current) == nfsd;
 }
 
+// 创建 nfs 服务
 int nfsd_create_serv(struct net *net)
 {
 	int error;
@@ -660,12 +662,14 @@ int nfsd_create_serv(struct net *net)
 	if (nfsd_max_blksize == 0)
 		nfsd_max_blksize = nfsd_get_default_max_blksize();
 	nfsd_reset_versions(nn);
+	// 创建 初始化 serv
 	serv = svc_create_pooled(&nfsd_program, &nn->nfsd_svcstats,
 				 nfsd_max_blksize, nfsd);
 	if (serv == NULL)
 		return -ENOMEM;
 
 	serv->sv_maxconn = nn->max_connections;
+    // 服务与网络绑定
 	error = svc_bind(serv, net);
 	if (error < 0) {
 		svc_destroy(&serv);
@@ -789,6 +793,7 @@ nfsd_svc(int nrservs, struct net *net, const struct cred *cred, const char *scop
 	strscpy(nn->nfsd_name, scope ? scope : utsname()->nodename,
 		sizeof(nn->nfsd_name));
 
+    // 创建 nfsd 服务
 	error = nfsd_create_serv(net);
 	if (error)
 		goto out;
@@ -797,6 +802,7 @@ nfsd_svc(int nrservs, struct net *net, const struct cred *cred, const char *scop
 	error = nfsd_startup_net(net, cred);
 	if (error)
 		goto out_put;
+    // 创建 nfsd 线程
 	error = svc_set_num_threads(serv, NULL, nrservs);
 	if (error)
 		goto out_put;
@@ -937,6 +943,7 @@ nfsd(void *vrqstp)
 		/* Update sv_maxconn if it has changed */
 		rqstp->rq_server->sv_maxconn = nn->max_connections;
 
+		// 接受 rpc 数据包
 		svc_recv(rqstp);
 
 		nfsd_file_net_dispose(nn);
@@ -959,6 +966,11 @@ out:
  * Return values:
  *  %0: Processing complete; do not send a Reply
  *  %1: Processing complete; send Reply in rqstp->rq_res
+ *  这是RPC请求的处理函数
+ *  简单来说就是依次调用 svc_procedure 中的
+ *  pc_decode
+ *  pc_func
+ *  pc_encode 函数.
  */
 int nfsd_dispatch(struct svc_rqst *rqstp)
 {

@@ -313,6 +313,7 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 	}
 
 	/* TODO: Make all filesystems support this unconditionally */
+    // 初始化 
 	init_fs_context = fc->fs_type->init_fs_context;
 	if (!init_fs_context)
 		init_fs_context = legacy_init_fs_context;
@@ -331,7 +332,7 @@ err_fc:
 struct fs_context *fs_context_for_mount(struct file_system_type *fs_type,
 					unsigned int sb_flags)
 {
-    // 分配 上下文
+    // 分配 初始化 上下文
 	return alloc_fs_context(fs_type, NULL, sb_flags, 0,
 					FS_CONTEXT_FOR_MOUNT);
 }
@@ -689,6 +690,7 @@ static int legacy_reconfigure(struct fs_context *fc)
 				    ctx ? ctx->legacy_data : NULL);
 }
 
+// 兼容 提供默认 fs_context_operations
 const struct fs_context_operations legacy_fs_context_ops = {
 	.free			= legacy_fs_context_free,
 	.dup			= legacy_fs_context_dup,

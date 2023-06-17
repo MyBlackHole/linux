@@ -1884,6 +1884,7 @@ int __sys_listen(int fd, int backlog)
 	if (sock) {
 		somaxconn = READ_ONCE(sock_net(sock->sk)->core.sysctl_somaxconn);
 		if ((unsigned int)backlog > somaxconn)
+            // TCP 全连接队列最大长度 min(somaxconn, backlog)
 			backlog = somaxconn;
 
 		err = security_socket_listen(sock, backlog);

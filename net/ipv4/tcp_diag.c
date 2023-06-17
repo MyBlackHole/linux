@@ -21,13 +21,18 @@ static void tcp_diag_get_info(struct sock *sk, struct inet_diag_msg *r,
 	struct tcp_info *info = _info;
 
 	if (inet_sk_state_load(sk) == TCP_LISTEN) {
+        // socket 状态是 LISTEN 时
+        // 当前全连接队列大小
 		r->idiag_rqueue = READ_ONCE(sk->sk_ack_backlog);
+        // 全连接队列最大长度
 		r->idiag_wqueue = READ_ONCE(sk->sk_max_ack_backlog);
 	} else if (sk->sk_type == SOCK_STREAM) {
+        // socket 状态不是 LISTEN 时
 		const struct tcp_sock *tp = tcp_sk(sk);
-
+        // 已收到但未被应用程序读取的字节数
 		r->idiag_rqueue = max_t(int, READ_ONCE(tp->rcv_nxt) -
 					     READ_ONCE(tp->copied_seq), 0);
+        // 已发送但未收到确认的字节数
 		r->idiag_wqueue = READ_ONCE(tp->write_seq) - tp->snd_una;
 	}
 	if (info)

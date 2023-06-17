@@ -58,6 +58,7 @@ struct bpf_prog;
 #define NETDEV_HASHBITS    8
 #define NETDEV_HASHENTRIES (1 << NETDEV_HASHBITS)
 
+// 网络命名空间
 struct net {
 	/* First cache line can be often dirtied.
 	 * Do not place here read-mostly fields.

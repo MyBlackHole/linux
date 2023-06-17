@@ -26,9 +26,13 @@ struct user_namespace;
 struct vfsmount;
 struct path;
 
+// 目的
 enum fs_context_purpose {
+    // 创建安装超级块
 	FS_CONTEXT_FOR_MOUNT,		/* New superblock for explicit mount */
+    // 自动子安装超级块
 	FS_CONTEXT_FOR_SUBMOUNT,	/* New superblock for automatic submount */
+    // 重新安装超级块
 	FS_CONTEXT_FOR_RECONFIGURE,	/* Superblock reconfiguration (remount) */
 };
 
@@ -86,26 +90,53 @@ struct p_log {
  * already set.
  *
  * See Documentation/filesystems/mount_api.rst
+ *
+ * 文件系统上下文
  */
 struct fs_context {
+    // 这是一个文件系统上下文实例持续期间，提供给文件系统上下文使用的众多方法
+    // 一般由特定文件系统类型的 init_fs_context 方法来对其进行设置。
 	const struct fs_context_operations *ops;
 	struct mutex		uapi_mutex;	/* Userspace access mutex */
+    // 这是一个用来指向即将被挂载（或重新配置）的文件系统所属文件系统类型实例的指针
+    // 换句话说，用例中我们要挂载一个XFS，这里就是指向XFS的 file_system_type 结构指针
 	struct file_system_type	*fs_type;
+    // 这是一个指向文件系统私有数据的指针
+    // 常用于存储需要特定文件系统来解析的选项
 	void			*fs_private;	/* The filesystem's context */
 	void			*sget_key;
+    // 这是一个指向一个可挂载文件系统的根节点的指针
+    // 同时它也和文件系统的 superblock 关联
+    // 这个域一般通过 vfs_get_tree 调用特定文件系统的 ops->get_tree 函数来构建
+    // 同时，为了构建SB，也会调用特定文件系统的 fill_super 函数。
 	struct dentry		*root;		/* The root and superblock */
 	struct user_namespace	*user_ns;	/* The user namespace for this mount */
     // 网络命名空间
 	struct net		*net_ns;	/* The network namespace for this mount */
 	const struct cred	*cred;		/* The mounter's credentials */
 	struct p_log		log;		/* Logging buffer */
+    // 这个代表挂载操作的源对象
+    // 一般就是一个设备（上面含有文件系统）
+    // 如mount /dev/sda1 /mnt中
+    // "/dev/sda1"就是这个source的名称
+    // 当然它还可以是非本地文件系统时使用的类似url:/path这样的写法
 	const char		*source;	/* The source name (eg. dev path) */
 	void			*security;	/* LSM options */
+    // 这是区别于内存通用 superblock 结构的一个域
+    // 用于指向特定文件系统的私有信息
 	void			*s_fs_info;	/* Proposed s_fs_info */
+    // 这其实是挂载 flag 在 superblock 里的一个镜像
+    // 比如SB_RDONLY, SB_NODEV, SB_NOATIME等对分别对应MS_*的flag
 	unsigned int		sb_flags;	/* Proposed superblock flags (SB_*) */
 	unsigned int		sb_flags_mask;	/* Superblock flags that were changed */
 	unsigned int		s_iflags;	/* OR'd with sb->s_iflags */
+	unsigned int		lsm_flags;	/* Information flags from the fs to the LSM */
+    // 指明当前的文件系统上下文的使用意图
+    // 目前有三种使用意图 fs_context_purpose
 	enum fs_context_purpose	purpose:8;
+    // 指明当前处于文件系统挂载过程的哪个阶段
+    // 虽然我们在本文最开始说了现在将挂载过程分成独立的六个步骤
+    // 但下面这7个阶段的定义和上面说的并没有直接关系
 	enum fs_context_phase	phase:8;	/* The phase the context is in */
 	bool			need_free:1;	/* Need to call ops->free() */
 	bool			global:1;	/* Goes into &init_user_ns */

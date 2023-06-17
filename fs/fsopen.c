@@ -111,6 +111,8 @@ static int fscontext_alloc_log(struct fs_context *fc)
  * We are allowed to specify a container in which the filesystem will be
  * opened, thereby indicating which namespaces will be used (notably, which
  * network namespace will be used for network filesystems).
+ *
+ * 用名称打开文件系统挂载
  */
 SYSCALL_DEFINE2(fsopen, const char __user *, _fs_name, unsigned int, flags)
 {
@@ -125,10 +127,12 @@ SYSCALL_DEFINE2(fsopen, const char __user *, _fs_name, unsigned int, flags)
 	if (flags & ~FSOPEN_CLOEXEC)
 		return -EINVAL;
 
+    // 转移数据到内核空间
 	fs_name = strndup_user(_fs_name, PAGE_SIZE);
 	if (IS_ERR(fs_name))
 		return PTR_ERR(fs_name);
 
+    // 获取对应文件系统类型 file_system_type
 	fs_type = get_fs_type(fs_name);
 	kfree(fs_name);
 	if (!fs_type)
