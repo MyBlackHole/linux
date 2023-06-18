@@ -2861,6 +2861,8 @@ pid_t kernel_thread(int (*fn)(void *), void *arg, const char *name,
 
 /*
  * Create a user mode thread.
+ *
+ * 用户线程创建
  */
 pid_t user_mode_thread(int (*fn)(void *), void *arg, unsigned long flags)
 {

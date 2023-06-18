@@ -67,6 +67,7 @@ struct kthread {
 
 enum KTHREAD_BITS {
 	KTHREAD_IS_PER_CPU = 0,
+    // 是否已退出
 	KTHREAD_SHOULD_STOP,
 	KTHREAD_SHOULD_PARK,
 };
@@ -338,6 +339,7 @@ void __noreturn kthread_complete_and_exit(struct completion *comp, long code)
 }
 EXPORT_SYMBOL(kthread_complete_and_exit);
 
+// 实际创建线程与运行
 static int kthread(void *_create)
 {
 	static const struct sched_param param = { .sched_priority = 0 };
@@ -352,6 +354,7 @@ static int kthread(void *_create)
 	self = to_kthread(current);
 
 	/* Release the structure when caller killed by a fatal signal. */
+    // 检查发起者是否还活着
 	done = xchg(&create->done, NULL);
 	if (!done) {
 		kfree(create->full_name);
@@ -366,26 +369,36 @@ static int kthread(void *_create)
 	/*
 	 * The new thread inherited kthreadd's priority and CPU mask. Reset
 	 * back to default in case they have been changed.
+     *
+     * 新线程继承 kthreadd 的优先级、cpu 掩码
 	 */
 	sched_setscheduler_nocheck(current, SCHED_NORMAL, &param);
 	set_cpus_allowed_ptr(current, housekeeping_cpumask(HK_TYPE_KTHREAD));
 
 	/* OK, tell user we're spawned, wait for stop or wakeup */
+    // 线程生成完成
 	__set_current_state(TASK_UNINTERRUPTIBLE);
 	create->result = current;
 	/*
 	 * Thread is going to call schedule(), do not preempt it,
 	 * or the creator may spend more time in wait_task_inactive().
 	 */
+    // 关闭抢占
 	preempt_disable();
 	complete(done);
+    // 发起调度
+    // 创建完成切换 cpu 控制
 	schedule_preempt_disabled();
+    // 唤醒起点
+    // 恢复抢占
 	preempt_enable();
 
 	ret = -EINTR;
+    // 非结束
 	if (!test_bit(KTHREAD_SHOULD_STOP, &self->flags)) {
 		cgroup_kthread_ready();
 		__kthread_parkme(self);
+        // 用户业务处理
 		ret = threadfn(data);
 	}
 	kthread_exit(ret);
@@ -401,6 +414,7 @@ int tsk_fork_get_node(struct task_struct *tsk)
 	return NUMA_NO_NODE;
 }
 
+// 创建 kthread 线程, kthread 处理具体线程创建
 static void create_kthread(struct kthread_create_info *create)
 {
 	int pid;
@@ -433,9 +447,11 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
 {
 	DECLARE_COMPLETION_ONSTACK(done);
 	struct task_struct *task;
+    // 分配线程创建描述信息，所需内存
 	struct kthread_create_info *create = kmalloc(sizeof(*create),
 						     GFP_KERNEL);
 
+    // 初始化
 	if (!create)
 		return ERR_PTR(-ENOMEM);
 	create->threadfn = threadfn;
@@ -449,9 +465,11 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
 	}
 
 	spin_lock(&kthread_create_lock);
+    // 添加到全局线程链表 kthread_create_list
 	list_add_tail(&create->list, &kthread_create_list);
 	spin_unlock(&kthread_create_lock);
 
+    // 启动 内核线程添加任务线程
 	wake_up_process(kthreadd_task);
 	/*
 	 * Wait for completion in killable state, for I might be chosen by
@@ -734,6 +752,8 @@ int kthread_stop_put(struct task_struct *k)
 }
 EXPORT_SYMBOL(kthread_stop_put);
 
+// 线程创建 线程
+// 管理线程创建
 int kthreadd(void *unused)
 {
 	struct task_struct *tsk = current;

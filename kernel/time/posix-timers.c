@@ -1374,6 +1374,7 @@ SYSCALL_DEFINE4(clock_nanosleep, const clockid_t, which_clock, int, flags,
 		const struct __kernel_timespec __user *, rqtp,
 		struct __kernel_timespec __user *, rmtp)
 {
+    // 根据时钟类型得到内核时钟结构
 	const struct k_clock *kc = clockid_to_kclock(which_clock);
 	struct timespec64 t;
 
@@ -1392,7 +1393,7 @@ SYSCALL_DEFINE4(clock_nanosleep, const clockid_t, which_clock, int, flags,
 	current->restart_block.fn = do_no_restart_syscall;
 	current->restart_block.nanosleep.type = rmtp ? TT_NATIVE : TT_NONE;
 	current->restart_block.nanosleep.rmtp = rmtp;
-
+    // 调用内核时钟结构的nsleep回调
 	return kc->nsleep(which_clock, flags, &t);
 }
 

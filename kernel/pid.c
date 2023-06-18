@@ -75,6 +75,8 @@ static u64 pidfs_ino = RESERVED_PIDS;
  * first use and are never deallocated. This way a low pid_max
  * value does not cause lots of bitmaps to be allocated, but
  * the scheme scales to up to 4 million PIDs, runtime.
+ *
+ * pid 命名空间, 用于初始化
  */
 struct pid_namespace init_pid_ns = {
 	.ns.count = REFCOUNT_INIT(2),

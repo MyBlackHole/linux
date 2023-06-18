@@ -604,33 +604,41 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 #endif
 	}
 
+    // 关闭抢占
 	preempt_disable();
 	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
 
 	trace_contention_begin(lock, LCB_F_MUTEX | LCB_F_SPIN);
 	if (__mutex_trylock(lock) ||
 	    mutex_optimistic_spin(lock, ww_ctx, NULL)) {
+        // 取到锁
 		/* got the lock, yay! */
 		lock_acquired(&lock->dep_map, ip);
 		if (ww_ctx)
 			ww_mutex_set_context_fastpath(ww, ww_ctx);
 		trace_contention_end(lock, 0);
+        // 使能抢占
 		preempt_enable();
 		return 0;
 	}
 
+    // 自旋获取等待 lock
 	raw_spin_lock(&lock->wait_lock);
 	/*
 	 * After waiting to acquire the wait_lock, try again.
+     *
+     * 获取到 互斥锁的等待锁 后再尝试获取，互斥锁
 	 */
 	if (__mutex_trylock(lock)) {
 		if (ww_ctx)
 			__ww_mutex_check_waiters(lock, ww_ctx);
 
+        // 取到锁
 		goto skip_wait;
 	}
 
 	debug_mutex_lock_common(lock, &waiter);
+    // 记录需要唤醒的任务为当前任务
 	waiter.task = current;
 	if (use_ww_ctx)
 		waiter.ww_ctx = ww_ctx;
@@ -649,7 +657,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 		if (ret)
 			goto err_early_kill;
 	}
-
+    // 设置睡眠状态
 	set_current_state(state);
 	trace_contention_begin(lock, LCB_F_MUTEX);
 	for (;;) {
@@ -660,6 +668,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 		 * mutex_unlock() handing the lock off to us, do a trylock
 		 * before testing the error conditions to make sure we pick up
 		 * the handoff.
+         * 尝试获取锁
 		 */
 		if (__mutex_trylock(lock))
 			goto acquired;
@@ -680,8 +689,12 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 				goto err;
 		}
 
+        // 释放等待锁
 		raw_spin_unlock(&lock->wait_lock);
+        // 没有获取到 互斥锁，发起调度
+        // 释放 cpu 占用
 		schedule_preempt_disabled();
+        // 调度唤醒起点
 
 		first = __mutex_waiter_is_first(lock, &waiter);
 
@@ -705,6 +718,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 	}
 	raw_spin_lock(&lock->wait_lock);
 acquired:
+    // 设置状态为可运行状态
 	__set_current_state(TASK_RUNNING);
 
 	if (ww_ctx) {
@@ -1037,6 +1051,7 @@ EXPORT_SYMBOL_GPL(mutex_lock_io);
 static noinline void __sched
 __mutex_lock_slowpath(struct mutex *lock)
 {
+    // 睡眠的状态为不可中断睡眠
 	__mutex_lock(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
 }
 
