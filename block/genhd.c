@@ -635,6 +635,9 @@ EXPORT_SYMBOL_GPL(blk_mark_disk_dead);
  * it should not be deferred.
  *
  * Context: can sleep
+ *
+ * 删除 gendisk
+ *
  */
 void del_gendisk(struct gendisk *disk)
 {
@@ -1427,6 +1430,10 @@ EXPORT_SYMBOL(__blk_alloc_disk);
  *
  * Context: Any context, but the last reference must not be dropped from
  *          atomic context.
+ *
+ * 减少设备引用次数
+ * 为 0 时会调用 disk_release
+ *
  */
 void put_disk(struct gendisk *disk)
 {

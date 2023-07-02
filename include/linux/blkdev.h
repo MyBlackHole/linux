@@ -131,15 +131,23 @@ typedef unsigned int __bitwise blk_mode_t;
 /* return partition scanning errors */
 #define BLK_OPEN_STRICT_SCAN	((__force blk_mode_t)(1 << 6))
 
+/*
+ * 内核表示:
+ * 通用磁盘
+ * 分区
+ */
 struct gendisk {
 	/*
 	 * major/first_minor/minors should not be set by any new driver, the
 	 * block core will take care of allocating them automatically.
 	 */
+    // 主设备号
 	int major;
 	int first_minor;
+    // 最大的次设备号数量，如果设备不能分区值为 1
 	int minors;
 
+    // 主设备名
 	char disk_name[DISK_NAME_LEN];	/* name of major driver */
 
 	unsigned short events;		/* supported events */
@@ -148,7 +156,10 @@ struct gendisk {
 	struct xarray part_tbl;
 	struct block_device *part0;
 
+    // 设备操作
 	const struct block_device_operations *fops;
+
+    // 请求队列
 	struct request_queue *queue;
 	void *private_data;
 
@@ -368,6 +379,12 @@ struct blk_independent_access_ranges {
 	struct blk_independent_access_range	ia_range[];
 };
 
+/*
+ * 系统对块设备读写
+ * 通过块设备通用的读写操作函数将请求保存该设备的请求队列 request_queue
+ * 
+ * 此结构描述了块设备的请求队列
+ */
 struct request_queue {
 	/*
 	 * The queue owner gets to use this for whatever they like.
@@ -385,6 +402,7 @@ struct request_queue {
 	/*
 	 * various queue flags, see QUEUE_* below
 	 */
+    // 各种队列标识
 	unsigned long		queue_flags;
 
 	unsigned int		rq_timeout;
@@ -401,6 +419,7 @@ struct request_queue {
 
 	struct request		*last_merge;
 
+    // 队列保护 lock
 	spinlock_t		queue_lock;
 
 	int			quiesce_depth;
@@ -710,6 +729,8 @@ static inline unsigned int blk_queue_depth(struct request_queue *q)
 
 int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 				 const struct attribute_group **groups);
+
+// 添加磁盘
 static inline int __must_check add_disk(struct gendisk *disk)
 {
 	return device_add_disk(NULL, disk, NULL);

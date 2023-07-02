@@ -284,6 +284,10 @@ enum blk_eh_timer_return {
 /**
  * struct blk_mq_hw_ctx - State for a hardware queue facing the hardware
  * block device
+ *
+ * 面向硬件块设备的硬件队列
+ * 块设备至少有一个
+ *
  */
 struct blk_mq_hw_ctx {
 	struct {
@@ -438,8 +442,15 @@ struct blk_mq_hw_ctx {
  *	driver to map each hardware queue type (enum hctx_type) onto a distinct
  *	set of hardware queues.
  */
+/*
+ *
+ * 将软件队列映射到硬件队列
+ *
+ */
 struct blk_mq_queue_map {
+    // cpu id 与硬件队列队列映射
 	unsigned int *mq_map;
+    // 要映射 cpu id 的硬件列队数
 	unsigned int nr_queues;
 	unsigned int queue_offset;
 };
@@ -492,15 +503,28 @@ enum hctx_type {
  * @srcu:	   Use as lock when type of the request queue is blocking
  *		   (BLK_MQ_F_BLOCKING).
  */
+/*
+ *
+ * 多队列架构 支持
+ * 用于描述与存储器相关的 tag 合集
+ *
+ */
 struct blk_mq_tag_set {
+    // 块设备驱动函数操作
 	const struct blk_mq_ops	*ops;
+    // 队列
 	struct blk_mq_queue_map	map[HCTX_MAX_TYPES];
+    // map 元素数量
 	unsigned int		nr_maps;
+    // 块驱动程序支持的硬件队列数
 	unsigned int		nr_hw_queues;
 	unsigned int		queue_depth;
 	unsigned int		reserved_tags;
+    // 每个请求分配的附加字节数
 	unsigned int		cmd_size;
+    // 存储适配器已连接的 NUMA 节点
 	int			numa_node;
+    // 请求超时
 	unsigned int		timeout;
 	unsigned int		flags;
 	void			*driver_data;
@@ -730,6 +754,10 @@ struct request *blk_mq_alloc_request_hctx(struct request_queue *q,
 
 /*
  * Tag address space map.
+ *
+ * 地址空间映射
+ * 主要管理 struct request
+ *
  */
 struct blk_mq_tags {
 	unsigned int nr_tags;

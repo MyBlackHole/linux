@@ -2418,6 +2418,7 @@ init_xfs_fs(void)
 	if (error)
 		goto out_remove_dbg_kobj;
 
+    // 注册 xfs 文件系统
 	error = register_filesystem(&xfs_fs_type);
 	if (error)
 		goto out_qm_exit;

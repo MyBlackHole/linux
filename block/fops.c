@@ -842,6 +842,11 @@ static int blkdev_mmap(struct file *file, struct vm_area_struct *vma)
 	return generic_file_mmap(file, vma);
 }
 
+/*
+ * 设备 black block_device_operations 不提供文件全部操作
+ * 只有 open、release
+ * 需要依赖 def_blk_fops
+ */
 const struct file_operations def_blk_fops = {
 	.open		= blkdev_open,
 	.release	= blkdev_release,

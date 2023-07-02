@@ -1579,6 +1579,9 @@ EXPORT_SYMBOL_GPL(setup_bdev_super);
  * get_tree_bdev - Get a superblock based on a single block device
  * @fc: The filesystem context holding the parameters
  * @fill_super: Helper to initialise a new superblock
+ *
+ * 基于单个块设备获取超级块
+ * fill_super 帮助程序初始化一个新超级块
  */
 int get_tree_bdev(struct fs_context *fc,
 		int (*fill_super)(struct super_block *,
@@ -1765,6 +1768,10 @@ EXPORT_SYMBOL(mount_single);
  * The filesystem is invoked to get or create a superblock which can then later
  * be used for mounting.  The filesystem places a pointer to the root to be
  * used for mounting in @fc->root.
+ *
+ * 获取可用根
+ * 获取或创建一个超级块
+ *
  */
 int vfs_get_tree(struct fs_context *fc)
 {

@@ -132,10 +132,16 @@ static inline void *proc_sys_poll_event(struct ctl_table_poll *poll)
 	struct ctl_table_poll name = __CTL_TABLE_POLL_INITIALIZER(name)
 
 /* A sysctl table is an array of struct ctl_table: */
+/*
+ * 用于注册内核参数
+ */
 struct ctl_table {
 	const char *procname;		/* Text ID for /proc/sys, or zero */
+    // 表示对应于内核中的变量名称
 	void *data;
+    // 表示允许的最大长度
 	int maxlen;
+    // 访问权限
 	umode_t mode;
 	proc_handler *proc_handler;	/* Callback for text formatting */
 	struct ctl_table_poll *poll;

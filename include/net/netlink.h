@@ -951,6 +951,9 @@ static inline u32 nlmsg_seq(const struct nlmsghdr *nlh)
  *
  * Returns NULL if the tailroom of the skb is insufficient to store
  * the message header and payload.
+ *
+ * 将一个新的 netlink 消息加入到 skb 中。如果 skb 无法存放消息则返回 NULL
+ *
  */
 static inline struct nlmsghdr *nlmsg_put(struct sk_buff *skb, u32 portid, u32 seq,
 					 int type, int payload, int flags)
@@ -1009,6 +1012,9 @@ static inline struct nlmsghdr *nlmsg_put_answer(struct sk_buff *skb,
  *
  * Use NLMSG_DEFAULT_SIZE if the size of the payload isn't known
  * and a good default is needed.
+ *
+ * 创建 payload 大小的struct sk_buff
+ *
  */
 static inline struct sk_buff *nlmsg_new(size_t payload, gfp_t flags)
 {
@@ -1085,6 +1091,9 @@ static inline void nlmsg_cancel(struct sk_buff *skb, struct nlmsghdr *nlh)
 /**
  * nlmsg_free - drop a netlink message
  * @skb: socket buffer of netlink message
+ *
+ * 释放nlmsg_new()创建的skb
+ *
  */
 static inline void nlmsg_free(struct sk_buff *skb)
 {
@@ -1241,6 +1250,9 @@ static inline int nla_type(const struct nlattr *nla)
 /**
  * nla_data - head of payload
  * @nla: netlink attribute
+ *
+ * 根据 nlmsghdr 指针获取对应的 payload
+ *
  */
 static inline void *nla_data(const struct nlattr *nla)
 {
@@ -1275,6 +1287,9 @@ static inline int nla_ok(const struct nlattr *nla, int remaining)
  *
  * Returns the next netlink attribute in the attribute stream and
  * decrements remaining by the size of the current attribute.
+ *
+ * 获取消息流中下一个netlink消息
+ *
  */
 static inline struct nlattr *nla_next(const struct nlattr *nla, int *remaining)
 {

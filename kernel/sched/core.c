@@ -8415,6 +8415,9 @@ out_free_cpus_allowed:
 	return retval;
 }
 
+/*
+ * 设置亲和性
+ */
 long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
 {
 	struct affinity_context ac;
@@ -8496,6 +8499,9 @@ SYSCALL_DEFINE3(sched_setaffinity, pid_t, pid, unsigned int, len,
 	return retval;
 }
 
+/*
+ * 获取亲和性
+ */
 long sched_getaffinity(pid_t pid, struct cpumask *mask)
 {
 	struct task_struct *p;

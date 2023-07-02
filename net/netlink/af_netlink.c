@@ -1341,6 +1341,14 @@ static int netlink_unicast_kernel(struct sock *sk, struct sk_buff *skb,
 	return ret;
 }
 
+/*
+ * 用来发送单播信息
+ *
+ * ssk：netlink socket
+ * skb：skb buff指针
+ * portid：通信端口号
+ * nonblock：表示该函数是否为非阻塞，如果为1，该函数将在没有接收缓存可利用时立即返回；如果为0，该函数在没有接收缓存可利用时定是睡眠。
+ */
 int netlink_unicast(struct sock *ssk, struct sk_buff *skb,
 		    u32 portid, int nonblock)
 {
@@ -1510,6 +1518,15 @@ out:
 	sock_put(sk);
 }
 
+/*
+ * 用来发送多播信息
+ *
+ * ssk：netlink socket，netlink_kernel_create()返回值
+ * skb：内核skb buff
+ * portid：通信端口号
+ * group：是所有目标多播组对应掩码的OR操作的合值
+ * allocation：指定内核内存分配方式，通常GFP_ATOMIC用于中断上下文，而GFP_KERNEL用于其他场合。这个参数的存在是因为该API可能需要分配一个或多个缓冲区来对多播消息进行clone。
+ */
 int netlink_broadcast_filtered(struct sock *ssk, struct sk_buff *skb,
 			       u32 portid,
 			       u32 group, gfp_t allocation,
@@ -2082,6 +2099,9 @@ out_sock_release_nosk:
 }
 EXPORT_SYMBOL(__netlink_kernel_create);
 
+/* 
+ * sk：释放netlink_kernel_create()创建的sock
+ */
 void
 netlink_kernel_release(struct sock *sk)
 {

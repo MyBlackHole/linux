@@ -13,6 +13,9 @@ struct net;
 
 void do_trace_netlink_extack(const char *msg);
 
+/*
+ * 从sk_buff->data获取struct nlmsghdr数据结构
+ */
 static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
 {
 	return (struct nlmsghdr *)skb->data;
@@ -56,6 +59,12 @@ struct netlink_kernel_cfg {
 struct sock *__netlink_kernel_create(struct net *net, int unit,
 					    struct module *module,
 					    struct netlink_kernel_cfg *cfg);
+
+/*
+ * net：net指向所在的网络命名空间，一般默认传入的是&init_net，不需要定义；定义在net_namespace.c中。
+ * unit：netlink协议类型。
+ * cfg：cfg存放的是netlink内核配置参数struct netlink_kernel_cfg数据结构。
+ */
 static inline struct sock *
 netlink_kernel_create(struct net *net, int unit, struct netlink_kernel_cfg *cfg)
 {

@@ -753,6 +753,35 @@ struct task_struct {
 	 */
 	struct thread_info		thread_info;
 #endif
+	/*
+	1. 进程执行时，它会根据具体情况改变状态。进程状态是进程调度和对换的依据。Linux中的进程主要有如下状态:
+	1) TASK_RUNNING: 可运行
+	处于这种状态的进程，只有两种状态:
+	    1.1) 正在运行
+	    正在运行的进程就是当前进程(由current所指向的进程)
+	    1.2) 正准备运行
+	    准备运行的进程只要得到CPU就可以立即投入运行，CPU是这些进程唯一等待的系统资源，系统中有一个运行队列(run_queue)，用来容纳所有处于可运行状态的进程，调度程序执行时，从中选择一个进程投入运行
+
+	2) TASK_INTERRUPTIBLE: 可中断的等待状态，是针对等待某事件或其他资源的睡眠进程设置的，在内核发送信号给该进程表明事件已经发生时，进程状态变为TASK_RUNNING，它只要调度器选中该进程即可恢复执行
+
+	3) TASK_UNINTERRUPTIBLE: 不可中断的等待状态
+	处于该状态的进程正在等待某个事件(event)或某个资源，它肯定位于系统中的某个等待队列(wait_queue)中，处于不可中断等待态的进程是因为硬件环境不能满足而等待，例如等待特定的系统资源，它任何情况下都不能被打断，只能用特定的方式来唤醒它，例如唤醒函数wake_up()等
+	　　　　　它们不能由外部信号唤醒，只能由内核亲自唤醒
+
+	4) TASK_ZOMBIE: 僵死
+	进程虽然已经终止，但由于某种原因，父进程还没有执行wait()系统调用，终止进程的信息也还没有回收。顾名思义，处于该状态的进程就是死进程，这种进程实际上是系统中的垃圾，必须进行相应处理以释放其占用的资源。
+
+	5) TASK_STOPPED: 暂停
+	此时的进程暂时停止运行来接受某种特殊处理。通常当进程接收到SIGSTOP、SIGTSTP、SIGTTIN或 SIGTTOU信号后就处于这种状态。例如，正接受调试的进程就处于这种状态
+	　　　　
+	6) TASK_TRACED
+	从本质上来说，这属于TASK_STOPPED状态，用于从停止的进程中，将当前被调试的进程与常规的进程区分开来
+	　
+	7) TASK_DEAD
+	父进程wait系统调用发出后，当子进程退出时，父进程负责回收子进程的全部资源，子进程进入TASK_DEAD状态
+
+	8) TASK_SWAPPING: 换入/换出
+	*/
 	unsigned int			__state;
 
 	/* saved state for "spinlock sleepers" */
@@ -764,10 +793,48 @@ struct task_struct {
 	 */
 	randomized_struct_fields_start
 
+	/*
+	2. 进程内核栈，进程通过 alloc_thread_stack 函数分配它的内核栈，通过 free_thread_stack 函数释放所分配的内核栈
+	*/
 	void				*stack;
+
+	/*
+	3. 进程描述符使用计数，被置为2时，表示进程描述符正在被使用而且其相应的进程处于活动状态
+	*/
 	refcount_t			usage;
 	/* Per task flags (PF_*), defined further below: */
+
+	/*
+	4. flags是进程当前的状态标志(注意和运行状态区分)
+	1) #define PF_ALIGNWARN    0x00000001: 显示内存地址未对齐警告
+	2) #define PF_PTRACED    0x00000010: 标识是否是否调用了ptrace
+	3) #define PF_TRACESYS    0x00000020: 跟踪系统调用
+	4) #define PF_FORKNOEXEC 0x00000040: 已经完成fork，但还没有调用exec
+	5) #define PF_SUPERPRIV    0x00000100: 使用超级用户(root)权限
+	6) #define PF_DUMPCORE    0x00000200: dumped core
+	7) #define PF_SIGNALED    0x00000400: 此进程由于其他进程发送相关信号而被杀死
+	8) #define PF_STARTING    0x00000002: 当前进程正在被创建
+	9) #define PF_EXITING    0x00000004: 当前进程正在关闭
+	10) #define PF_USEDFPU    0x00100000: Process used the FPU this quantum(SMP only)
+
+	11) #define PF_DTRACE    0x00200000: delayed trace (used on m68k)
+	*/
 	unsigned int			flags;
+
+	/*
+	5. ptrace 系统调用，成员ptrace被设置为0时表示不需要被跟踪，它的可能取值如下：
+	linux-2.6.38.8/include/linux/ptrace.h
+	1) #define PT_PTRACED    0x00000001
+	2) #define PT_DTRACE    0x00000002: delayed trace (used on m68k, i386)
+	3) #define PT_TRACESYSGOOD    0x00000004
+	4) #define PT_PTRACE_CAP    0x00000008: ptracer can follow suid-exec
+	5) #define PT_TRACE_FORK    0x00000010
+	6) #define PT_TRACE_VFORK    0x00000020
+	7) #define PT_TRACE_CLONE    0x00000040
+	8) #define PT_TRACE_EXEC    0x00000080
+	9) #define PT_TRACE_VFORK_DONE    0x00000100
+	10) #define PT_TRACE_EXIT    0x00000200
+	*/
 	unsigned int			ptrace;
 
 #ifdef CONFIG_MEM_ALLOC_PROFILING
@@ -775,6 +842,10 @@ struct task_struct {
 #endif
 
 #ifdef CONFIG_SMP
+
+	/*
+	7. 在SMP上帮助实现无加锁的进程切换 (unlocked context switches)
+	*/
 	int				on_cpu;
 	struct __call_single_node	wake_entry;
 	unsigned int			wakee_flips;
@@ -793,15 +864,43 @@ struct task_struct {
 #endif
 	int				on_rq;
 
+	/*
+	8. 进程调度
+	1) prio: 调度器考虑的优先级保存在prio，由于在某些情况下内核需要暂时提高进程的优先级，因此需要第三个成员来表示(除了static_prio、normal_prio之外)，由于这些改变不是持久的，因此静态(static_prio)和普通(normal_prio)优先级不受影响
+	2) static_prio: 用于保存进程的"静态优先级"，静态优先级是进程"启动"时分配的优先级，它可以用nice、sched_setscheduler系统调用修改，否则在进程运行期间会一直保持恒定
+	3) normal_prio: 表示基于进程的"静态优先级"和"调度策略"计算出的优先级，因此，即使普通进程和实时进程具有相同的静态优先级(static_prio)，其普通优先级(normal_prio)也是不同的。进程分支时(fork)，新创建的子进程会集成普通优先级
+	*/
 	int				prio;
 	int				static_prio;
 	int				normal_prio;
+
+	/*
+	4) rt_priority: 表示实时进程的优先级，需要明白的是，"实时进程优先级"和"普通进程优先级"有两个独立的范畴，实时进程即使是最低优先级也高于普通进程，最低的实时优先级为0，最高的优先级为99，值越大，表明优先级越高
+	*/
 	unsigned int			rt_priority;
 
+	/*
+	5) se: 用于普通进程的调用实体
+	　　调度器不限于调度进程，还可以处理更大的实体，这可以实现"组调度"，可用的CPU时间可以首先在一般的进程组(例如所有进程可以按所有者分组)之间分配，接下来分配的时间在组内再次分配
+	　　这种一般性要求调度器不直接操作进程，而是处理"可调度实体"，一个实体有sched_entity的一个实例标识
+	　　在最简单的情况下，调度在各个进程上执行，由于调度器设计为处理可调度的实体，在调度器看来各个进程也必须也像这样的实体，因此se在task_struct中内嵌了一个sched_entity实例，调度器可据此操作各个task_struct
+	*/
 	struct sched_entity		se;
+
+	/*
+	6) rt: 用于实时进程的调用实体
+	*/
 	struct sched_rt_entity		rt;
 	struct sched_dl_entity		dl;
 	struct sched_dl_entity		*dl_server;
+
+	/*
+	7) sched_class: 该进程所属的调度类，目前内核中有实现以下四种：
+	    5.1) static const struct sched_class fair_sched_class;
+	    5.2) static const struct sched_class rt_sched_class;
+	    5.3) static const struct sched_class idle_sched_class;
+	    5.4) static const struct sched_class stop_sched_class;
+	*/
 	const struct sched_class	*sched_class;
 
 #ifdef CONFIG_SCHED_CORE
@@ -832,6 +931,10 @@ struct task_struct {
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	/* List of struct preempt_notifier: */
+
+    /*
+    9. preempt_notifiers 结构体链表
+    */
 	struct hlist_head		preempt_notifiers;
 #endif
 
@@ -839,8 +942,21 @@ struct task_struct {
 	unsigned int			btrace_seq;
 #endif
 
+	/*
+	10. policy表示进程的调度策略，目前主要有以下五种：
+	1) #define SCHED_NORMAL        0: 用于普通进程，它们通过完全公平调度器来处理
+	2) #define SCHED_FIFO        1: 先来先服务调度，由实时调度类处理
+	3) #define SCHED_RR            2: 时间片轮转调度，由实时调度类处理
+	4) #define SCHED_BATCH        3: 用于非交互、CPU使用密集的批处理进程，通过完全公平调度器来处理，调度决策对此类进程给与"冷处理"，它们绝不会抢占CFS调度器处理的另一个进程，因此不会干扰交互式进程，如果不打算用nice降低进程的静态优先级，同时又不希望该进程影响系统的交互性，最适合用该调度策略
+	5) #define SCHED_IDLE        5: 可用于次要的进程，其相对权重总是最小的，也通过完全公平调度器来处理。要注意的是，SCHED_IDLE不负责调度空闲进程，空闲进程由内核提供单独的机制来处理
+	只有root用户能通过sched_setscheduler()系统调用来改变调度策略
+	*/
 	unsigned int			policy;
 	unsigned long			max_allowed_capacity;
+
+	/*
+	11. 此进程运行的处理器数量
+	*/
 	int				nr_cpus_allowed;
 	const cpumask_t			*cpus_ptr;
 	cpumask_t			*user_cpus_ptr;
@@ -852,6 +968,10 @@ struct task_struct {
 	unsigned short			migration_flags;
 
 #ifdef CONFIG_PREEMPT_RCU
+
+	/*
+	12. RCU 同步原语
+	*/
 	int				rcu_read_lock_nesting;
 	union rcu_special		rcu_read_unlock_special;
 	struct list_head		rcu_node_entry;
@@ -877,27 +997,61 @@ struct task_struct {
 	int				trc_blkd_cpu;
 #endif /* #ifdef CONFIG_TASKS_TRACE_RCU */
 
+	/*
+	13. 用于调度器统计进程的运行信息
+	*/
 	struct sched_info		sched_info;
 
+	/*
+	通过list_head将当前进程的task_struct串联进内核的进程列表中
+	*/
 	struct list_head		tasks;
 #ifdef CONFIG_SMP
+
+	/*
+	limit pushing to one attempt
+	*/
 	struct plist_node		pushable_tasks;
 	struct rb_node			pushable_dl_tasks;
 #endif
 
+	/*
+	进程地址空间
+	1) mm: 指向进程所拥有的内存描述符
+	2) active_mm: active_mm指向进程运行时所使用的内存描述符
+	对于普通进程而言，这两个指针变量的值相同。但是，内核线程不拥有任何内存描述符，所以它们的mm成员总是为NULL。当内核线程得以运行时，它的active_mm成员被初始化为前一个运行进程的active_mm值
+	*/
 	struct mm_struct		*mm;
 	struct mm_struct		*active_mm;
 	struct address_space		*faults_disabled_mapping;
 
+	/*
+	进程退出状态码
+	*/
 	int				exit_state;
+
+	/*
+	判断标志
+	1) exit_code 用于设置进程的终止代号，这个值要么是_exit()或exit_group()系统调用参数(正常终止)，要么是由内核提供的一个错误代号(异常终止)
+	2) exit_signal 被置为-1时表示是某个线程组中的一员。只有当线程组的最后一个成员终止时，才会产生一个信号，以通知线程组的领头进程的父进程
+	*/
 	int				exit_code;
 	int				exit_signal;
 	/* The signal sent when the parent dies: */
+
+	/*
+	用于判断父进程终止时发送信号
+	*/
 	int				pdeath_signal;
 	/* JOBCTL_*, siglock protected: */
 	unsigned long			jobctl;
 
 	/* Used for emulating ABI behavior of previous Linux versions: */
+
+	/*
+	personality用于处理不同的ABI
+	include/uapi/linux/personality.h
+	*/
 	unsigned int			personality;
 
 	/* Scheduler bits, serialized by scheduler locks: */
@@ -1200,6 +1354,7 @@ struct task_struct {
 	struct bio_list			*bio_list;
 
 	/* Stack plugging: */
+	/* 堆堵塞 */
 	struct blk_plug			*plug;
 
 	/* VM state: */

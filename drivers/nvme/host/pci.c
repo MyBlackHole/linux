@@ -114,6 +114,10 @@ static void nvme_update_attrs(struct nvme_dev *dev);
 
 /*
  * Represents an NVM Express device.  Each nvme_dev is a PCI function.
+ *
+ * 代表 NVME Express 设备
+ * 每个 nvme_dev 都是一个 PCI 方法
+ *
  */
 struct nvme_dev {
 	struct nvme_queue *queues;

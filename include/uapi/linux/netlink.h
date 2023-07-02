@@ -50,10 +50,15 @@ struct sockaddr_nl {
  * @nlmsg_pid:   Sending process port ID
  */
 struct nlmsghdr {
+    // 整个netlink消息的长度，包含消息头
 	__u32		nlmsg_len;
+    // 消息状态
 	__u16		nlmsg_type;
+    // 消息标记，它们泳衣表示消息的类型
 	__u16		nlmsg_flags;
+    // 消息序列号，用以将消息排队有些类似TCP协议中的序号(不完全一样)，但是netlink的这个字段是可选的，不强制使用
 	__u32		nlmsg_seq;
+    // 发送端口的ID号，对于内核来说该值就是0，对于用户进程来说就是其socket所绑定的ID号
 	__u32		nlmsg_pid;
 };
 
@@ -96,22 +101,36 @@ struct nlmsghdr {
  */
 
 #define NLMSG_ALIGNTO	4U
+// 用于得到不小于len且字节对齐的最小数值
 #define NLMSG_ALIGN(len) ( ((len)+NLMSG_ALIGNTO-1) & ~(NLMSG_ALIGNTO-1) )
+// netlink头部长度
 #define NLMSG_HDRLEN	 ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
+// 计算消息数据len的真实消息长度，消息体+消息头
 #define NLMSG_LENGTH(len) ((len) + NLMSG_HDRLEN)
+// 返回不小于NLMSG_LENGTH(len)且字节对齐的最小数值
 #define NLMSG_SPACE(len) NLMSG_ALIGN(NLMSG_LENGTH(len))
+// 用于取得消息的数据部分的首地址，设置和读取消息数据部分时需要使用该宏
 #define NLMSG_DATA(nlh)  ((void *)(((char *)nlh) + NLMSG_HDRLEN))
+// 用于得到下一个消息的首地址，同时len变为剩余消息的长度
 #define NLMSG_NEXT(nlh,len)	 ((len) -= NLMSG_ALIGN((nlh)->nlmsg_len), \
 				  (struct nlmsghdr *)(((char *)(nlh)) + \
 				  NLMSG_ALIGN((nlh)->nlmsg_len)))
+// 判断消息是否>len
 #define NLMSG_OK(nlh,len) ((len) >= (int)sizeof(struct nlmsghdr) && \
 			   (nlh)->nlmsg_len >= sizeof(struct nlmsghdr) && \
 			   (nlh)->nlmsg_len <= (len))
+// 用于返回payload的长度
 #define NLMSG_PAYLOAD(nlh,len) ((nlh)->nlmsg_len - NLMSG_SPACE((len)))
 
+/* nlmsg_type value */
+
+// 不执行任何动作，必须将该消息丢弃
 #define NLMSG_NOOP		0x1	/* Nothing.		*/
+// 消息发生错误
 #define NLMSG_ERROR		0x2	/* Error		*/
+// 标识分组消息的末尾
 #define NLMSG_DONE		0x3	/* End of a dump	*/
+// 缓冲区溢出，表示某些消息已经丢失
 #define NLMSG_OVERRUN		0x4	/* Data lost		*/
 
 #define NLMSG_MIN_TYPE		0x10	/* < 0x10: reserved control messages */

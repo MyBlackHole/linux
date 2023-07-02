@@ -338,6 +338,10 @@ static void init_once(void *foo)
 
 static void init_inodecache(void)
 {
+    /*
+     * 创建 sock_inode_cache 缓存池
+     * sock 与 inode 绑定
+     */
 	sock_inode_cachep = kmem_cache_create("sock_inode_cache",
 					      sizeof(struct socket_alloc),
 					      0,
