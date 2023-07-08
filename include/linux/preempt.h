@@ -210,6 +210,7 @@ extern void preempt_count_sub(int val);
 
 #ifdef CONFIG_PREEMPT_COUNT
 
+// 禁止抢占
 #define preempt_disable() \
 do { \
 	preempt_count_inc(); \
@@ -227,6 +228,7 @@ do { \
 #define preemptible()	(preempt_count() == 0 && !irqs_disabled())
 
 #ifdef CONFIG_PREEMPTION
+// 恢复抢占
 #define preempt_enable() \
 do { \
 	barrier(); \

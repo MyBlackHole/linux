@@ -349,6 +349,9 @@ xfs_trans_alloc_empty(
  * applied to the incore superblock, but we don't want them to
  * cause the superblock to get locked and logged if these are the
  * only fields in the superblock that the transaction modifies.
+ *
+ * 将指定更改事物提交到文件系统
+ *
  */
 void
 xfs_trans_mod_sb(

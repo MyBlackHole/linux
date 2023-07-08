@@ -445,6 +445,9 @@ int mnt_get_write_access_file(struct file *file)
  * skips incrementing mnt_writers (since the open file already has a reference)
  * and instead only does the freeze protection and the check for emergency r/o
  * remounts.  This must be paired with mnt_drop_write_file.
+ *
+ * 获取文件挂载对应超级块写权限
+ *
  */
 int mnt_want_write_file(struct file *file)
 {

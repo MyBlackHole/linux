@@ -899,6 +899,11 @@ xfs_file_fallocate(
 	 * the on disk and in memory inode sizes, and the operations that follow
 	 * require the in-memory size to be fully up-to-date.
 	 */
+
+    /*
+     * 等待所有 aio 完成
+     * 应为 aio 会修改大小
+     */
 	inode_dio_wait(inode);
 
 	/*

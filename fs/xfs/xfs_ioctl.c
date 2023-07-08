@@ -1474,10 +1474,12 @@ xfs_file_ioctl(
 		if (copy_from_user(&in, arg, sizeof(in)))
 			return -EFAULT;
 
+        // 获取写权限
 		error = mnt_want_write_file(filp);
 		if (error)
 			return error;
 		error = xfs_growfs_data(mp, &in);
+        // 释放写权限
 		mnt_drop_write_file(filp);
 		return error;
 	}

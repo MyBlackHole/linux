@@ -29,6 +29,7 @@
 #define	ENOTTY		25	/* Not a typewriter */
 #define	ETXTBSY		26	/* Text file busy */
 #define	EFBIG		27	/* File too large */
+// 磁盘没有可用空间
 #define	ENOSPC		28	/* No space left on device */
 #define	ESPIPE		29	/* Illegal seek */
 #define	EROFS		30	/* Read-only file system */

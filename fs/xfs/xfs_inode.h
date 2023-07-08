@@ -23,6 +23,7 @@ struct xfs_dquot;
 
 typedef struct xfs_inode {
 	/* Inode linking and identification information. */
+    // 文件系统挂载结构指针
 	struct xfs_mount	*i_mount;	/* fs mount struct ptr */
 	struct xfs_dquot	*i_udquot;	/* user dquot */
 	struct xfs_dquot	*i_gdquot;	/* group dquot */

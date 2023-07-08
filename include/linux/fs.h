@@ -272,7 +272,7 @@ struct iattr {
  */
 #define FILESYSTEM_MAX_STACK_DEPTH 2
 
-/** 
+/**
  * enum positive_aop_returns - aop return codes with specific semantics
  *
  * @AOP_WRITEPAGE_ACTIVATE: Informs the caller that page writeback has
@@ -282,7 +282,7 @@ struct iattr {
  * 			    be a candidate for writeback again in the near
  * 			    future.  Other callers must be careful to unlock
  * 			    the page if they get this return.  Returned by
- * 			    writepage(); 
+ * 			    writepage();
  *
  * @AOP_TRUNCATED_PAGE: The AOP method that was handed a locked page has
  *  			unlocked it and the page might have been truncated.
@@ -626,6 +626,7 @@ is_uncached_acl(struct posix_acl *acl)
  * of the 'struct inode'
  */
 struct inode {
+    // 文件访问权限、所有权、文件类型
 	umode_t			i_mode;
 	unsigned short		i_opflags;
 	kuid_t			i_uid;
@@ -655,18 +656,25 @@ struct inode {
 	 *    inode_(inc|dec)_link_count
 	 */
 	union {
+        // 硬连接总数
 		const unsigned int i_nlink;
 		unsigned int __i_nlink;
 	};
+    // 设备号
 	dev_t			i_rdev;
+    // 文件长度
 	loff_t			i_size;
-	struct timespec64	__i_atime;
-	struct timespec64	__i_mtime;
-	struct timespec64	__i_ctime; /* use inode_*_ctime accessors! */
+    // 最后访问时间
+	struct timespec64	i_atime;
+    // 最后修改时间
+	struct timespec64	i_mtime;
+    // 最后修改 inode 时间
+	struct timespec64	i_ctime;
 	spinlock_t		i_lock;	/* i_blocks, i_bytes, maybe i_size */
 	unsigned short          i_bytes;
 	u8			i_blkbits;
 	enum rw_hint		i_write_hint;
+	// 块计数长度
 	blkcnt_t		i_blocks;
 
 #ifdef __NEED_I_SIZE_ORDERED
@@ -699,6 +707,7 @@ struct inode {
 	};
 	atomic64_t		i_version;
 	atomic64_t		i_sequence; /* see futex */
+    // 文件引用计数器
 	atomic_t		i_count;
 	atomic_t		i_dio_count;
 	atomic_t		i_writecount;
@@ -706,6 +715,7 @@ struct inode {
 	atomic_t		i_readcount; /* struct files open RO */
 #endif
 	union {
+        // 文件操作集合
 		const struct file_operations	*i_fop;	/* former ->i_op->default_file_ops */
 		void (*free_inode)(struct inode *);
 	};
@@ -1048,8 +1058,8 @@ struct file *get_file_active(struct file **f);
 
 #define	MAX_NON_LFS	((1UL<<31) - 1)
 
-/* Page cache limit. The filesystems should put that into their s_maxbytes 
-   limits, otherwise bad things can happen in VM. */ 
+/* Page cache limit. The filesystems should put that into their s_maxbytes
+   limits, otherwise bad things can happen in VM. */
 #if BITS_PER_LONG==32
 #define MAX_LFS_FILESIZE	((loff_t)ULONG_MAX << PAGE_SHIFT)
 #elif BITS_PER_LONG==64
@@ -1185,6 +1195,7 @@ extern int send_sigurg(struct fown_struct *fown);
 /* Possible states of 'frozen' field */
 enum {
 	SB_UNFROZEN = 0,		/* FS is unfrozen */
+    // 写入、目录操作、ioctl 冻结
 	SB_FREEZE_WRITE	= 1,		/* Writes, dir ops, ioctls frozen */
 	SB_FREEZE_PAGEFAULT = 2,	/* Page faults stopped as well */
 	SB_FREEZE_FS = 3,		/* For internal FS use (e.g. to stop
@@ -1202,19 +1213,30 @@ struct sb_writers {
 };
 
 struct super_block {
+    // 用于连接到 super_blocks 全局链表上
 	struct list_head	s_list;		/* Keep this first */
+    // 对应块设备标识
 	dev_t			s_dev;		/* search index; _not_ kdev_t */
 	unsigned char		s_blocksize_bits;
+    // 文件系统块大小
 	unsigned long		s_blocksize;
+    // 文件系统最大支持文件大小
 	loff_t			s_maxbytes;	/* Max file size */
+    // 文件系统类型
 	struct file_system_type	*s_type;
+    // 超级块的操作函数
 	const struct super_operations	*s_op;
+    // 文件系统限额操作函数
 	const struct dquot_operations	*dq_op;
+    // 磁盘限额
 	const struct quotactl_ops	*s_qcop;
 	const struct export_operations *s_export_op;
+    // 挂载标记
 	unsigned long		s_flags;
 	unsigned long		s_iflags;	/* internal SB_I_* flags */
+    //魔术字
 	unsigned long		s_magic;
+    // 全局根目录的目录项
 	struct dentry		*s_root;
 	struct rw_semaphore	s_umount;
 	int			s_count;
@@ -1236,10 +1258,13 @@ struct super_block {
 #endif
 	struct hlist_bl_head	s_roots;	/* alternate root dentries for NFS */
 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
+	// 对应的块设备
 	struct block_device	*s_bdev;	/* can go away once we use an accessor for @s_bdev_file */
 	struct file		*s_bdev_file;
+	// 超级块对应的设备详情
 	struct backing_dev_info *s_bdi;
 	struct mtd_info		*s_mtd;
+	// 连接到 file_system_type 的 fs_supers
 	struct hlist_node	s_instances;
 	unsigned int		s_quota_types;	/* Bitmask of supported quota types */
 	struct quota_info	s_dquot;	/* Diskquota specific options */
@@ -1250,8 +1275,8 @@ struct super_block {
 	 * Keep s_fs_info, s_time_gran, s_fsnotify_mask, and
 	 * s_fsnotify_info together for cache efficiency. They are frequently
 	 * accessed and rarely modified.
-     *
-     * 文件系统私有数据
+	 *
+	 * 文件系统私有数据
 	 */
 	void			*s_fs_info;	/* Filesystem private info */
 
@@ -1276,6 +1301,7 @@ struct super_block {
 	 * change at runtime
 	 */
 	char			s_id[32];	/* Informational name */
+    // tune2fs -l
 	uuid_t			s_uuid;		/* UUID */
 	u8			s_uuid_len;	/* Default 16, possibly smaller for weird filesystems */
 
@@ -1296,8 +1322,10 @@ struct super_block {
 	 */
 	const char *s_subtype;
 
+	// 超级块默认的目录项操作函数
 	const struct dentry_operations *s_d_op; /* default d_op for dentries */
 
+	// 超级块注册的内存回收函数
 	struct shrinker *s_shrink;	/* per-sb shrinker handle */
 
 	/* Number of inodes with nlink == 0 but still referenced */
@@ -1325,7 +1353,9 @@ struct super_block {
 	 * of per-node lru lists, each of which has its own spinlock.
 	 * There is no need to put them into separate cachelines.
 	 */
+    // 超级块对应的未使用 目录项 列表
 	struct list_lru		s_dentry_lru;
+    // 超级块对应的未使用 索引节点 列表
 	struct list_lru		s_inode_lru;
 	struct rcu_head		rcu;
 	struct work_struct	destroy_work;
@@ -1339,9 +1369,11 @@ struct super_block {
 
 	/* s_inode_list_lock protects s_inodes */
 	spinlock_t		s_inode_list_lock ____cacheline_aligned_in_smp;
+    // 挂载了所有 索引节点 的链表
 	struct list_head	s_inodes;	/* all inodes */
 
 	spinlock_t		s_inode_wblist_lock;
+    // 正在回写 索引节点 的链表
 	struct list_head	s_inodes_wb;	/* writeback inodes */
 } __randomize_layout;
 
@@ -1739,6 +1771,9 @@ static inline bool file_write_not_started(const struct file *file)
  *
  * Decrement number of writers to the filesystem. Wake up possible waiters
  * wanting to freeze the filesystem.
+ *
+ * 删除对超级块写访问
+ *
  */
 static inline void sb_end_write(struct super_block *sb)
 {
@@ -1787,6 +1822,14 @@ static inline void sb_end_intwrite(struct super_block *sb)
  * sb_start_write
  *   -> i_mutex			(write path, truncate, directory ops, ...)
  *   -> s_umount		(freeze_super, thaw_super)
+ *
+ *
+ * 获取超级块写入访问权限
+ * 当进程想要将数据写入文件系统时应该
+ * sb_start_write
+ * sb_end_write
+ * 防止文件系统冻结
+ *
  */
 static inline void sb_start_write(struct super_block *sb)
 {
@@ -2466,9 +2509,10 @@ int kiocb_modified(struct kiocb *iocb);
 int sync_inode_metadata(struct inode *inode, int wait);
 
 struct file_system_type {
+    // 名 如:xfs
 	const char *name;
 	int fs_flags;
-#define FS_REQUIRES_DEV		1 
+#define FS_REQUIRES_DEV		1
 #define FS_BINARY_MOUNTDATA	2
 #define FS_HAS_SUBTYPE		4
 #define FS_USERNS_MOUNT		8	/* Can be mounted by userns root */
@@ -2477,11 +2521,15 @@ struct file_system_type {
 #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
 	int (*init_fs_context)(struct fs_context *);
 	const struct fs_parameter_spec *parameters;
+    // 挂载函数
 	struct dentry *(*mount) (struct file_system_type *, int,
 		       const char *, void *);
 	void (*kill_sb) (struct super_block *);
 	struct module *owner;
+    // 通过 next 挂载在全局文件系统列表上
 	struct file_system_type * next;
+    // 此文件系统类型锁包含的超级块对象
+    // 保证所有关联超级块 umount 后
 	struct hlist_head fs_supers;
 
 	struct lock_class_key s_lock_key;
@@ -2982,7 +3030,7 @@ ssize_t __kernel_read(struct file *file, void *buf, size_t count, loff_t *pos);
 extern ssize_t kernel_write(struct file *, const void *, size_t, loff_t *);
 extern ssize_t __kernel_write(struct file *, const void *, size_t, loff_t *);
 extern struct file * open_exec(const char *);
- 
+
 /* fs/dcache.c -- generic fs support functions */
 extern bool is_subdir(struct dentry *, struct dentry *);
 extern bool path_is_under(const struct path *, const struct path *);

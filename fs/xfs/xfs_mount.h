@@ -243,7 +243,9 @@ typedef struct xfs_mount {
 	 * ever support shrinks it would have to be persisted in addition
 	 * to various other kinds of pain inflicted on the pNFS server.
 	 */
+    // 扩容计数
 	uint32_t		m_generation;
+    // 文件系统扩容互斥锁
 	struct mutex		m_growlock;	/* growfs mutex */
 
 #ifdef DEBUG

@@ -81,6 +81,9 @@ xfs_resizefs_init_new_ags(
 
 /*
  * growfs operations
+ *
+ * 扩容文件系统操作
+ *
  */
 static int
 xfs_growfs_data_private(
@@ -104,6 +107,7 @@ xfs_growfs_data_private(
 	if (error)
 		return error;
 
+    // 判断新块数量与旧块数量
 	if (nb > mp->m_sb.sb_dblocks) {
 		error = xfs_buf_read_uncached(mp->m_ddev_targp,
 				XFS_FSB_TO_BB(mp, nb) - XFS_FSS_TO_BB(mp, 1),
@@ -131,6 +135,7 @@ xfs_growfs_data_private(
 	 * supported, and reject a shrink operation that would cause a
 	 * filesystem to become unsupported.
 	 */
+    // 不支持单个 AG 的 xfs
 	if (delta < 0 && nagcount < 2)
 		return -EINVAL;
 
@@ -150,6 +155,7 @@ xfs_growfs_data_private(
 	}
 
 	if (delta > 0)
+        // 申请分配 xfs_trans 事务
 		error = xfs_trans_alloc(mp, &M_RES(mp)->tr_growdata,
 				XFS_GROWFS_SPACE_RES(mp), 0, XFS_TRANS_RESERVE,
 				&tp);
@@ -177,6 +183,9 @@ xfs_growfs_data_private(
 	 * Update changed superblock fields transactionally. These are not
 	 * seen by the rest of the world until the transaction commit applies
 	 * them atomically to the superblock.
+     *
+     * 以事物方式更新超级块
+     *
 	 */
 	if (nagcount > oagcount)
 		xfs_trans_mod_sb(tp, XFS_TRANS_SB_AGCOUNT, nagcount - oagcount);
@@ -189,16 +198,22 @@ xfs_growfs_data_private(
 	 * Sync sb counters now to reflect the updated values. This is
 	 * particularly important for shrink because the write verifier
 	 * will fail if sb_fdblocks is ever larger than sb_dblocks.
+     *
+     * 更新超级块计数器
+     *
 	 */
 	if (xfs_has_lazysbcount(mp))
 		xfs_log_sb(tp);
 
 	xfs_trans_set_sync(tp);
+    // 提交事物
 	error = xfs_trans_commit(tp);
 	if (error)
 		return error;
 
 	/* New allocation groups fully initialized, so update mount struct */
+    // 新分配组（AG）已完成初始化
+    // 更新挂载结构
 	if (nagimax)
 		mp->m_maxagi = nagimax;
 	xfs_set_low_space_thresholds(mp);
@@ -294,6 +309,7 @@ xfs_growfs_data(
 
 	if (!capable(CAP_SYS_ADMIN))
 		return -EPERM;
+    // 获取扩容锁
 	if (!mutex_trylock(&mp->m_growlock))
 		return -EWOULDBLOCK;
 
@@ -319,6 +335,8 @@ xfs_growfs_data(
 		M_IGEO(mp)->maxicount = 0;
 
 	/* Update secondary superblocks now the physical grow has completed */
+    // 扩容已完成
+    // 更新辅助超级块
 	error = xfs_update_secondary_sbs(mp);
 
 out_error:
@@ -328,6 +346,7 @@ out_error:
 	 * is live already.
 	 */
 	mp->m_generation++;
+    // 释放扩容锁
 	mutex_unlock(&mp->m_growlock);
 	return error;
 }
