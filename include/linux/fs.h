@@ -179,6 +179,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 #define FMODE_NONOTIFY		((__force fmode_t)(1 << 26))
 
 /* File is capable of returning -EAGAIN if I/O will block */
+/* 如果 I/O 阻塞，文件能够返回 -EAGAIN */
 #define FMODE_NOWAIT		((__force fmode_t)(1 << 27))
 
 /* File represents mount that needs unmounting */
@@ -672,6 +673,7 @@ struct inode {
 	struct timespec64	i_ctime;
 	spinlock_t		i_lock;	/* i_blocks, i_bytes, maybe i_size */
 	unsigned short          i_bytes;
+    // 以位为单位块大小
 	u8			i_blkbits;
 	enum rw_hint		i_write_hint;
 	// 块计数长度
@@ -705,6 +707,7 @@ struct inode {
 		struct hlist_head	i_dentry;
 		struct rcu_head		i_rcu;
 	};
+    // 版本号
 	atomic64_t		i_version;
 	atomic64_t		i_sequence; /* see futex */
     // 文件引用计数器
@@ -720,15 +723,20 @@ struct inode {
 		void (*free_inode)(struct inode *);
 	};
 	struct file_lock_context	*i_flctx;
+    // 设备地址映射
 	struct address_space	i_data;
+    // 块设备链表
 	struct list_head	i_devices;
 	union {
+        // 管道信息
 		struct pipe_inode_info	*i_pipe;
+        // 块设备驱动
 		struct cdev		*i_cdev;
 		char			*i_link;
 		unsigned		i_dir_seq;
 	};
 
+    // 索引节点版本号
 	__u32			i_generation;
 
 #ifdef CONFIG_FSNOTIFY
@@ -999,6 +1007,7 @@ struct file {
 		/* fput() uses task work when closing and freeing file (default). */
 		struct callback_head 	f_task_work;
 		/* fput() must use workqueue (most kernel threads). */
+		// 文件对象链表
 		struct llist_node	f_llist;
 		unsigned int 		f_iocb_flags;
 	};
@@ -1008,16 +1017,23 @@ struct file {
 	 * Must not be taken from IRQ context.
 	 */
 	spinlock_t		f_lock;
+	// 读写模式
 	fmode_t			f_mode;
+	// 文件引用次数
 	atomic_long_t		f_count;
 	struct mutex		f_pos_lock;
+	// 表示当前进程对文件的操作偏移里里量
 	loff_t			f_pos;
 	unsigned int		f_flags;
+	// 用于信号通知
 	struct fown_struct	f_owner;
 	const struct cred	*f_cred;
+	// 文件预读
 	struct file_ra_state	f_ra;
+	// 文件路径
 	struct path		f_path;
 	struct inode		*f_inode;	/* cached value */
+	// 关联的操作
 	const struct file_operations	*f_op;
 
 	u64			f_version;
@@ -1239,7 +1255,9 @@ struct super_block {
     // 全局根目录的目录项
 	struct dentry		*s_root;
 	struct rw_semaphore	s_umount;
+    // 引用计数
 	int			s_count;
+    // 使用计数
 	atomic_t		s_active;
 #ifdef CONFIG_SECURITY
 	void                    *s_security;
@@ -1331,6 +1349,16 @@ struct super_block {
 	/* Number of inodes with nlink == 0 but still referenced */
 	atomic_long_t s_remove_count;
 
+<<<<<<< HEAD
+=======
+	/*
+	 * Number of inode/mount/sb objects that are being watched, note that
+	 * inodes objects are currently double-accounted.
+	 */
+	// 正在监视的 inode mount sb 的数量
+	atomic_long_t s_fsnotify_connectors;
+
+>>>>>>> a1e1bb72da62 (oepn 审计 通知)
 	/* Read-only state of the superblock is being changed */
 	int s_readonly_remount;
 
@@ -2042,39 +2070,67 @@ struct offset_ctx;
 typedef unsigned int __bitwise fop_flags_t;
 
 struct file_operations {
+	// 反向引用指针
 	struct module *owner;
+<<<<<<< HEAD
 	fop_flags_t fop_flags;
+=======
+	// 改变文件读写位置，并返回新位置
+>>>>>>> a1e1bb72da62 (oepn 审计 通知)
 	loff_t (*llseek) (struct file *, loff_t, int);
+	// 读取数据, 非负代表成功读取数
 	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
+	// 写入数据, 非负代表成功写取数
 	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
+	// 初始化一个异步读, 不存在使用 read 替换
 	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *);
+	// 初始化一个异步写, 不存在使用 write 替换
 	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *);
 	int (*iopoll)(struct kiocb *kiocb, struct io_comp_batch *,
 			unsigned int flags);
+	// 共享迭代
 	int (*iterate_shared) (struct file *, struct dir_context *);
+	// poll\epoll\select 后端调用，查询读写是否堵塞
 	__poll_t (*poll) (struct file *, struct poll_table_struct *);
 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+	// 兼容 ioctl
 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+	// 用来将设备内存映射到进程地址空间
 	int (*mmap) (struct file *, struct vm_area_struct *);
 	int (*open) (struct inode *, struct file *);
+	// 保证数据落盘
 	int (*flush) (struct file *, fl_owner_t id);
+	// 文件结构释放
 	int (*release) (struct inode *, struct file *);
+	// fsync 系统调用、用来刷新挂着的数据
 	int (*fsync) (struct file *, loff_t, loff_t, int datasync);
+	// 通知设备标志变化
 	int (*fasync) (int, struct file *, int);
+	// 实现文件加锁
 	int (*lock) (struct file *, int, struct file_lock *);
+	// 映射设备内存段
 	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+	// fnctl 传参检查
 	int (*check_flags)(int);
+	// 文件锁
 	int (*flock) (struct file *, int, struct file_lock *);
+	// 零拷贝、用于两个文件移动数据
 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *, loff_t *, size_t, unsigned int);
+	// 零拷贝、用于两个文件移动数据
 	ssize_t (*splice_read)(struct file *, loff_t *, struct pipe_inode_info *, size_t, unsigned int);
 	void (*splice_eof)(struct file *file);
+	// 设置租约
 	int (*setlease)(struct file *, int, struct file_lease **, void **);
+	// 快速创建文件
 	long (*fallocate)(struct file *file, int mode, loff_t offset,
 			  loff_t len);
+	// 展示 fd 文件描述符信息
 	void (*show_fdinfo)(struct seq_file *m, struct file *f);
 #ifndef CONFIG_MMU
+    // mmap 权限限制信息
 	unsigned (*mmap_capabilities)(struct file *);
 #endif
+    // 将一个文件的数据复制到另一个文件
 	ssize_t (*copy_file_range)(struct file *, loff_t, struct file *,
 			loff_t, size_t, unsigned int);
 	loff_t (*remap_file_range)(struct file *file_in, loff_t pos_in,

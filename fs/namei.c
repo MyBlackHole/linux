@@ -564,6 +564,7 @@ void path_put(const struct path *path)
 EXPORT_SYMBOL(path_put);
 
 #define EMBEDDED_LEVELS 2
+// 路径查询辅助结构
 struct nameidata {
 	struct path	path;
 	struct qstr	last;
@@ -3618,6 +3619,7 @@ static int do_open(struct nameidata *nd,
 			return error;
 	}
 	if (!(file->f_mode & FMODE_CREATED))
+        // 审计 inode
 		audit_inode(nd->name, nd->path.dentry, 0);
 	idmap = mnt_idmap(nd->path.mnt);
 	if (open_flag & O_CREAT) {
@@ -3795,8 +3797,10 @@ static struct file *path_openat(struct nameidata *nd,
 		return file;
 
 	if (unlikely(file->f_flags & __O_TMPFILE)) {
+        // tmpfile 文件处理
 		error = do_tmpfile(nd, flags, op, file);
 	} else if (unlikely(file->f_flags & O_PATH)) {
+        // 不直接打开文件
 		error = do_o_path(nd, flags, file);
 	} else {
 		const char *s = path_init(nd, flags);
@@ -3830,6 +3834,7 @@ struct file *do_filp_open(int dfd, struct filename *pathname,
 	int flags = op->lookup_flags;
 	struct file *filp;
 
+    // 初始化 nameidata
 	set_nameidata(&nd, dfd, pathname, NULL);
 	filp = path_openat(&nd, op, flags | LOOKUP_RCU);
 	if (unlikely(filp == ERR_PTR(-ECHILD)))

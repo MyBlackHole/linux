@@ -1390,23 +1390,30 @@ static long do_sys_openat2(int dfd, const char __user *filename,
 			   struct open_how *how)
 {
 	struct open_flags op;
+    // 验证 flags
 	int fd = build_open_flags(how, &op);
 	struct filename *tmp;
 
 	if (fd)
 		return fd;
 
+    // 提取文件名
 	tmp = getname(filename);
 	if (IS_ERR(tmp))
 		return PTR_ERR(tmp);
 
+    // 分配 fd
 	fd = get_unused_fd_flags(how->flags);
 	if (fd >= 0) {
+        // 进入打开文件流程
 		struct file *f = do_filp_open(dfd, tmp, &op);
 		if (IS_ERR(f)) {
+            // 异常
 			put_unused_fd(fd);
 			fd = PTR_ERR(f);
 		} else {
+            // 发送 open 通知
+			fsnotify_open(f);
 			fd_install(fd, f);
 		}
 	}
@@ -1414,6 +1421,7 @@ static long do_sys_openat2(int dfd, const char __user *filename,
 	return fd;
 }
 
+// 所有打开操作苦难的开始
 long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 {
 	struct open_how how = build_open_how(flags, mode);
@@ -1603,6 +1611,7 @@ SYSCALL_DEFINE0(vhangup)
 int generic_file_open(struct inode * inode, struct file * filp)
 {
 	if (!(filp->f_flags & O_LARGEFILE) && i_size_read(inode) > MAX_NON_LFS)
+        // 超过大文件最大大小
 		return -EOVERFLOW;
 	return 0;
 }

@@ -17,8 +17,11 @@
  * @resolve: RESOLVE_* flags.
  */
 struct open_how {
+    // 字段指定文件创建和文件状态标志
 	__u64 flags;
+    // 指定文件的模式
 	__u64 mode;
+    // 解析路径名的组件方式
 	__u64 resolve;
 };
 

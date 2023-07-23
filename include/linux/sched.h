@@ -745,6 +745,7 @@ struct kmap_ctrl {
 #endif
 };
 
+// task_struct
 struct task_struct {
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 	/*
@@ -1260,6 +1261,7 @@ struct task_struct {
 	struct fs_struct		*fs;
 
 	/* Open file information: */
+    // 打开的文件信息
 	struct files_struct		*files;
 
 #ifdef CONFIG_IO_URING
@@ -1285,6 +1287,7 @@ struct task_struct {
 
 #ifdef CONFIG_AUDIT
 #ifdef CONFIG_AUDITSYSCALL
+    // 审计上下文
 	struct audit_context		*audit_context;
 #endif
 	kuid_t				loginuid;

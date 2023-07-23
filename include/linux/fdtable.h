@@ -25,6 +25,7 @@
 #define NR_OPEN_MAX ~0U
 
 struct fdtable {
+    // 当前文件对象最大数
 	unsigned int max_fds;
 	struct file __rcu **fd;      /* current fd array */
 	unsigned long *close_on_exec;
@@ -35,11 +36,14 @@ struct fdtable {
 
 /*
  * Open file table structure
+ *
+ * 打开的文件表结构
  */
 struct files_struct {
   /*
    * read mostly part
    */
+    // 进程引用次数
 	atomic_t count;
 	bool resize_in_progress;
 	wait_queue_head_t resize_wait;

@@ -73,6 +73,7 @@ static inline void fsnotify_inode(struct inode *inode, __u32 mask)
 }
 
 /* Notify this dentry's parent about a child's events. */
+// 通知目录项的父级有关于子级事件信息
 static inline int fsnotify_parent(struct dentry *dentry, __u32 mask,
 				  const void *data, int data_type)
 {
@@ -91,6 +92,7 @@ static inline int fsnotify_parent(struct dentry *dentry, __u32 mask,
 
 	/* disconnected dentry cannot notify parent */
 	if (IS_ROOT(dentry))
+        // 没有父级
 		goto notify_child;
 
 	return __fsnotify_parent(dentry, mask, data, data_type);

@@ -497,6 +497,16 @@ static void fsnotify_iter_next(struct fsnotify_iter_info *iter_info)
  *		If @dir and @inode are both non-NULL, event may be
  *		reported to both.
  * @cookie:	inotify rename cookie
+ *
+ * fsnotify 的主要调用
+ *
+ * vfs 调用的钩子通知函数
+ *
+ * mask: 事件类型和标志
+ * data：事件发生的对象
+ * data_type： fanotify_data_XXX 访问器的对象类型
+ * dir: 与事件关联的可选目录
+ * inode: 与事件关联的 inode
  */
 int fsnotify(__u32 mask, const void *data, int data_type, struct inode *dir,
 	     const struct qstr *file_name, struct inode *inode, u32 cookie)

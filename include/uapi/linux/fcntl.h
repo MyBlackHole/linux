@@ -95,6 +95,7 @@
  * faccessat would be undefined behavior and thus treating it equivalent to
  * AT_EACCESS is valid undefined behavior.
  */
+// 特殊值，代表使用当前工作目录
 #define AT_FDCWD		-100    /* Special value used to indicate
                                            openat should use the current
                                            working directory. */
