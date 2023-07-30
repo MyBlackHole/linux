@@ -31,6 +31,7 @@ static struct ctl_table nfs_cb_sysctls[] = {
 	},
 };
 
+// 注册 nfs sysctl
 int nfs_register_sysctl(void)
 {
 	nfs_callback_sysctl_table = register_sysctl("fs/nfs", nfs_cb_sysctls);

@@ -1650,6 +1650,7 @@ static int nfs_init_fs_context(struct fs_context *fc)
 	return 0;
 }
 
+// nfs 文件系统类型
 struct file_system_type nfs_fs_type = {
 	.owner			= THIS_MODULE,
 	.name			= "nfs",
@@ -1662,6 +1663,7 @@ MODULE_ALIAS_FS("nfs");
 EXPORT_SYMBOL_GPL(nfs_fs_type);
 
 #if IS_ENABLED(CONFIG_NFS_V4)
+// nfs v4 版本文件系统类型
 struct file_system_type nfs4_fs_type = {
 	.owner			= THIS_MODULE,
 	.name			= "nfs4",

@@ -133,6 +133,7 @@ static struct shrinker *acl_shrinker;
 
 /*
  * Register the NFS filesystems
+ * 注册 nfs 文件系统
  */
 int __init register_nfs_fs(void)
 {
@@ -142,6 +143,7 @@ int __init register_nfs_fs(void)
 	if (ret < 0)
 		goto error_0;
 
+       // 注册 nfs v4
 	ret = register_nfs4_fs();
 	if (ret < 0)
 		goto error_1;
@@ -1358,6 +1360,7 @@ error_splat_super:
 
 /*
  * Destroy an NFS superblock
+ * 释放 nfs 超级块处理函数
  */
 void nfs_kill_super(struct super_block *s)
 {

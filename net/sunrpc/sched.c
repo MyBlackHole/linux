@@ -905,6 +905,8 @@ static bool xprt_needs_memalloc(struct rpc_xprt *xprt, struct rpc_task *tk)
 
 /*
  * This is the RPC `scheduler' (or rather, the finite state machine).
+ * RPC 调度程序
+ * 状态机
  */
 static void __rpc_execute(struct rpc_task *task)
 {
@@ -1025,6 +1027,7 @@ void rpc_execute(struct rpc_task *task)
 	rpc_set_active(task);
 	rpc_make_runnable(rpciod_workqueue, task);
 	if (!is_async) {
+        // 不是异步执行
 		unsigned int pflags = memalloc_nofs_save();
 		__rpc_execute(task);
 		memalloc_nofs_restore(pflags);

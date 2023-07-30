@@ -97,16 +97,23 @@ EXPORT_SYMBOL_GPL(nfs_file_release);
  * have cached writes (in which case we don't care about the server's
  * idea of what the file length is), or O_DIRECT (in which case we
  * shouldn't trust the cache).
+ *
+ * 重新验证文件大小
+ *
  */
 static int nfs_revalidate_file_size(struct inode *inode, struct file *filp)
 {
+    // 获取 nfs 客户端
 	struct nfs_server *server = NFS_SERVER(inode);
 
 	if (filp->f_flags & O_DIRECT)
+        // 直接 io
 		goto force_reval;
 	if (nfs_check_cache_invalid(inode, NFS_INO_INVALID_SIZE))
+        // 缓存大小无效
 		goto force_reval;
 	return 0;
+// 强制重新查询
 force_reval:
 	return __nfs_revalidate_inode(server, inode);
 }
@@ -554,6 +561,7 @@ static void nfs_swap_deactivate(struct file *file)
 		cl->rpc_ops->disable_swap(file_inode(file));
 }
 
+// 文件地址空间处理函数集
 const struct address_space_operations nfs_file_aops = {
 	.read_folio = nfs_read_folio,
 	.readahead = nfs_readahead,

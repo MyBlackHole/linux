@@ -13,6 +13,9 @@ static const struct rpc_version *nfsacl_version[] = {
 	[3]			= &nfsacl_version3,
 };
 
+// ACL (Access Control List)
+// 文件访问控制列表
+// 处理程序
 const struct rpc_program nfsacl_program = {
 	.name			= "nfsacl",
 	.number			= NFS_ACL_PROGRAM,

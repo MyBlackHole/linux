@@ -22,10 +22,15 @@
  * This is the actual RPC procedure call info.
  */
 struct rpc_procinfo;
+/* rpc 消息结构 */
 struct rpc_message {
+    // 程序信息
 	const struct rpc_procinfo *rpc_proc;	/* Procedure information */
+    // 参数
 	void *			rpc_argp;	/* Arguments */
+    // 结果
 	void *			rpc_resp;	/* Result */
+    // 证书
 	const struct cred *	rpc_cred;	/* Credentials */
 };
 
@@ -50,15 +55,21 @@ struct rpc_timeout {
 
 /*
  * This is the RPC task struct
+ * RPC 任务结构体
  */
 struct rpc_task {
+    // 引用次数
 	atomic_t		tk_count;	/* Reference count */
+    // 上一次的操作结果
 	int			tk_status;	/* result of last operation */
+    // 挂载到全局 tasks 链表
 	struct list_head	tk_task;	/* global list of tasks */
 
 	/*
 	 * callback	to be executed after waking up
+     * 唤醒(获得结果)后执行的回调
 	 * action	next procedure for async tasks
+     * 下一个异步任务
 	 */
 	void			(*tk_callback)(struct rpc_task *);
 	void			(*tk_action)(struct rpc_task *);

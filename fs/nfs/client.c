@@ -61,6 +61,7 @@ static LIST_HEAD(nfs_versions);
 
 /*
  * RPC cruft for NFS
+ * 全局 rpc 版本记录
  */
 static const struct rpc_version *nfs_version[5] = {
 	[2] = NULL,
@@ -113,6 +114,7 @@ void put_nfs_version(struct nfs_subversion *nfs)
 	module_put(nfs->owner);
 }
 
+// nfs 注册入口
 void register_nfs_version(struct nfs_subversion *nfs)
 {
 	spin_lock(&nfs_version_lock);

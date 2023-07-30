@@ -24,6 +24,7 @@ struct nfs41_impl_id;
 
 /*
  * The nfs_client identifies our client state to the server.
+ * 客户端状态
  */
 struct nfs_client {
 	refcount_t		cl_count;
@@ -43,6 +44,7 @@ struct nfs_client {
 #define NFS_CS_DISCRTRY		1		/* - disconnect on RPC retry */
 #define NFS_CS_MIGRATION	2		/* - transparent state migr */
 #define NFS_CS_INFINITE_SLOTS	3		/* - don't limit TCP slots */
+    // 关闭重传超时
 #define NFS_CS_NO_RETRANS_TIMEOUT	4	/* - Disable retransmit timeouts */
 #define NFS_CS_TSM_POSSIBLE	5		/* - Maybe state migration */
 #define NFS_CS_NOPING		6		/* - don't ping on connect */
@@ -51,8 +53,10 @@ struct nfs_client {
 #define NFS_CS_PNFS		9		/* - Server used for pnfs */
 	struct sockaddr_storage	cl_addr;	/* server identifier */
 	size_t			cl_addrlen;
+    // 服务端名
 	char *			cl_hostname;	/* hostname of server */
 	char *			cl_acceptor;	/* GSSAPI acceptor name */
+    // 连接到全局客户端链表
 	struct list_head	cl_share_link;	/* link in global client list */
 	struct list_head	cl_superblocks;	/* List of nfs_server structs */
 
@@ -62,7 +66,9 @@ struct nfs_client {
 	struct nfs_subversion *	cl_nfs_mod;	/* pointer to nfs version module */
 
 	u32			cl_minorversion;/* NFSv4 minorversion */
+    // 连接数
 	unsigned int		cl_nconnect;	/* Number of connections */
+    // 最大 xprts 分配数
 	unsigned int		cl_max_connect; /* max number of xprts allowed */
 	const char *		cl_principal;	/* used for machine cred */
 	struct xprtsec_parms	cl_xprtsec;	/* xprt security policy */
@@ -129,13 +135,18 @@ struct nfs_client {
 
 /*
  * NFS client parameters stored in the superblock.
+ *
+ * nfs 客户端参数存储在超级块的私有数据中
+ *
  */
 struct nfs_server {
+    // 用于网络连接状态同步
 	struct nfs_client *	nfs_client;	/* shared client and NFS4 state */
 	struct list_head	client_link;	/* List of other nfs_server structs
 						 * that share the same client
 						 */
 	struct list_head	master_link;	/* link in master servers list */
+    // rpc 客户端处理函数
 	struct rpc_clnt *	client;		/* RPC client handle */
 	struct rpc_clnt *	client_acl;	/* ACL RPC client handle */
 	struct nlm_host		*nlm_host;	/* NLM client handle */
@@ -226,6 +237,7 @@ struct nfs_server {
 	u32			fh_expire_type;	/* V4 bitmask representing file
 						   handle volatility type for
 						   this filesystem */
+    /* 主动布局驱动 */
 	struct pnfs_layoutdriver_type  *pnfs_curr_ld; /* Active layout driver */
 	struct rpc_wait_queue	roc_rpcwaitq;
 	void			*pnfs_ld_data;	/* per mount point data */

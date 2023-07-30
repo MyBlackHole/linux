@@ -1410,6 +1410,7 @@ xfs_file_mmap(
 	return 0;
 }
 
+// 文件类型操作
 const struct file_operations xfs_file_operations = {
 	.llseek		= xfs_file_llseek,
 	.read_iter	= xfs_file_read_iter,
@@ -1433,6 +1434,7 @@ const struct file_operations xfs_file_operations = {
 			  FOP_BUFFER_WASYNC | FOP_DIO_PARALLEL_WRITE,
 };
 
+// 目录类型操作
 const struct file_operations xfs_dir_file_operations = {
 	.open		= xfs_dir_open,
 	.read		= generic_read_dir,

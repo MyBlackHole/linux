@@ -11,8 +11,10 @@
 #define	E2BIG		 7	/* Argument list too long */
 #define	ENOEXEC		 8	/* Exec format error */
 #define	EBADF		 9	/* Bad file number */
+// 没有子进程
 #define	ECHILD		10	/* No child processes */
 #define	EAGAIN		11	/* Try again */
+/* 内存不足 */
 #define	ENOMEM		12	/* Out of memory */
 #define	EACCES		13	/* Permission denied */
 #define	EFAULT		14	/* Bad address */

@@ -2580,6 +2580,7 @@ struct file_system_type {
     // 挂载函数
 	struct dentry *(*mount) (struct file_system_type *, int,
 		       const char *, void *);
+    // 释放函数
 	void (*kill_sb) (struct super_block *);
 	struct module *owner;
     // 通过 next 挂载在全局文件系统列表上

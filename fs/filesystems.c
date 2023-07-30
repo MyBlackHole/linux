@@ -88,6 +88,7 @@ int register_filesystem(struct file_system_type * fs)
 	write_lock(&file_systems_lock);
     // 查找文件系统
 	p = find_filesystem(fs->name, strlen(fs->name));
+    // 添加文件系统到全局 file_systems 链表上
 	if (*p)
 		res = -EBUSY;
 	else

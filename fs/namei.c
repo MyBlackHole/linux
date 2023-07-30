@@ -3622,6 +3622,7 @@ static int do_open(struct nameidata *nd,
         // 审计 inode
 		audit_inode(nd->name, nd->path.dentry, 0);
 	idmap = mnt_idmap(nd->path.mnt);
+    // 处理打开方式
 	if (open_flag & O_CREAT) {
 		if ((open_flag & O_EXCL) && !(file->f_mode & FMODE_CREATED))
 			return -EEXIST;
@@ -3808,6 +3809,7 @@ static struct file *path_openat(struct nameidata *nd,
 		       (s = open_last_lookups(nd, file, op)) != NULL)
 			;
 		if (!error)
+            // 我们常识的打开文件开始了
 			error = do_open(nd, file, op);
 		terminate_walk(nd);
 	}

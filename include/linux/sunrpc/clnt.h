@@ -97,11 +97,15 @@ struct rpc_clnt {
 
 /*
  * General RPC program info
+ * 一般 RPC 程序信息
  */
 #define RPC_MAXVERSION		4
 struct rpc_program {
+    // 协议名
 	const char *		name;		/* protocol name */
+    // 程序号
 	u32			number;		/* program number */
+    // 版本号
 	unsigned int		nrvers;		/* number of versions */
 	const struct rpc_version **	version;	/* version array */
 	struct rpc_stat *	stats;		/* statistics */
@@ -117,15 +121,22 @@ struct rpc_version {
 
 /*
  * Procedure information
+ * 程序信息结构体
  */
 struct rpc_procinfo {
+    // rpc 程序号
 	u32			p_proc;		/* RPC procedure number */
+    // 加密
 	kxdreproc_t		p_encode;	/* XDR encode function */
+    // 解密
 	kxdrdproc_t		p_decode;	/* XDR decode function */
+    // 参数长度
 	unsigned int		p_arglen;	/* argument hdr length (u32) */
+    // 回复长度
 	unsigned int		p_replen;	/* reply hdr length (u32) */
 	unsigned int		p_timer;	/* Which RTT timer to use */
 	u32			p_statidx;	/* Which procedure to account */
+    // 程序名
 	const char *		p_name;		/* name of procedure */
 };
 

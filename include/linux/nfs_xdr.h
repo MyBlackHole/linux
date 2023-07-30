@@ -44,7 +44,9 @@ struct nfs4_threshold {
 	__u64	wr_io_sz;
 };
 
+// nfs inode 属性描述结构体, 网络传输使用
 struct nfs_fattr {
+    // 表述那些字段有效
 	unsigned int		valid;		/* which fields are valid */
 	umode_t			mode;
 	__u32			nlink;
@@ -67,6 +69,7 @@ struct nfs_fattr {
 	struct timespec64	atime;
 	struct timespec64	mtime;
 	struct timespec64	ctime;
+/*     属性修改 */
 	__u64			change_attr;	/* NFSv4 change attribute */
 	__u64			pre_change_attr;/* pre-op NFSv4 change attribute */
 	__u64			pre_size;	/* pre_op_attr.size	  */
@@ -1736,6 +1739,7 @@ struct fs_context;
 
 /*
  * RPC procedure vector for NFSv2/NFSv3 demuxing
+ * rpc 过程描述结构
  */
 struct nfs_rpc_ops {
 	u32	version;		/* Protocol version */

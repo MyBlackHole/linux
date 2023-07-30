@@ -333,6 +333,7 @@ static void nfs3_free_createdata(struct nfs3_createdata *data)
 
 /*
  * Create a regular file.
+ * 创建常规文件
  */
 static int
 nfs3_proc_create(struct inode *dir, struct dentry *dentry, struct iattr *sattr,
@@ -984,6 +985,7 @@ static int nfs3_have_delegation(struct inode *inode, fmode_t flags)
 	return 0;
 }
 
+// 索引目录操作集
 static const struct inode_operations nfs3_dir_inode_operations = {
 	.create		= nfs_create,
 	.atomic_open	= nfs_atomic_open_v23,
@@ -1005,6 +1007,7 @@ static const struct inode_operations nfs3_dir_inode_operations = {
 #endif
 };
 
+// 索引文件操作集
 static const struct inode_operations nfs3_file_inode_operations = {
 	.permission	= nfs_permission,
 	.getattr	= nfs_getattr,
@@ -1016,6 +1019,7 @@ static const struct inode_operations nfs3_file_inode_operations = {
 #endif
 };
 
+// nfs v3 rpc 服务函数集
 const struct nfs_rpc_ops nfs_v3_clientops = {
 	.version	= 3,			/* protocol version */
 	.dentry_ops	= &nfs_dentry_operations,

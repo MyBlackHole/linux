@@ -124,6 +124,8 @@ struct nfs4_xattr_cache;
 
 /*
  * nfs fs inode data in memory
+ *
+ * nfs fs 内存中的inode数据
  */
 struct nfs_inode {
 	/*
@@ -133,6 +135,7 @@ struct nfs_inode {
 
 	/*
 	 * NFS file handle
+     * NFS 文件处理函数
 	 */
 	struct nfs_fh		fh;
 
@@ -324,6 +327,7 @@ static inline struct nfs_inode *NFS_I(const struct inode *inode)
 	return container_of(inode, struct nfs_inode, vfs_inode);
 }
 
+// 获取超级块 nfs 客户端信息
 static inline struct nfs_server *NFS_SB(const struct super_block *s)
 {
 	return (struct nfs_server *)(s->s_fs_info);
@@ -334,6 +338,7 @@ static inline struct nfs_fh *NFS_FH(const struct inode *inode)
 	return &NFS_I(inode)->fh;
 }
 
+// 获取索引 nfs 客户端信息
 static inline struct nfs_server *NFS_SERVER(const struct inode *inode)
 {
 	return NFS_SB(inode->i_sb);
@@ -344,6 +349,7 @@ static inline struct rpc_clnt *NFS_CLIENT(const struct inode *inode)
 	return NFS_SERVER(inode)->client;
 }
 
+// 获取 rpc 操作函数集
 static inline const struct nfs_rpc_ops *NFS_PROTO(const struct inode *inode)
 {
 	return NFS_SERVER(inode)->nfs_client->rpc_ops;
@@ -361,6 +367,7 @@ static inline unsigned NFS_MAXATTRTIMEO(const struct inode *inode)
 	return S_ISDIR(inode->i_mode) ? nfss->acdirmax : nfss->acregmax;
 }
 
+// 是不是旧索引
 static inline int NFS_STALE(const struct inode *inode)
 {
 	return test_bit(NFS_INO_STALE, &NFS_I(inode)->flags);

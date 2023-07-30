@@ -10666,6 +10666,7 @@ static void nfs4_disable_swap(struct inode *inode)
 	wake_up_var(&clp->cl_state);
 }
 
+// 索引目录操作集
 static const struct inode_operations nfs4_dir_inode_operations = {
 	.create		= nfs_create,
 	.lookup		= nfs_lookup,
@@ -10683,6 +10684,7 @@ static const struct inode_operations nfs4_dir_inode_operations = {
 	.listxattr	= nfs4_listxattr,
 };
 
+// 索引文件操作集
 static const struct inode_operations nfs4_file_inode_operations = {
 	.permission	= nfs_permission,
 	.getattr	= nfs_getattr,
@@ -10691,6 +10693,7 @@ static const struct inode_operations nfs4_file_inode_operations = {
 };
 
 // v4 client ops
+// nfs v4 rpc 服务函数集
 const struct nfs_rpc_ops nfs_v4_clientops = {
 	.version	= 4,			/* protocol version */
 	.dentry_ops	= &nfs4_dentry_operations,

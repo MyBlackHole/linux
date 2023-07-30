@@ -121,6 +121,7 @@ enum layoutdriver_policy_flags {
 struct nfs4_deviceid_node;
 
 /* Per-layout driver specific registration structure */
+/* 每个布局驱动程序特定的注册结构 */
 struct pnfs_layoutdriver_type {
 	struct list_head pnfs_tblid;
 	const u32 id;
@@ -460,6 +461,7 @@ pnfs_is_valid_lseg(struct pnfs_layout_segment *lseg)
 }
 
 /* Return true if a layout driver is being used for this mountpoint */
+/* 如果布局驱动程序正用于此安装点，则返回 true */
 static inline int pnfs_enabled_sb(struct nfs_server *nfss)
 {
 	return nfss->pnfs_curr_ld != NULL;
@@ -586,6 +588,7 @@ pnfs_ld_read_whole_page(struct inode *inode)
 	return NFS_SERVER(inode)->pnfs_curr_ld->flags & PNFS_READ_WHOLE_PAGE;
 }
 
+// 同步索引
 static inline int
 pnfs_sync_inode(struct inode *inode, bool datasync)
 {

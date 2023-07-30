@@ -12,6 +12,7 @@
 #include <linux/sunrpc/sched.h>
 #include <linux/nfs_xdr.h>
 
+// rpc 版本描述结构体
 struct nfs_subversion {
 	struct module *owner;	/* THIS_MODULE pointer */
 	struct file_system_type *nfs_fs;	/* NFS filesystem type */

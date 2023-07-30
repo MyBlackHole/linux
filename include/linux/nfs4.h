@@ -43,6 +43,7 @@ struct nfs4_acl {
 
 #define NFS4_MAXLABELLEN	2048
 
+// nfs4 标签
 struct nfs4_label {
 	uint32_t	lfs;
 	uint32_t	pi;
@@ -849,8 +850,11 @@ struct nl4_server {
 enum nfs4_change_attr_type {
 	NFS4_CHANGE_TYPE_IS_MONOTONIC_INCR = 0,
 	NFS4_CHANGE_TYPE_IS_VERSION_COUNTER = 1,
+/*     更改类型是版本计数器 */
 	NFS4_CHANGE_TYPE_IS_VERSION_COUNTER_NOPNFS = 2,
+/*     更改类型是时间元数据 */
 	NFS4_CHANGE_TYPE_IS_TIME_METADATA = 3,
+/*     更改类型未定义 */
 	NFS4_CHANGE_TYPE_IS_UNDEFINED = 4,
 };
 

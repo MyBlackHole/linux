@@ -159,6 +159,7 @@ static int bad_inode_set_acl(struct mnt_idmap *idmap,
 	return -EIO;
 }
 
+// 坏索引操作
 static const struct inode_operations bad_inode_ops =
 {
 	.create		= bad_inode_create,
@@ -226,10 +227,13 @@ EXPORT_SYMBOL(make_bad_inode);
  *	@inode: inode to test
  *
  *	Returns true if the inode in question has been marked as bad.
+ *
+ *	是否是环索引
  */
  
 bool is_bad_inode(struct inode *inode)
 {
+    // 操作函数等于坏操作函数就是坏索引
 	return (inode->i_op == &bad_inode_ops);	
 }
 
