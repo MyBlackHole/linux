@@ -142,6 +142,8 @@ struct mnt_fhstatus {
  * Uses timeout parameters specified by caller. On successful return, the
  * auth_flavs list and auth_flav_len will be populated with the list from the
  * server or a faked-up list if the server didn't provide one.
+ *
+ * 获取给定主机和路径的 NFS 文件句柄
  */
 int nfs_mount(struct nfs_mount_request *info, int timeo, int retrans)
 {
@@ -190,6 +192,7 @@ int nfs_mount(struct nfs_mount_request *info, int timeo, int retrans)
 	else
 		msg.rpc_proc = &mnt_clnt->cl_procinfo[MOUNTPROC_MNT];
 
+    // 执行 rpc 远程同步过程调用
 	status = rpc_call_sync(mnt_clnt, &msg, RPC_TASK_SOFT|RPC_TASK_TIMEOUT);
 	rpc_shutdown_client(mnt_clnt);
 
@@ -535,6 +538,7 @@ static const struct rpc_version *mnt_version[] = {
 
 static struct rpc_stat mnt_stats;
 
+// rpc mount 远程调用程序
 static const struct rpc_program mnt_program = {
 	.name		= "mount",
 	.number		= NFS_MNT_PROGRAM,

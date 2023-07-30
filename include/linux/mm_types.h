@@ -647,11 +647,14 @@ struct vma_numab_state {
  */
 struct vm_area_struct {
 	/* The first cache line has the info for VMA tree walking. */
+/*     第一个缓存行具有VMA树移动的信息 */
 
 	union {
 		struct {
 			/* VMA covers [vm_start; vm_end) addresses within mm */
+            /* 起始地址 */
 			unsigned long vm_start;
+            /* 结束地址(最后一个字节的下一个) */
 			unsigned long vm_end;
 		};
 #ifdef CONFIG_PER_VMA_LOCK
@@ -659,7 +662,9 @@ struct vm_area_struct {
 #endif
 	};
 
+    /* 我们所属的address space */
 	struct mm_struct *vm_mm;	/* The address space we belong to. */
+    // VMA的访问权限
 	pgprot_t vm_page_prot;          /* Access permissions of this VMA. */
 
 	/*

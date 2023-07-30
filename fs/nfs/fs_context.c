@@ -1582,10 +1582,12 @@ static int nfs_init_fs_context(struct fs_context *fc)
 {
 	struct nfs_fs_context *ctx;
 
+    // 分配 nfs fs 上下文内存
 	ctx = kzalloc(sizeof(struct nfs_fs_context), GFP_KERNEL);
 	if (unlikely(!ctx))
 		return -ENOMEM;
 
+    // 挂载文件处理数据内存
 	ctx->mntfh = nfs_alloc_fhandle();
 	if (unlikely(!ctx->mntfh)) {
 		kfree(ctx);
@@ -1645,6 +1647,7 @@ static int nfs_init_fs_context(struct fs_context *fc)
 
 		fc->s_iflags		|= SB_I_STABLE_WRITES;
 	}
+    // 保存 nfs fs 的上下文到文件系统上下文私有数据属性
 	fc->fs_private = ctx;
 	fc->ops = &nfs_fs_context_ops;
 	return 0;

@@ -31,6 +31,7 @@
  *	Our network namespace constructor/destructor lists
  */
 
+// 每个新网络命名空间创建时会遍历 pernet_list 执行子系统 init 方法
 static LIST_HEAD(pernet_list);
 static struct list_head *first_device = &pernet_list;
 

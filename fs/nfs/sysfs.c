@@ -46,6 +46,8 @@ int nfs_sysfs_init(void)
 	if (!nfs_kset)
 		return -ENOMEM;
 
+    // 创建 /sys/fs/nfs
+    // 设置全局变量 nfs_kset
 	ret = kobject_set_name(&nfs_kset->kobj, "nfs");
 	if (ret) {
 		kfree(nfs_kset);

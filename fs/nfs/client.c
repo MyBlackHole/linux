@@ -1369,17 +1369,20 @@ int nfs_fs_proc_net_init(struct net *net)
 	struct nfs_net *nn = net_generic(net, nfs_net_id);
 	struct proc_dir_entry *p;
 
+    // 创建 /proc/net/nfsfs/
 	nn->proc_nfsfs = proc_net_mkdir(net, "nfsfs", net->proc_net);
 	if (!nn->proc_nfsfs)
 		goto error_0;
 
 	/* a file of servers with which we're dealing */
+    // 创建 /proc/net/nfsfs/servers
 	p = proc_create_net("servers", S_IFREG|S_IRUGO, nn->proc_nfsfs,
 			&nfs_server_list_ops, sizeof(struct seq_net_private));
 	if (!p)
 		goto error_1;
 
 	/* a file of volumes that we have mounted */
+    // 创建 /proc/net/nfsfs/volumes
 	p = proc_create_net("volumes", S_IFREG|S_IRUGO, nn->proc_nfsfs,
 			&nfs_volume_list_ops, sizeof(struct seq_net_private));
 	if (!p)

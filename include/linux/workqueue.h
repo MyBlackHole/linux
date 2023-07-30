@@ -657,6 +657,8 @@ static inline bool mod_delayed_work(struct workqueue_struct *wq,
  * @work: job to be done
  *
  * This puts a job on a specific cpu
+ *
+ * 将工作任务放到特定的 CPU 上
  */
 static inline bool schedule_work_on(int cpu, struct work_struct *work)
 {
@@ -676,6 +678,8 @@ static inline bool schedule_work_on(int cpu, struct work_struct *work)
  *
  * Shares the same memory-ordering properties of queue_work(), cf. the
  * DocBook header of queue_work().
+ *
+ * 将工作任务放到全局工作队列
  */
 static inline bool schedule_work(struct work_struct *work)
 {

@@ -69,6 +69,7 @@ static int sysfs_init_fs_context(struct fs_context *fc)
 	kfc->ns_tag = netns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
 	kfc->root = sysfs_root;
 	kfc->magic = SYSFS_MAGIC;
+    // sysfs 私有数据设置
 	fc->fs_private = kfc;
 	fc->ops = &sysfs_fs_context_ops;
 	if (netns) {
@@ -98,6 +99,7 @@ int __init sysfs_init(void)
 {
 	int err;
 
+    // 创建 /sys 根
 	sysfs_root = kernfs_create_root(NULL, KERNFS_ROOT_EXTRA_OPEN_PERM_CHECK,
 					NULL);
 	if (IS_ERR(sysfs_root))
@@ -105,6 +107,7 @@ int __init sysfs_init(void)
 
 	sysfs_root_kn = kernfs_root_to_node(sysfs_root);
 
+    // 注册 sysfs 文件系统
 	err = register_filesystem(&sysfs_fs_type);
 	if (err) {
 		kernfs_destroy_root(sysfs_root);

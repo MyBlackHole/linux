@@ -881,6 +881,8 @@ static int nfs_request_mount(struct fs_context *fc,
 	/*
 	 * Now ask the mount server to map our export path
 	 * to a file handle.
+     *
+     * 挂载映射导出路径
 	 */
 	status = nfs_mount(&request, ctx->timeo, ctx->retrans);
 	if (status != 0) {
@@ -913,6 +915,8 @@ static struct nfs_server *nfs_try_mount_request(struct fs_context *fc)
 			ctx->flags &= ~(NFS_MOUNT_LOCAL_FLOCK | NFS_MOUNT_LOCAL_FCNTL);
 		}
 	}
+
+	// 执行挂载请求
 	status = nfs_request_mount(fc, ctx->mntfh, authlist, &authlist_len);
 	if (status)
 		return ERR_PTR(status);
@@ -954,6 +958,7 @@ static struct nfs_server *nfs_try_mount_request(struct fs_context *fc)
 		}
 		dfprintk(MOUNT, "NFS: attempting to use auth flavor %u\n", flavor);
 		ctx->selected_flavor = flavor;
+        // nfs4_create_server
 		server = ctx->nfs_mod->rpc_ops->create_server(fc);
 		if (!IS_ERR(server))
 			return server;
@@ -975,6 +980,8 @@ static struct nfs_server *nfs_try_mount_request(struct fs_context *fc)
 
 int nfs_try_get_tree(struct fs_context *fc)
 {
+    // 获取 fs 私有数据
+    // nfs fs 上下文
 	struct nfs_fs_context *ctx = nfs_fc2context(fc);
 
 	if (ctx->need_mount)

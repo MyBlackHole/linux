@@ -997,6 +997,8 @@ static struct kset *kset_create(const char *name,
  * is no longer being used.
  *
  * If the kset was not able to be created, NULL will be returned.
+ * 
+ * 动态创建 struct kset 并添加到 sysfs
  */
 struct kset *kset_create_and_add(const char *name,
 				 const struct kset_uevent_ops *uevent_ops,
@@ -1005,9 +1007,11 @@ struct kset *kset_create_and_add(const char *name,
 	struct kset *kset;
 	int error;
 
+    // 创建
 	kset = kset_create(name, uevent_ops, parent_kobj);
 	if (!kset)
 		return NULL;
+    // 注册到 sysfs
 	error = kset_register(kset);
 	if (error) {
 		kfree(kset);

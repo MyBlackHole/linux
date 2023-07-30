@@ -999,6 +999,8 @@ void start_kernel(void)
 	 * Allow workqueue creation and work item queueing/cancelling
 	 * early.  Work item execution depends on kthreads and starts after
 	 * workqueue_init().
+     *
+     * 工作队列初始化
 	 */
 	workqueue_init_early();
 
@@ -1569,6 +1571,7 @@ static noinline void __init kernel_init_freeable(void)
 
 	smp_prepare_cpus(setup_max_cpus);
 
+    // 初始化 worker 队列
 	workqueue_init();
 
 	init_mm_internals();

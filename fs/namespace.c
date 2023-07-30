@@ -5188,10 +5188,12 @@ void __init mnt_init(void)
 
 	kernfs_init();
 
+    // 处理 sys 初始化与设置一些全局变量
 	err = sysfs_init();
 	if (err)
 		printk(KERN_WARNING "%s: sysfs_init error: %d\n",
 			__func__, err);
+    // 初始化全局 fs_kobj /sys/fs
 	fs_kobj = kobject_create_and_add("fs", NULL);
 	if (!fs_kobj)
 		printk(KERN_WARNING "%s: kobj create error\n", __func__);
