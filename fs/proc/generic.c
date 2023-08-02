@@ -494,6 +494,7 @@ struct proc_dir_entry *_proc_mkdir(const char *name, umode_t mode,
 		if (force_lookup) {
 			pde_force_lookup(ent);
 		}
+        // 注册到 proc 文件系统
 		ent = proc_register(parent, ent);
 	}
 	return ent;

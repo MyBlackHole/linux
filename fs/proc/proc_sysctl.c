@@ -1630,11 +1630,13 @@ static int process_sysctl_arg(char *param, char *val,
 	 * proc mount options.
 	 */
 	if (!*proc_mnt) {
+        // 获取 proc 文件系统
 		proc_fs_type = get_fs_type("proc");
 		if (!proc_fs_type) {
 			pr_err("Failed to find procfs to set sysctl from command line\n");
 			return 0;
 		}
+        // 挂载 proc 文件系统
 		*proc_mnt = kern_mount(proc_fs_type);
 		put_filesystem(proc_fs_type);
 		if (IS_ERR(*proc_mnt)) {
@@ -1698,6 +1700,7 @@ void do_sysctl_args(void)
 		   NULL, 0, -1, -1, &proc_mnt, process_sysctl_arg);
 
 	if (proc_mnt)
+        // 卸载 proc 文件系统 (不决定用户操作)
 		kern_unmount(proc_mnt);
 
 	kfree(command_line);

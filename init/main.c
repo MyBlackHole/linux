@@ -1095,10 +1095,13 @@ void start_kernel(void)
 	security_init();
 	dbg_late_init();
 	net_ns_init();
+    // bdev 等初始化
+    // 与各类缓存初始化
 	vfs_caches_init();
 	pagecache_init();
 	signals_init();
 	seq_file_init();
+    // proc 文件系统 初始化开始
 	proc_root_init();
 	nsfs_init();
 	pidfs_init();
@@ -1499,6 +1502,7 @@ static int __ref kernel_init(void *unused)
 
 	rcu_end_inkernel_boot();
 
+    // 执行 proc 文件系统挂载等
 	do_sysctl_args();
 
 	if (ramdisk_execute_command) {

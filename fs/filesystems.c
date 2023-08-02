@@ -41,6 +41,7 @@ struct file_system_type *get_filesystem(struct file_system_type *fs)
 	return fs;
 }
 
+// 引用次数减一(为0时卸载)
 void put_filesystem(struct file_system_type *fs)
 {
 	module_put(fs->owner);

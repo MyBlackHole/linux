@@ -314,6 +314,7 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 
 	/* TODO: Make all filesystems support this unconditionally */
     // 初始化 
+    // bdev bd_init_fs_context
 	init_fs_context = fc->fs_type->init_fs_context;
 	if (!init_fs_context)
 		init_fs_context = legacy_init_fs_context;

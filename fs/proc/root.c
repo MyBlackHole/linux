@@ -156,6 +156,7 @@ static void proc_apply_options(struct proc_fs_info *fs_info,
 		fs_info->pidonly = ctx->pidonly;
 }
 
+// 挂载 proc 文件系统
 static int proc_fill_super(struct super_block *s, struct fs_context *fc)
 {
 	struct proc_fs_context *ctx = fc->fs_private;
@@ -284,14 +285,19 @@ static struct file_system_type proc_fs_type = {
 
 void __init proc_root_init(void)
 {
+    // 缓存分配初始化
 	proc_init_kmemcache();
+    // 设置 pid (每个进程) 在 /proc/ 的 目录连接数量
 	set_proc_pid_nlink();
+    // 处理索引节点
 	proc_self_init();
 	proc_thread_self_init();
 	proc_symlink("mounts", NULL, "self/mounts");
 
 	proc_net_init();
+    // 创建 /proc/fs
 	proc_mkdir("fs", NULL);
+    // 创建 /proc/driver/
 	proc_mkdir("driver", NULL);
 	proc_create_mount_point("fs/nfsd"); /* somewhere for the nfsd filesystem to be mounted */
 #if defined(CONFIG_SUN_OPENPROMFS) || defined(CONFIG_SUN_OPENPROMFS_MODULE)
@@ -299,6 +305,7 @@ void __init proc_root_init(void)
 	proc_create_mount_point("openprom");
 #endif
 	proc_tty_init();
+    // 创建 /proc/bus/
 	proc_mkdir("bus", NULL);
 	proc_sys_init();
 
@@ -307,6 +314,7 @@ void __init proc_root_init(void)
 	 * to open /proc files exist at this point but register last
 	 * anyway.
 	 */
+/*     注册 proc 文件系统 */
 	register_filesystem(&proc_fs_type);
 }
 
@@ -361,6 +369,7 @@ static const struct inode_operations proc_root_inode_operations = {
 
 /*
  * This is the root "inode" in the /proc tree..
+ * proc 文件系统 根目录项
  */
 struct proc_dir_entry proc_root = {
 	.low_ino	= PROC_ROOT_INO, 

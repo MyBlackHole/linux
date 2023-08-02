@@ -3176,9 +3176,12 @@ void __init vfs_caches_init_early(void)
 
 void __init vfs_caches_init(void)
 {
+    // 创建 name 缓存
+    // 提供目录名路径等存放缓存
 	names_cachep = kmem_cache_create_usercopy("names_cache", PATH_MAX, 0,
 			SLAB_HWCACHE_ALIGN|SLAB_PANIC, 0, PATH_MAX, NULL);
 
+    // 初始化目录项缓存
 	dcache_init();
 	inode_init();
 	files_init();

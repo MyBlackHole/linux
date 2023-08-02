@@ -745,7 +745,9 @@ retry:
 		}
 	}
 	if (!s) {
+        // 为空
 		spin_unlock(&sb_lock);
+        // 分配一个超级块
 		s = alloc_super(fc->fs_type, fc->sb_flags, user_ns);
 		if (!s)
 			return ERR_PTR(-ENOMEM);
@@ -753,6 +755,7 @@ retry:
 	}
 
 	s->s_fs_info = fc->s_fs_info;
+    // set_anon_super_fc
 	err = set(s, fc);
 	if (err) {
 		s->s_fs_info = NULL;
@@ -1266,6 +1269,7 @@ static int vfs_get_super(struct fs_context *fc,
 		return PTR_ERR(sb);
 
 	if (!sb->s_root) {
+        // pseudo_fs_fill_super
 		err = fill_super(sb, fc);
 		if (err)
 			goto error;
@@ -1615,6 +1619,7 @@ int get_tree_bdev(struct fs_context *fc,
 	} else {
 		error = setup_bdev_super(s, fc->sb_flags, fc);
 		if (!error)
+            // xfs_fs_fill_super
 			error = fill_super(s, fc);
 		if (error) {
 			deactivate_locked_super(s);
@@ -1783,7 +1788,10 @@ int vfs_get_tree(struct fs_context *fc)
 
 	/* Get the mountable root in fc->root, with a ref on the root and a ref
 	 * on the superblock.
+     *
+     * 获取超级块
 	 */
+    // pseudo_fs_get_tree
 	error = fc->ops->get_tree(fc);
 	if (error < 0)
 		return error;

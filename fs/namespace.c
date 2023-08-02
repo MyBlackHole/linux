@@ -1103,6 +1103,7 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 	if (!fc->root)
 		return ERR_PTR(-EINVAL);
 
+    // 分配挂载对象
 	mnt = alloc_vfsmnt(fc->source ?: "none");
 	if (!mnt)
 		return ERR_PTR(-ENOMEM);
@@ -1158,6 +1159,7 @@ struct vfsmount *vfs_kern_mount(struct file_system_type *type,
 	if (!ret)
 		ret = parse_monolithic_mount_data(fc, data);
 	if (!ret)
+        // 开始挂载
 		mnt = fc_mount(fc);
 	else
 		mnt = ERR_PTR(ret);
@@ -5210,6 +5212,7 @@ void put_mnt_ns(struct mnt_namespace *ns)
 	free_mnt_ns(ns);
 }
 
+// 内核文件系统挂载函数
 struct vfsmount *kern_mount(struct file_system_type *type)
 {
 	struct vfsmount *mnt;
