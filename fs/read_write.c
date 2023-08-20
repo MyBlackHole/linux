@@ -352,6 +352,7 @@ out_putf:
 }
 #endif
 
+// 读写区域验证
 int rw_verify_area(int read_write, struct file *file, const loff_t *ppos, size_t count)
 {
 	int mask = read_write == READ ? MAY_READ : MAY_WRITE;
@@ -457,7 +458,9 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
 
+    // 验证
 	if (!(file->f_mode & FMODE_READ))
+        // 读未打开
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_READ))
 		return -EINVAL;
@@ -471,6 +474,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 		count =  MAX_RW_COUNT;
 
 	if (file->f_op->read)
+        // 自定义读操作
 		ret = file->f_op->read(file, buf, count, pos);
 	else if (file->f_op->read_iter)
 		ret = new_sync_read(file, buf, count, pos);
@@ -612,6 +616,7 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	ssize_t ret = -EBADF;
 
 	if (f.file) {
+        // 获取文件偏移量
 		loff_t pos, *ppos = file_ppos(f.file);
 		if (ppos) {
 			pos = *ppos;
@@ -625,8 +630,10 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	return ret;
 }
 
+// 读取苦难的开始
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
+    // 系统调用读
 	return ksys_read(fd, buf, count);
 }
 
@@ -1701,6 +1708,8 @@ EXPORT_SYMBOL(generic_write_checks_count);
  * Can adjust writing position or amount of bytes to write.
  * Returns appropriate error code that caller should return or
  * zero in case that write should be allowed.
+ *
+ * 写入之前执行检查
  */
 ssize_t generic_write_checks(struct kiocb *iocb, struct iov_iter *from)
 {

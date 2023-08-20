@@ -25,11 +25,16 @@ struct fs_pin;
 
 struct pid_namespace {
 	struct idr idr;
+    // 保证数据同步
 	struct rcu_head rcu;
+    // PID 分配计数
 	unsigned int pid_allocated;
 	struct task_struct *child_reaper;
+    // 指向分配 pid 的分配缓存
 	struct kmem_cache *pid_cachep;
+    // pid 所在层级
 	unsigned int level;
+    // 指向父命名空间
 	struct pid_namespace *parent;
 #ifdef CONFIG_BSD_PROCESS_ACCT
 	struct fs_pin *bacct;

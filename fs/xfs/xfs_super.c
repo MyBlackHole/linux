@@ -1750,6 +1750,7 @@ xfs_fs_fill_super(
 		xfs_warn(mp,
 	"EXPERIMENTAL parent pointer feature enabled. Use at your own risk!");
 
+	// 进入挂载逻辑
 	error = xfs_mountfs(mp);
 	if (error)
 		goto out_filestream_unmount;

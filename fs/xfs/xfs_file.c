@@ -565,6 +565,8 @@ static const struct iomap_dio_ops xfs_dio_write_ops = {
 
 /*
  * Handle block aligned direct I/O writes
+ *
+ * 处理对齐直接 IO 写
  */
 static noinline ssize_t
 xfs_file_dio_write_aligned(
@@ -616,6 +618,8 @@ out_unlock:
  * IOMAP_DIO_OVERWRITE_ONLY flag to tell the lower layers to return -EAGAIN
  * if block allocation or partial block zeroing would be required.  In that case
  * we try again with the exclusive lock.
+ *
+ * 处理没对齐直接 IO 写
  */
 static noinline ssize_t
 xfs_file_dio_write_unaligned(
@@ -697,6 +701,7 @@ xfs_file_dio_write(
 {
 	struct xfs_inode	*ip = XFS_I(file_inode(iocb->ki_filp));
 	struct xfs_buftarg      *target = xfs_inode_buftarg(ip);
+    // 数据数量
 	size_t			count = iov_iter_count(from);
 
 	/* direct I/O must be aligned to device logical sector size */
@@ -834,6 +839,7 @@ xfs_file_write_iter(
 		return xfs_file_dax_write(iocb, from);
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
+        // 直接落盘 (不写缓存)
 		/*
 		 * Allow a directio write to fall back to a buffered
 		 * write *only* in the case that we're doing a reflink

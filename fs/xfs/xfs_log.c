@@ -713,6 +713,8 @@ xfs_log_mount(
 	/*
 	 * skip log recovery on a norecovery mount.  pretend it all
 	 * just worked.
+     *
+     * 是否跳过 log 恢复
 	 */
 	if (!xfs_has_norecovery(mp)) {
 		error = xlog_recover(log);

@@ -57,21 +57,27 @@ typedef void (bh_end_io_t)(struct buffer_head *bh, int uptodate);
  * for backward compatibility reasons (e.g. submit_bh).
  */
 struct buffer_head {
+    // 块缓存标记
 	unsigned long b_state;		/* buffer state bitmap (see above) */
+    // 同一个页缓存的块缓存构成的环状链表
 	struct buffer_head *b_this_page;/* circular list of page's buffers */
 	union {
 		struct page *b_page;	/* the page this bh is mapped to */
 		struct folio *b_folio;	/* the folio this bh is mapped to */
 	};
 
+    // 块缓存个数
 	sector_t b_blocknr;		/* start block number */
 	size_t b_size;			/* size of mapping */
+    // 块缓存起点
 	char *b_data;			/* pointer to data within the page */
 
+    // 所属的块设备
 	struct block_device *b_bdev;
 	bh_end_io_t *b_end_io;		/* I/O completion */
  	void *b_private;		/* reserved for b_end_io */
 	struct list_head b_assoc_buffers; /* associated with another mapping */
+    // 所属的地址空间
 	struct address_space *b_assoc_map;	/* mapping this buffer is
 						   associated with */
 	atomic_t b_count;		/* users using this buffer_head */

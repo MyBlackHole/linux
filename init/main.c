@@ -1089,6 +1089,7 @@ void start_kernel(void)
 	thread_stack_cache_init();
 	cred_init();
 	fork_init();
+    // task_struct 相关缓存分配
 	proc_caches_init();
 	uts_ns_init();
 	key_init();

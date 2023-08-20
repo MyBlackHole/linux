@@ -13,6 +13,7 @@
 #define	EBADF		 9	/* Bad file number */
 // 没有子进程
 #define	ECHILD		10	/* No child processes */
+// 重试
 #define	EAGAIN		11	/* Try again */
 /* 内存不足 */
 #define	ENOMEM		12	/* Out of memory */
@@ -30,6 +31,7 @@
 #define	EMFILE		24	/* Too many open files */
 #define	ENOTTY		25	/* Not a typewriter */
 #define	ETXTBSY		26	/* Text file busy */
+// 文件过大
 #define	EFBIG		27	/* File too large */
 // 磁盘没有可用空间
 #define	ENOSPC		28	/* No space left on device */

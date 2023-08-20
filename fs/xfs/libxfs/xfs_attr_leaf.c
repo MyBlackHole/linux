@@ -1336,6 +1336,9 @@ xfs_attr3_leaf_create(
 
 /*
  * Split the leaf node, rebalance, then add the new entry.
+ *
+ * 分裂叶子节点、重新平衡
+ * 添加新条目
  */
 int
 xfs_attr3_leaf_split(

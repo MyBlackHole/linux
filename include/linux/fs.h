@@ -112,6 +112,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
  */
 
 /* file is open for reading */
+/* 文件已打开并可供读取 */
 #define FMODE_READ		((__force fmode_t)(1 << 0))
 /* file is open for writing */
 #define FMODE_WRITE		((__force fmode_t)(1 << 1))
@@ -155,6 +156,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 /* Write access to underlying fs */
 #define FMODE_WRITER		((__force fmode_t)(1 << 16))
 /* Has read method(s) */
+/* 有读取方法 */
 #define FMODE_CAN_READ          ((__force fmode_t)(1 << 17))
 /* Has write method(s) */
 #define FMODE_CAN_WRITE         ((__force fmode_t)(1 << 18))
@@ -163,6 +165,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 #define FMODE_CREATED		((__force fmode_t)(1 << 20))
 
 /* File is stream-like */
+/* 文件是类似流的 */
 #define FMODE_STREAM		((__force fmode_t)(1 << 21))
 
 /* File supports DIRECT IO */
@@ -321,6 +324,7 @@ struct readahead_control;
 
 /* non-RWF related bits - start at 16 */
 #define IOCB_EVENTFD		(1 << 16)
+// 直接 IO 调用
 #define IOCB_DIRECT		(1 << 17)
 #define IOCB_WRITE		(1 << 18)
 /* iocb->ki_waitq is valid */
@@ -360,11 +364,18 @@ struct readahead_control;
 	{ IOCB_ALLOC_CACHE,	"ALLOC_CACHE" }, \
 	{ IOCB_DIO_CALLER_COMP,	"CALLER_COMP" }
 
+// 描述文件 IO 文件侧
+// 一般与 iov_iter 一起出现
+// 内核里描述文件数据结构体
 struct kiocb {
 	struct file		*ki_filp;
+	// 数据偏移
 	loff_t			ki_pos;
+	// IO 成功回调
 	void (*ki_complete)(struct kiocb *iocb, long ret);
+	// 私有数据
 	void			*private;
+	// IO 属性
 	int			ki_flags;
 	u16			ki_ioprio; /* See linux/ioprio.h */
 	union {
@@ -373,6 +384,7 @@ struct kiocb {
 		 * page waitqueue associated with completing the read. Valid
 		 * IFF IOCB_WAITQ is set.
 		 */
+		// 用于异步缓冲 IO 等待队列
 		struct wait_page_queue	*ki_waitq;
 		/*
 		 * Can be used for O_DIRECT IO, where the completion handling
@@ -391,34 +403,44 @@ static inline bool is_sync_kiocb(struct kiocb *kiocb)
 	return kiocb->ki_complete == NULL;
 }
 
+// 地址空间操作
 struct address_space_operations {
+    // 页面写操作 (page -> file)
 	int (*writepage)(struct page *page, struct writeback_control *wbc);
+    // 页面读操作 (file -> page)
 	int (*read_folio)(struct file *, struct folio *);
 
 	/* Write back some dirty pages from this mapping. */
+    // 回写脏页
 	int (*writepages)(struct address_space *, struct writeback_control *);
 
 	/* Mark a folio dirty.  Return true if this dirtied it */
+    // 标记为脏页
 	bool (*dirty_folio)(struct address_space *, struct folio *);
 
 	void (*readahead)(struct readahead_control *);
 
+    // 写开始准备
 	int (*write_begin)(struct file *, struct address_space *mapping,
 				loff_t pos, unsigned len,
 				struct page **pagep, void **fsdata);
+    // 写完成处理
 	int (*write_end)(struct file *, struct address_space *mapping,
 				loff_t pos, unsigned len, unsigned copied,
 				struct page *page, void *fsdata);
 
 	/* Unfortunately this kludge is needed for FIBMAP. Don't use it */
+    /* 不幸的是，FIBMAP 需要这个拼凑。 不要使用它*/
 	sector_t (*bmap)(struct address_space *, sector_t);
 	void (*invalidate_folio) (struct folio *, size_t offset, size_t len);
 	bool (*release_folio)(struct folio *, gfp_t);
 	void (*free_folio)(struct folio *folio);
+    // 直接 io，不缓存
 	ssize_t (*direct_IO)(struct kiocb *, struct iov_iter *iter);
 	/*
 	 * migrate the contents of a folio to the specified target. If
 	 * migrate_mode is MIGRATE_ASYNC, it must not block.
+     * 将作品集的内容迁移到指定的目标。 如果 migrate_mode 是 MIGRATE_ASYNC，它不能阻塞。
 	 */
 	int (*migrate_folio)(struct address_space *, struct folio *dst,
 			struct folio *src, enum migrate_mode);
@@ -429,6 +451,7 @@ struct address_space_operations {
 	int (*error_remove_folio)(struct address_space *, struct folio *);
 
 	/* swapfile support */
+    /* 交换文件支持 */
 	int (*swap_activate)(struct swap_info_struct *sis, struct file *file,
 				sector_t *span);
 	void (*swap_deactivate)(struct file *file);
@@ -458,25 +481,40 @@ extern const struct address_space_operations empty_aops;
  * @i_private_lock: For use by the owner of the address_space.
  * @i_private_list: For use by the owner of the address_space.
  * @i_private_data: For use by the owner of the address_space.
+ *
+ * 用于管理文件 inode 映射到内存数据页 (struct page)
+ *
+ * 文件打开后，内核会在内存中分配一个 inode 结构，
+ * inode 内就有 i_mapping 域指向一个 address_space
+ *
  */
 struct address_space {
+	// 反向指向拥有它的 inode 指针
 	struct inode		*host;
 	struct xarray		i_pages;
 	struct rw_semaphore	invalidate_lock;
 	gfp_t			gfp_mask;
+	// 内存映射树节点计数
 	atomic_t		i_mmap_writable;
 #ifdef CONFIG_READ_ONLY_THP_FOR_FS
 	/* number of thp, only for non-shmem files */
 	atomic_t		nr_thps;
 #endif
+	// 内存映射树
+	// 优先搜索树的树根
 	struct rb_root_cached	i_mmap;
+	// 已缓存页数量
 	unsigned long		nrpages;
+	// 回写起始偏移
 	pgoff_t			writeback_index;
+	// 地址空间操作
 	const struct address_space_operations *a_ops;
+	// 掩码与标识
 	unsigned long		flags;
 	errseq_t		wb_err;
 	spinlock_t		i_private_lock;
 	struct list_head	i_private_list;
+	// 读写信号量
 	struct rw_semaphore	i_mmap_rwsem;
 	void *			i_private_data;
 } __attribute__((aligned(sizeof(long)))) __randomize_layout;
@@ -641,6 +679,7 @@ struct inode {
 
 	const struct inode_operations	*i_op;
 	struct super_block	*i_sb;
+    // 文件对应 page 空间
 	struct address_space	*i_mapping;
 
 #ifdef CONFIG_SECURITY
@@ -1349,16 +1388,6 @@ struct super_block {
 	/* Number of inodes with nlink == 0 but still referenced */
 	atomic_long_t s_remove_count;
 
-<<<<<<< HEAD
-=======
-	/*
-	 * Number of inode/mount/sb objects that are being watched, note that
-	 * inodes objects are currently double-accounted.
-	 */
-	// 正在监视的 inode mount sb 的数量
-	atomic_long_t s_fsnotify_connectors;
-
->>>>>>> a1e1bb72da62 (oepn 审计 通知)
 	/* Read-only state of the superblock is being changed */
 	int s_readonly_remount;
 
@@ -1381,9 +1410,9 @@ struct super_block {
 	 * of per-node lru lists, each of which has its own spinlock.
 	 * There is no need to put them into separate cachelines.
 	 */
-    // 超级块对应的未使用 目录项 列表
+	// 超级块对应的未使用 目录项 列表
 	struct list_lru		s_dentry_lru;
-    // 超级块对应的未使用 索引节点 列表
+	// 超级块对应的未使用 索引节点 列表
 	struct list_lru		s_inode_lru;
 	struct rcu_head		rcu;
 	struct work_struct	destroy_work;
@@ -2072,11 +2101,8 @@ typedef unsigned int __bitwise fop_flags_t;
 struct file_operations {
 	// 反向引用指针
 	struct module *owner;
-<<<<<<< HEAD
 	fop_flags_t fop_flags;
-=======
 	// 改变文件读写位置，并返回新位置
->>>>>>> a1e1bb72da62 (oepn 审计 通知)
 	loff_t (*llseek) (struct file *, loff_t, int);
 	// 读取数据, 非负代表成功读取数
 	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
@@ -2127,10 +2153,10 @@ struct file_operations {
 	// 展示 fd 文件描述符信息
 	void (*show_fdinfo)(struct seq_file *m, struct file *f);
 #ifndef CONFIG_MMU
-    // mmap 权限限制信息
+	// mmap 权限限制信息
 	unsigned (*mmap_capabilities)(struct file *);
 #endif
-    // 将一个文件的数据复制到另一个文件
+	// 将一个文件的数据复制到另一个文件
 	ssize_t (*copy_file_range)(struct file *, loff_t, struct file *,
 			loff_t, size_t, unsigned int);
 	loff_t (*remap_file_range)(struct file *file_in, loff_t pos_in,
@@ -2565,7 +2591,7 @@ int kiocb_modified(struct kiocb *iocb);
 int sync_inode_metadata(struct inode *inode, int wait);
 
 struct file_system_type {
-    // 名 如:xfs
+	// 名 如:xfs
 	const char *name;
 	int fs_flags;
 #define FS_REQUIRES_DEV		1
@@ -2577,16 +2603,16 @@ struct file_system_type {
 #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
 	int (*init_fs_context)(struct fs_context *);
 	const struct fs_parameter_spec *parameters;
-    // 挂载函数
+	// 挂载函数
 	struct dentry *(*mount) (struct file_system_type *, int,
 		       const char *, void *);
-    // 释放函数
+	// 释放函数
 	void (*kill_sb) (struct super_block *);
 	struct module *owner;
-    // 通过 next 挂载在全局文件系统列表上
+	// 通过 next 挂载在全局文件系统列表上
 	struct file_system_type * next;
-    // 此文件系统类型锁包含的超级块对象
-    // 保证所有关联超级块 umount 后
+	// 此文件系统类型锁包含的超级块对象
+	// 保证所有关联超级块 umount 后
 	struct hlist_head fs_supers;
 
 	struct lock_class_key s_lock_key;

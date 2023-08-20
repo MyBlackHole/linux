@@ -48,23 +48,34 @@
 #define RESERVED_PIDS 300
 
 struct upid {
+    // pid 的值
 	int nr;
+    // pid 命名空间
 	struct pid_namespace *ns;
 };
 
+// pid 跳表？
 struct pid
 {
+    // 引用次数
 	refcount_t count;
+    // 最高层
 	unsigned int level;
 	spinlock_t lock;
 	struct dentry *stashed;
 	u64 ino;
 	/* lists of tasks that use this pid */
+    // pid 类型挂载列表
 	struct hlist_head tasks[PIDTYPE_MAX];
 	struct hlist_head inodes;
 	/* wait queue for pidfd notifications */
 	wait_queue_head_t wait_pidfd;
+    // rcu 算法结构体
 	struct rcu_head rcu;
+    // 1 下标是可扩展 upid，一个 pid 可以属于不同的 namespace
+    // 0 下标表示全局命名空间
+    // i 下标越大表示层级越低
+    // 柔性数组用法
 	struct upid numbers[];
 };
 
@@ -209,6 +220,7 @@ pid_t pid_vnr(struct pid *pid);
 		task = tg___;						\
 	} while_each_pid_task(pid, type, task)
 
+// 获取 pid 哈希表指针
 static inline struct pid *task_pid(struct task_struct *task)
 {
 	return task->thread_pid;

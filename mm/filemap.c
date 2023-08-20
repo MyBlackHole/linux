@@ -2760,6 +2760,9 @@ EXPORT_SYMBOL_GPL(kiocb_invalidate_pages);
  * Return:
  * * number of bytes copied, even for partial reads
  * * negative error code (or 0 if IOCB_NOIO) if nothing was read
+ *
+ *
+ * 通用文件读
  */
 ssize_t
 generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
@@ -2771,6 +2774,7 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 		return 0; /* skip atime */
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
+        // 直接读硬盘
 		struct file *file = iocb->ki_filp;
 		struct address_space *mapping = file->f_mapping;
 		struct inode *inode = mapping->host;
@@ -2803,6 +2807,8 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 			return retval;
 	}
 
+    // 去查页缓存
+    // 没有读硬盘
 	return filemap_read(iocb, iter, retval);
 }
 EXPORT_SYMBOL(generic_file_read_iter);
@@ -3919,10 +3925,12 @@ void kiocb_invalidate_post_direct_write(struct kiocb *iocb, size_t count)
 		dio_warn_stale_pagecache(iocb->ki_filp);
 }
 
+// 通用文件直接 io 写
 ssize_t
 generic_file_direct_write(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct address_space *mapping = iocb->ki_filp->f_mapping;
+    // 获取写数据大小
 	size_t write_len = iov_iter_count(from);
 	ssize_t written;
 
@@ -4077,6 +4085,26 @@ EXPORT_SYMBOL(generic_perform_write);
  * * number of bytes written, even for truncated writes
  * * negative error code if no data has been written at all
  */
+
+// __generic_file_write_iter - 将数据写入文件
+// @iocb：IO状态结构（文件、偏移量等）
+// @from：iov_iter，有要写入的数据
+//                                                                              
+// 该函数完成了实际将数据写入到文件中所需的所有工作。
+// 它执行所有基本检查、从文件中删除 SUID、更新
+// 修改时间并调用适当的子例程取决于我们是否
+// 进行直接 IO 或标准缓冲写入。
+//                                                                              
+// 它期望 i_rwsem 被抓取，除非我们在块设备或类似设备上工作
+// 根本不需要锁定的对象。
+//                                                                              
+// 在 O_SYNC 写入的情况下，此函数*不*负责同步数据。
+// 调用者必须处理它。 这主要是因为我们想要
+// 避免在 i_rwsem 下同步。
+//                                                                              
+// 返回：
+// * 写入的字节数，即使是截断的写入
+// * 如果根本没有写入任何数据，则为负错误代码
 ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct file *file = iocb->ki_filp;
@@ -4093,6 +4121,7 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		return ret;
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
+        // io 直接写处理
 		ret = generic_file_direct_write(iocb, from);
 		/*
 		 * If the write stopped short of completing, fall back to
@@ -4123,6 +4152,8 @@ EXPORT_SYMBOL(__generic_file_write_iter);
  * * negative error code if no data has been written at all of
  *   vfs_fsync_range() failed for a synchronous write
  * * number of bytes written, even for truncated writes
+ *
+ * 通用文件写
  */
 ssize_t generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
@@ -4133,10 +4164,12 @@ ssize_t generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	inode_lock(inode);
 	ret = generic_write_checks(iocb, from);
 	if (ret > 0)
+        // 内部通用写实现
 		ret = __generic_file_write_iter(iocb, from);
 	inode_unlock(inode);
 
 	if (ret > 0)
+        // 同步写
 		ret = generic_write_sync(iocb, ret);
 	return ret;
 }

@@ -44,6 +44,7 @@ typedef unsigned long sigset_t;
 #define SIGTTOU		22
 #define SIGURG		23
 #define SIGXCPU		24
+// 文件过大信号
 #define SIGXFSZ		25
 #define SIGVTALRM	26
 #define SIGPROF		27

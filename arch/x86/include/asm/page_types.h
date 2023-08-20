@@ -7,6 +7,7 @@
 #include <linux/mem_encrypt.h>
 
 /* PAGE_SHIFT determines the page size */
+// 换页定义
 #define PAGE_SHIFT		CONFIG_PAGE_SHIFT
 #define PAGE_SIZE		(_AC(1,UL) << PAGE_SHIFT)
 #define PAGE_MASK		(~(PAGE_SIZE-1))

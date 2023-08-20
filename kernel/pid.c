@@ -132,6 +132,7 @@ static void delayed_put_pid(struct rcu_head *rhp)
 	put_pid(pid);
 }
 
+// 回收 pid
 void free_pid(struct pid *pid)
 {
 	/* We can be called with write_lock_irq(&tasklist_lock) held */
@@ -186,6 +187,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *set_tid,
 	if (set_tid_size > ns->level + 1)
 		return ERR_PTR(-EINVAL);
 
+    // 从命名空间缓存分配一个 pid 结构体
 	pid = kmem_cache_alloc(ns->pid_cachep, GFP_KERNEL);
 	if (!pid)
 		return ERR_PTR(retval);
@@ -193,6 +195,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *set_tid,
 	tmp = ns;
 	pid->level = ns->level;
 
+    // 初始化 level 到 0 层级命名空间
 	for (i = ns->level; i >= 0; i--) {
 		int tid = 0;
 
@@ -215,9 +218,11 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *set_tid,
 		}
 
 		idr_preload(GFP_KERNEL);
+        // 自旋加锁与关闭中断
 		spin_lock_irq(&pidmap_lock);
 
 		if (tid) {
+            // 分配局部 PID
 			nr = idr_alloc(&tmp->idr, NULL, tid,
 				       tid + 1, GFP_ATOMIC);
 			/*
@@ -242,6 +247,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *set_tid,
 			nr = idr_alloc_cyclic(&tmp->idr, NULL, pid_min,
 					      pid_max, GFP_ATOMIC);
 		}
+        // 释放自旋与恢复中断
 		spin_unlock_irq(&pidmap_lock);
 		idr_preload_end();
 
@@ -269,6 +275,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *set_tid,
 	refcount_set(&pid->count, 1);
 	spin_lock_init(&pid->lock);
 	for (type = 0; type < PIDTYPE_MAX; ++type)
+        // 初始化 PID 类型链表挂载域
 		INIT_HLIST_HEAD(&pid->tasks[type]);
 
 	init_waitqueue_head(&pid->wait_pidfd);
@@ -282,6 +289,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *set_tid,
 	pid->ino = ++pidfs_ino;
 	for ( ; upid >= pid->numbers; --upid) {
 		/* Make the PID visible to find_pid_ns. */
+        // 使 PID 对查询 PID 命名空间可见
 		idr_replace(&upid->ns->idr, pid, upid->nr);
 		upid->ns->pid_allocated++;
 	}
@@ -317,12 +325,14 @@ void disable_pid_allocation(struct pid_namespace *ns)
 	spin_unlock_irq(&pidmap_lock);
 }
 
+// 根据 pid 获取对应的 pid
 struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
 {
 	return idr_find(&ns->idr, nr);
 }
 EXPORT_SYMBOL_GPL(find_pid_ns);
 
+// 根据局部 PID (thread_pid) 获取当前 pid 
 struct pid *find_vpid(int nr)
 {
 	return find_pid_ns(nr, task_active_pid_ns(current));
@@ -408,6 +418,7 @@ void transfer_pid(struct task_struct *old, struct task_struct *new,
 	hlist_replace_rcu(&old->pid_links[type], &new->pid_links[type]);
 }
 
+// 根据 pid 与 PID 类型获取 task_struct
 struct task_struct *pid_task(struct pid *pid, enum pid_type type)
 {
 	struct task_struct *result = NULL;
@@ -519,6 +530,7 @@ pid_t __task_pid_nr_ns(struct task_struct *task, enum pid_type type,
 }
 EXPORT_SYMBOL(__task_pid_nr_ns);
 
+// 获取 pid 命名空间
 struct pid_namespace *task_active_pid_ns(struct task_struct *tsk)
 {
 	return ns_of_pid(task_pid(tsk));

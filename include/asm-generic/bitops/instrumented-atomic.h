@@ -78,6 +78,8 @@ static __always_inline bool test_and_set_bit(long nr, volatile unsigned long *ad
  * @addr: Address to count from
  *
  * This is an atomic fully-ordered operation (implied full memory barrier).
+ *
+ * 恢复 log 内容
  */
 static __always_inline bool test_and_clear_bit(long nr, volatile unsigned long *addr)
 {

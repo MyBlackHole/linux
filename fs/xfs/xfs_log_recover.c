@@ -3483,6 +3483,7 @@ xlog_recover(
 			msleep(xfs_globals.log_recovery_delay * 1000);
 		}
 
+        // 开始恢复 log
 		xfs_notice(log->l_mp, "Starting recovery (logdev: %s)",
 				log->l_mp->m_logname ? log->l_mp->m_logname
 						     : "internal");

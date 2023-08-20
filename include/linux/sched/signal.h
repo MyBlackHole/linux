@@ -90,6 +90,8 @@ struct core_state {
  * implies a shared sighand_struct, so locking
  * sighand_struct is always a proper superset of
  * the locking of signal_struct.
+ *
+ * 信号结构体
  */
 struct signal_struct {
 	refcount_t		sigcnt;
@@ -170,6 +172,7 @@ struct signal_struct {
 	struct pid *tty_old_pgrp;
 
 	/* boolean value for session group leader */
+    // 会话组老大
 	int leader;
 
 	struct tty_struct *tty; /* NULL if no tty */
@@ -684,11 +687,13 @@ static inline struct pid *task_tgid(struct task_struct *task)
  * the result of task_pgrp/task_session even if task == current,
  * we can race with another thread doing sys_setsid/sys_setpgid.
  */
+// 获取组 pid 表
 static inline struct pid *task_pgrp(struct task_struct *task)
 {
 	return task->signal->pids[PIDTYPE_PGID];
 }
 
+// 获取会话 pid 表
 static inline struct pid *task_session(struct task_struct *task)
 {
 	return task->signal->pids[PIDTYPE_SID];

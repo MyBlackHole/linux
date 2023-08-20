@@ -22,6 +22,9 @@ struct rb_root {
  * this feature can always implement the logic explicitly.
  * Furthermore, users that want to cache both pointers may
  * find it a bit asymmetric, but that's ok.
+ *
+ * 红黑树
+ * 总是指向最左边的节点
  */
 struct rb_root_cached {
 	struct rb_root rb_root;

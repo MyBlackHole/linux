@@ -306,7 +306,40 @@ typedef struct {
  * power-of-two.  It may be mapped into userspace at an address which is
  * at an arbitrary page offset, but its kernel virtual address is aligned
  * to its size.
+ *
+ * 新的 page 概念,替换 page
+ *
  */
+// struct folio - 表示一组连续的字节。
+// @flags：与页面标志相同。
+// @lru：最近最少使用列表； 跟踪该作品集最近的使用情况。
+// @mlock_count：此作品集被 mlock() 固定的次数。
+// @mapping：该页面所属的文件，或引用anon_vma匿名记忆。
+// @index：文件内的偏移量，以页为单位。 为了匿名记忆，这是从 mmap 开头开始的索引。
+// @private：每个作品集的文件系统数据（请参阅 folio_attach_private()）。如果 folio_test_swapcache()，则用于 swp_entry_t。
+// @_mapcount：不要直接访问该成员。 使用 folio_mapcount() 来找出该作品集被用户空间映射了多少次。
+// @_refcount：不要直接访问该成员。 使用 folio_ref_count()查找此作品集有多少参考文献。
+// @memcg_data：内存控制组数据。
+// @_folio_dtor：此作品集使用哪个析构函数。
+// @_folio_order：不要直接使用，调用folio_order()。
+// @_entire_mapcount：不要直接使用，调用folio_entire_mapcount()。
+// @_nr_pages_mapped：不要直接使用，调用folio_mapcount()。
+// @_pincount：不要直接使用，调用folio_maybe_dma_pinned()。
+// @_folio_nr_pages：不要直接使用，调用folio_nr_pages()。
+// @_hugetlb_subpool：不要直接使用，使用hugetlb.h中的访问器。
+// @_hugetlb_cgroup：不要直接使用，使用hugetlb_cgroup.h中的访问器。
+// @_hugetlb_cgroup_rsvd：不要直接使用，使用hugetlb_cgroup.h中的访问器。
+// @_hugetlb_hwpoison：不要直接使用，调用raw_hwp_list_head()。
+// @_deferred_list：在内存压力下要拆分的作品集。
+//                                                                               
+// 作品集是物理上、虚拟上和逻辑上连续的集合
+// 字节数。 它的大小是 2 的幂，并且与此对齐
+// 相同的二的幂。 它至少与 %PAGE_SIZE 一样大。 如果是
+// 在页面缓存中，它位于文件偏移量处，该偏移量是该偏移量的倍数
+// 二的幂。 它可以映射到用户空间的地址为
+// 在任意页偏移处，但其内核虚拟地址是对齐的
+// 到它的大小。
+
 struct folio {
 	/* private: don't document the anon union */
 	union {

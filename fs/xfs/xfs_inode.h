@@ -161,8 +161,10 @@ xfs_inode_fork_size(
 }
 
 /* Convert from vfs inode to xfs inode */
+// 将 inode 装 xfs inode
 static inline struct xfs_inode *XFS_I(struct inode *inode)
 {
+    // xfs_inode
 	return container_of(inode, struct xfs_inode, i_vnode);
 }
 

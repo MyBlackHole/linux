@@ -56,11 +56,17 @@ struct pipe_buffer {
  *	@watch_queue: If this pipe is a watch_queue, this is the stuff for that
  **/
 struct pipe_inode_info {
+    // 互斥量
 	struct mutex mutex;
+    // 读写等待队列
 	wait_queue_head_t rd_wait, wr_wait;
+    // 头部
 	unsigned int head;
+    // 尾部
 	unsigned int tail;
+    // 最大使用量
 	unsigned int max_usage;
+    // 环大小
 	unsigned int ring_size;
 	unsigned int nr_accounted;
 	unsigned int readers;

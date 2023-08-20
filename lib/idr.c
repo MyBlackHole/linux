@@ -75,6 +75,8 @@ EXPORT_SYMBOL_GPL(idr_alloc_u32);
  *
  * Return: The newly allocated ID, -ENOMEM if memory allocation failed,
  * or -ENOSPC if no free IDs could be found.
+ *
+ * 在 start end 间分配一个未使用 id
  */
 int idr_alloc(struct idr *idr, void *ptr, int start, int end, gfp_t gfp)
 {

@@ -1220,6 +1220,7 @@ out:
 	return retval;
 }
 
+// 设置 sid pgid
 static void set_special_pids(struct pid *pid)
 {
 	struct task_struct *curr = current->group_leader;
@@ -1233,8 +1234,11 @@ static void set_special_pids(struct pid *pid)
 
 int ksys_setsid(void)
 {
+    // 获取组老大任务结构体
 	struct task_struct *group_leader = current->group_leader;
+    // 获取组老大的 pid
 	struct pid *sid = task_pid(group_leader);
+    // 会话 id
 	pid_t session = pid_vnr(sid);
 	int err = -EPERM;
 
@@ -1249,7 +1253,9 @@ int ksys_setsid(void)
 	if (pid_task(sid, PIDTYPE_PGID))
 		goto out;
 
+    // 修改老大进程 信号结构体 leader 变化
 	group_leader->signal->leader = 1;
+    // 修改自己 sid pgid 为组老大的 pid 哈希表
 	set_special_pids(sid);
 
 	proc_clear_tty(group_leader);
