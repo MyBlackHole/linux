@@ -1061,6 +1061,7 @@ static int input_attach_handler(struct input_dev *dev, struct input_handler *han
 	if (!id)
 		return -ENODEV;
 
+    // 连接看看
 	error = handler->connect(handler, dev, id);
 	if (error && error != -ENODEV)
 		pr_err("failed to attach handler %s to device %s, error: %d\n",
@@ -2530,19 +2531,25 @@ int input_register_handler(struct input_handler *handler)
 	struct input_dev *dev;
 	int error;
 
+    // 加锁
 	error = mutex_lock_interruptible(&input_mutex);
 	if (error)
 		return error;
 
+    // 初始化自身链表
 	INIT_LIST_HEAD(&handler->h_list);
 
+    // 把处理节点加入 input 回调函数全局链表中
 	list_add_tail(&handler->node, &input_handler_list);
 
+    // 把节点设备放入全局 input 设备链表中
 	list_for_each_entry(dev, &input_dev_list, node)
 		input_attach_handler(dev, handler);
 
+    // 更新 /proc/
 	input_wakeup_procfs_readers();
 
+    // 解锁
 	mutex_unlock(&input_mutex);
 	return 0;
 }

@@ -30,9 +30,13 @@
 #define SYSRQ_ENABLE_RTNICE	0x0100
 
 struct sysrq_key_op {
+    // 回调处理函数
 	void (* const handler)(u8);
+    // 帮助信息
 	const char * const help_msg;
+    // 相关动作信息
 	const char * const action_msg;
+    // 掩码
 	const int enable_mask;
 };
 

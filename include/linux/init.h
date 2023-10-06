@@ -308,6 +308,7 @@ extern struct module __this_module;
 #define fs_initcall(fn)			__define_initcall(fn, 5)
 #define fs_initcall_sync(fn)		__define_initcall(fn, 5s)
 #define rootfs_initcall(fn)		__define_initcall(fn, rootfs)
+// 等效 module_init
 #define device_initcall(fn)		__define_initcall(fn, 6)
 #define device_initcall_sync(fn)	__define_initcall(fn, 6s)
 #define late_initcall(fn)		__define_initcall(fn, 7)

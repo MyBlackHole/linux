@@ -61,6 +61,7 @@ static bool __read_mostly sysrq_always_enabled;
 
 static bool sysrq_on(void)
 {
+    // sysrq
 	return sysrq_enabled || sysrq_always_enabled;
 }
 
@@ -95,6 +96,7 @@ static int __init sysrq_always_enabled_setup(char *str)
 	return 1;
 }
 
+// 跟随系统启动
 __setup("sysrq_always_enabled", sysrq_always_enabled_setup);
 
 
@@ -464,6 +466,7 @@ static struct sysrq_key_op sysrq_replay_logs_op = {
 /* Key Operations table and lock */
 static DEFINE_SPINLOCK(sysrq_key_table_lock);
 
+// sysrq map 表
 static const struct sysrq_key_op *sysrq_key_table[62] = {
 	&sysrq_loglevel_op,		/* 0 */
 	&sysrq_loglevel_op,		/* 1 */
@@ -597,9 +600,12 @@ void __handle_sysrq(u8 key, bool check_mask)
 	 * simply emit this at KERN_EMERG as that would change message
 	 * routing in the consumers of /proc/kmsg.
 	 */
+	// 使用默认等级
 	orig_log_level = console_loglevel;
+	// 输出到终端
 	console_loglevel = CONSOLE_LOGLEVEL_DEFAULT;
 
+	// 查找 key 处理函数
 	op_p = __sysrq_get_key_op(key);
 	if (op_p) {
 		/*
@@ -609,12 +615,14 @@ void __handle_sysrq(u8 key, bool check_mask)
 		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
 			pr_info("%s\n", op_p->action_msg);
 			console_loglevel = orig_log_level;
+			// 执行用户处理函数
 			op_p->handler(key);
 		} else {
 			pr_info("This sysrq operation is disabled.\n");
 			console_loglevel = orig_log_level;
 		}
 	} else {
+		// 没找到输出所有已经注册的
 		pr_info("HELP : ");
 		/* Only print the help msg once per handler */
 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
@@ -1041,12 +1049,15 @@ static struct input_handler sysrq_handler = {
 	.id_table	= sysrq_ids,
 };
 
+// 注册 sysrq 回调函数
 static inline void sysrq_register_handler(void)
 {
 	int error;
 
+    // 先通过设备树配置
 	sysrq_of_get_keyreset_config();
 
+    // 注册 input 回调处理函数
 	error = input_register_handler(&sysrq_handler);
 	if (error)
 		pr_err("Failed to register input handler, error %d", error);
@@ -1164,6 +1175,9 @@ EXPORT_SYMBOL(unregister_sysrq_key);
  * Normally, only the first character written is processed.
  * However, if the first character is an underscore,
  * all characters are processed.
+ *
+ * 处理写
+ * 例如: echo g > /proc/sysrq-trigger
  */
 static ssize_t write_sysrq_trigger(struct file *file, const char __user *buf,
 				   size_t count, loff_t *ppos)
@@ -1180,6 +1194,7 @@ static ssize_t write_sysrq_trigger(struct file *file, const char __user *buf,
 		if (c == '_')
 			bulk = true;
 		else
+			// 业务处理函数
 			__handle_sysrq(c, false);
 
 		if (!bulk)
@@ -1189,6 +1204,7 @@ static ssize_t write_sysrq_trigger(struct file *file, const char __user *buf,
 	return count;
 }
 
+// proc 文件操作集
 static const struct proc_ops sysrq_trigger_proc_ops = {
 	.proc_write	= write_sysrq_trigger,
 	.proc_lseek	= noop_llseek,
@@ -1196,6 +1212,7 @@ static const struct proc_ops sysrq_trigger_proc_ops = {
 
 static void sysrq_init_procfs(void)
 {
+    // 创建 /proc/sysrq-trigger
 	if (!proc_create("sysrq-trigger", S_IWUSR, NULL,
 			 &sysrq_trigger_proc_ops))
 		pr_err("Failed to register proc interface\n");
@@ -1211,9 +1228,11 @@ static inline void sysrq_init_procfs(void)
 
 static int __init sysrq_init(void)
 {
+    // proc sysrq
 	sysrq_init_procfs();
 
 	if (sysrq_on())
+        // 注册 sysrq 的处理函数
 		sysrq_register_handler();
 
 	return 0;
