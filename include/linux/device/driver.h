@@ -94,30 +94,39 @@ enum probe_type {
  * of any specific device.
  */
 struct device_driver {
+    // 设备驱动名
 	const char		*name;
+    // 连接的总线
 	const struct bus_type	*bus;
 
 	struct module		*owner;
+    // 用于内置模块
 	const char		*mod_name;	/* used for built-in modules */
 
 	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
 	enum probe_type probe_type;
 
+    // 匹配信息
 	const struct of_device_id	*of_match_table;
 	const struct acpi_device_id	*acpi_match_table;
 
+    // 设备驱动回调
 	int (*probe) (struct device *dev);
 	void (*sync_state)(struct device *dev);
 	int (*remove) (struct device *dev);
 	void (*shutdown) (struct device *dev);
 	int (*suspend) (struct device *dev, pm_message_t state);
 	int (*resume) (struct device *dev);
+
+    // 设备驱动默认属性
 	const struct attribute_group **groups;
+    // 设备默认属性
 	const struct attribute_group **dev_groups;
 
 	const struct dev_pm_ops *pm;
 	void (*coredump) (struct device *dev);
 
+    // 私有数据
 	struct driver_private *p;
 };
 

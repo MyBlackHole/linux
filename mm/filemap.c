@@ -384,6 +384,15 @@ static int filemap_check_and_keep_errors(struct address_space *mapping)
  *
  * Return: %0 on success, negative error code otherwise.
  */
+
+// filemap_fdatawrite_wbc - 在映射范围内的脏页时开始回写
+// @mapping：要写入的地址空间结构
+// @wbc：writeback_control控制写出
+//                                                                          
+// 使用提供的 wbc 调用映射上的 writepages 来控制
+// 写出。
+//                                                                          
+// 返回：成功时返回0，否则返回负错误代码。
 int filemap_fdatawrite_wbc(struct address_space *mapping,
 			   struct writeback_control *wbc)
 {
@@ -417,6 +426,22 @@ EXPORT_SYMBOL(filemap_fdatawrite_wbc);
  *
  * Return: %0 on success, negative error code otherwise.
  */
+
+// __filemap_fdatawrite_range - 开始写回映射范围内的脏页
+// @mapping：要写入的地址空间结构
+// @start：范围开始处的字节偏移量
+// @end：范围结束处（含）的偏移量（以字节为单位）
+// @sync_mode：启用同步操作
+//                                                                              
+// 开始写回映射中所有脏页
+// 在字节偏移量 <start, end> 内（含）。
+//                                                                              
+// 如果sync_mode是WB_SYNC_ALL那么这是一个“数据完整性”操作，如下所示
+// 与常规的内存清理写回相反。 和...之间的不同
+// 这两个操作就是如果遇到脏页/缓冲区，必须
+// 被等待，而不是被跳过。
+//                                                                              
+// 返回：成功时返回0，否则返回负错误代码。
 int __filemap_fdatawrite_range(struct address_space *mapping, loff_t start,
 				loff_t end, int sync_mode)
 {
@@ -4020,6 +4045,7 @@ again:
 			break;
 		}
 
+        // 写前处理
 		status = a_ops->write_begin(file, mapping, pos, bytes,
 						&page, &fsdata);
 		if (unlikely(status < 0))
@@ -4031,6 +4057,7 @@ again:
 		copied = copy_page_from_iter_atomic(page, offset, bytes, i);
 		flush_dcache_page(page);
 
+        // 写后处理
 		status = a_ops->write_end(file, mapping, pos, bytes, copied,
 						page, fsdata);
 		if (unlikely(status != copied)) {
@@ -4130,10 +4157,55 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		 * not succeed (even if it did, DAX does not handle dirty
 		 * page-cache pages correctly).
 		 */
+<<<<<<< HEAD
 		if (ret < 0 || !iov_iter_count(from) || IS_DAX(inode))
 			return ret;
 		return direct_write_fallback(iocb, from, ret,
 				generic_perform_write(iocb, from));
+=======
+		if (written < 0 || !iov_iter_count(from) || IS_DAX(inode))
+			goto out;
+
+		pos = iocb->ki_pos;
+        // 通用写处理
+		status = generic_perform_write(iocb, from);
+		/*
+		 * If generic_perform_write() returned a synchronous error
+		 * then we want to return the number of bytes which were
+		 * direct-written, or the error code if that was zero.  Note
+		 * that this differs from normal direct-io semantics, which
+		 * will return -EFOO even if some bytes were written.
+		 */
+		if (unlikely(status < 0)) {
+			err = status;
+			goto out;
+		}
+		/*
+		 * We need to ensure that the page cache pages are written to
+		 * disk and invalidated to preserve the expected O_DIRECT
+		 * semantics.
+		 */
+		endbyte = pos + status - 1;
+		err = filemap_write_and_wait_range(mapping, pos, endbyte);
+		if (err == 0) {
+			iocb->ki_pos = endbyte + 1;
+			written += status;
+			invalidate_mapping_pages(mapping,
+						 pos >> PAGE_SHIFT,
+						 endbyte >> PAGE_SHIFT);
+		} else {
+			/*
+			 * We don't know how much we wrote, so just return
+			 * the number of bytes which were direct-written
+			 */
+		}
+	} else {
+        // 非直接 io
+        // 通用写处理
+		written = generic_perform_write(iocb, from);
+		if (likely(written > 0))
+			iocb->ki_pos += written;
+>>>>>>> 2e121e3e2ed2 (平台总线 bus)
 	}
 
 	return generic_perform_write(iocb, from);

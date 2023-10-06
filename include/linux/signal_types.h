@@ -36,6 +36,7 @@ struct sigpending {
 
 struct sigaction {
 #ifndef __ARCH_HAS_IRIX_SIGACTION
+    // 信号处理回调
 	__sighandler_t	sa_handler;
 	unsigned long	sa_flags;
 #else
@@ -45,6 +46,7 @@ struct sigaction {
 #ifdef __ARCH_HAS_SA_RESTORER
 	__sigrestore_t sa_restorer;
 #endif
+    // 要阻止的信号集
 	sigset_t	sa_mask;	/* mask last for extensibility */
 };
 

@@ -89,6 +89,7 @@ enum {
 #define TCP_MSS_DESIRED		1220U	/* IPv6 (tunneled), EDNS0 (RFC3226) */
 
 /* TCP socket options */
+// 禁用 nagle 算法
 #define TCP_NODELAY		1	/* Turn off Nagle's algorithm. */
 #define TCP_MAXSEG		2	/* Limit MSS */
 #define TCP_CORK		3	/* Never send partially complete segments */

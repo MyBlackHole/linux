@@ -718,39 +718,55 @@ struct device_physical_location {
  */
 struct device {
 	struct kobject kobj;
+    // 父设备
 	struct device		*parent;
 
+    // 设备链表
 	struct device_private	*p;
 
+    // 设备初始化名称
 	const char		*init_name; /* initial name of the device */
+    // 设备类型信息
 	const struct device_type *type;
 
+    // 驱动程序的设备所属的总线
 	const struct bus_type	*bus;	/* type of bus device is on */
+    // 哪个驱动程序分配了这个设备
 	struct device_driver *driver;	/* which driver has allocated this
 					   device */
+    // 特定设备平台数据
 	void		*platform_data;	/* Platform specific data, device
 					   core doesn't touch it */
+    // 驱动程序特定信息的私有指针
 	void		*driver_data;	/* Driver data, set and get with
 					   dev_set_drvdata/dev_get_drvdata */
+    // 同步驱动设备调用
 	struct mutex		mutex;	/* mutex to synchronize calls to
 					 * its driver.
 					 */
 
+    // 指向该设备的供应商和消费者
 	struct dev_links_info	links;
+    // 设备电源管理
 	struct dev_pm_info	power;
+    // 提供在系统挂起期间执行的回调
 	struct dev_pm_domain	*pm_domain;
 
 #ifdef CONFIG_ENERGY_MODEL
+    // 设备的能量模型性能域
 	struct em_perf_domain	*em_pd;
 #endif
 
 #ifdef CONFIG_PINCTRL
+    // 设备引脚管理
 	struct dev_pin_info	*pins;
 #endif
 	struct dev_msi_info	msi;
 #ifdef CONFIG_DMA_OPS
+    // 设备 dma 映射操作
 	const struct dma_map_ops *dma_ops;
 #endif
+    // dma 掩码
 	u64		*dma_mask;	/* dma mask (if dma'able device) */
 	u64		coherent_dma_mask;/* Like dma_mask, but for
 					     alloc_coherent mappings as

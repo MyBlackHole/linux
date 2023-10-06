@@ -61,6 +61,7 @@ enum kobject_action {
 	KOBJ_UNBIND,
 };
 
+// 内核对象基类
 struct kobject {
 	const char		*name;
 	struct list_head	entry;

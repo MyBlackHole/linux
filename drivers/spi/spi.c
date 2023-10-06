@@ -4896,15 +4896,18 @@ static int __init spi_init(void)
 		goto err0;
 	}
 
+    // 创建 /sys/bus/spi/
 	status = bus_register(&spi_bus_type);
 	if (status < 0)
 		goto err1;
 
+    // 创建 /sys/class/spi_master/
 	status = class_register(&spi_master_class);
 	if (status < 0)
 		goto err2;
 
 	if (IS_ENABLED(CONFIG_SPI_SLAVE)) {
+        // 创建 /sys/class/spi_slave/
 		status = class_register(&spi_slave_class);
 		if (status < 0)
 			goto err3;

@@ -2620,6 +2620,7 @@ static int writeback_use_writepage(struct address_space *mapping,
 	return err;
 }
 
+// 开始了吗，开始写了吗
 int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
 {
 	int ret;

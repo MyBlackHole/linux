@@ -735,6 +735,8 @@ EXPORT_SYMBOL(disable_irq_nosync);
  *	Can only be called from preemptible code as it might sleep when
  *	an interrupt thread is associated to @irq.
  *
+ *	禁止中断
+ *
  */
 void disable_irq(unsigned int irq)
 {
@@ -827,6 +829,8 @@ void __enable_irq(struct irq_desc *desc)
  *
  *	This function may be called from IRQ context only when
  *	desc->irq_data.chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
+ *
+ *	中断使能
  */
 void enable_irq(unsigned int irq)
 {
@@ -2027,6 +2031,8 @@ static struct irqaction *__free_irq(struct irq_desc *desc, void *dev_id)
  *	This function must not be called from interrupt context.
  *
  *	Returns the devname argument passed to request_irq.
+ *
+ *	释放中断
  */
 const void *free_irq(unsigned int irq, void *dev_id)
 {

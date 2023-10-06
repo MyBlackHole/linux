@@ -27,10 +27,15 @@
  * setting should be assumed to be "as already configured", which
  * may be as per machine or firmware initialisation.
  */
+// 无触发
 #define IRQF_TRIGGER_NONE	0x00000000
+// 上升沿触发
 #define IRQF_TRIGGER_RISING	0x00000001
+// 下降沿触发
 #define IRQF_TRIGGER_FALLING	0x00000002
+// 高电平触发
 #define IRQF_TRIGGER_HIGH	0x00000004
+// 低电平触发
 #define IRQF_TRIGGER_LOW	0x00000008
 #define IRQF_TRIGGER_MASK	(IRQF_TRIGGER_HIGH | IRQF_TRIGGER_LOW | \
 				 IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING)
@@ -70,12 +75,14 @@
  * IRQF_COND_ONESHOT - Agree to do IRQF_ONESHOT if already set for a shared
  *                 interrupt.
  */
+// 共享中断
 #define IRQF_SHARED		0x00000080
 #define IRQF_PROBE_SHARED	0x00000100
 #define __IRQF_TIMER		0x00000200
 #define IRQF_PERCPU		0x00000400
 #define IRQF_NOBALANCING	0x00000800
 #define IRQF_IRQPOLL		0x00001000
+// 单词中断，中断执行一次就解除
 #define IRQF_ONESHOT		0x00002000
 #define IRQF_NO_SUSPEND		0x00004000
 #define IRQF_FORCE_RESUME	0x00008000
@@ -163,6 +170,8 @@ request_threaded_irq(unsigned int irq, irq_handler_t handler,
  *
  * This call allocates an interrupt and establishes a handler; see
  * the documentation for request_threaded_irq() for details.
+ *
+ * 申请中断
  */
 static inline int __must_check
 request_irq(unsigned int irq, irq_handler_t handler, unsigned long flags,
@@ -196,6 +205,7 @@ extern int __must_check
 request_percpu_nmi(unsigned int irq, irq_handler_t handler,
 		   const char *devname, void __percpu *dev);
 
+// 释放中断
 extern const void *free_irq(unsigned int, void *);
 extern void free_percpu_irq(unsigned int, void __percpu *);
 

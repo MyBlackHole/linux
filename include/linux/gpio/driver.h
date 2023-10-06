@@ -413,12 +413,18 @@ struct gpio_irq_chip {
  * by "offset" values in the range 0..(@ngpio - 1).  When those signals
  * are referenced through calls like gpio_get_value(gpio), the offset
  * is calculated by subtracting @base from the gpio number.
+ *
+ * 抽象 GPIO 控制器
  */
 struct gpio_chip {
+    // GPIO 功能名称
 	const char		*label;
+    // 内部状态持有者
 	struct gpio_device	*gpiodev;
+    // 可选父设备
 	struct device		*parent;
 	struct fwnode_handle	*fwnode;
+    // 防止删除导出活动的 GPIO 的模块
 	struct module		*owner;
 
 	int			(*request)(struct gpio_chip *gc,
@@ -431,11 +437,14 @@ struct gpio_chip {
 						unsigned int offset);
 	int			(*direction_output)(struct gpio_chip *gc,
 						unsigned int offset, int value);
+    // 获取信号 offset 值
 	int			(*get)(struct gpio_chip *gc,
 						unsigned int offset);
+    // 获取多个信号值
 	int			(*get_multiple)(struct gpio_chip *gc,
 						unsigned long *mask,
 						unsigned long *bits);
+    // 设置信号 offset 值
 	void			(*set)(struct gpio_chip *gc,
 						unsigned int offset, int value);
 	void			(*set_multiple)(struct gpio_chip *gc,

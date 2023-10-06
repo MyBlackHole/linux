@@ -46,10 +46,14 @@ struct fwnode_handle;
  * at the class level, they are all simply disks. Classes allow user space
  * to work with devices based on what they do, rather than how they are
  * connected or how they work.
+ *
+ *
+ * 高层设备类
  */
 struct class {
 	const char		*name;
 
+    // 属性
 	const struct attribute_group	**class_groups;
 	const struct attribute_group	**dev_groups;
 
@@ -66,6 +70,7 @@ struct class {
 
 	void (*get_ownership)(const struct device *dev, kuid_t *uid, kgid_t *gid);
 
+    // 功耗管理
 	const struct dev_pm_ops *pm;
 };
 

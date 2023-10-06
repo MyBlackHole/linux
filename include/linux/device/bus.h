@@ -73,34 +73,55 @@ struct fwnode_handle;
  * A bus is represented by the bus_type structure. It contains the name, the
  * default attributes, the bus' methods, PM operations, and the driver core's
  * private data.
+ *
+ * 总线描述结构
  */
 struct bus_type {
+	// 总线名称
 	const char		*name;
 	const char		*dev_name;
+	// 总线默认属性
 	const struct attribute_group **bus_groups;
+	// 总线上设备默认属性
 	const struct attribute_group **dev_groups;
+	// 总线上设备驱动默认属性
 	const struct attribute_group **drv_groups;
 
+	// 匹配设备的驱动，匹配成功后调用驱动(driver).probe
 	int (*match)(struct device *dev, struct device_driver *drv);
+	// 消息传递 （热插拔操作, 添加、删除等）
 	int (*uevent)(const struct device *dev, struct kobj_uevent_env *env);
+	// 有新设备或驱动添加到这个总线时调用, 匹配成功后调用驱动(driver).probe
 	int (*probe)(struct device *dev);
+	// 设备状态同步
 	void (*sync_state)(struct device *dev);
+	// 移除总线上设备
 	void (*remove)(struct device *dev);
+	// 设备关闭时调用
 	void (*shutdown)(struct device *dev);
 
+	// 重新联机（脱机后）
 	int (*online)(struct device *dev);
+	// 使设备脱机
 	int (*offline)(struct device *dev);
 
+	// 设备电源管理，低功耗挂起
 	int (*suspend)(struct device *dev, pm_message_t state);
+	// 设备电源管理，恢复
 	int (*resume)(struct device *dev);
 
+	// 查询设备支持的虚拟功能
 	int (*num_vf)(struct device *dev);
 
+	// 设备 dma 配置
 	int (*dma_configure)(struct device *dev);
+	// 清理设备 dma 配置
 	void (*dma_cleanup)(struct device *dev);
 
+	// 总线的电源管理
 	const struct dev_pm_ops *pm;
 
+	// 父设备锁定
 	bool need_parent_lock;
 };
 
