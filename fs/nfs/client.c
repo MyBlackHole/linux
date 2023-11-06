@@ -114,7 +114,7 @@ void put_nfs_version(struct nfs_subversion *nfs)
 	module_put(nfs->owner);
 }
 
-// nfs 注册入口
+// nfs 版本注册入口
 void register_nfs_version(struct nfs_subversion *nfs)
 {
 	spin_lock(&nfs_version_lock);
@@ -126,6 +126,7 @@ void register_nfs_version(struct nfs_subversion *nfs)
 }
 EXPORT_SYMBOL_GPL(register_nfs_version);
 
+// nfs 版本卸载入口
 void unregister_nfs_version(struct nfs_subversion *nfs)
 {
 	spin_lock(&nfs_version_lock);

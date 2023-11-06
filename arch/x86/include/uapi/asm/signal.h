@@ -30,6 +30,8 @@ typedef unsigned long sigset_t;
 #define SIGFPE		 8
 #define SIGKILL		 9
 #define SIGUSR1		10
+// 内存泄露/溢出
+// 当一个进程执行一个无效的内存引用，或发生断错误时，会触发 SIGSEGV信号
 #define SIGSEGV		11
 #define SIGUSR2		12
 #define SIGPIPE		13
