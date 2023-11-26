@@ -698,18 +698,17 @@ struct inode {
 	union {
         // 硬连接总数
 		const unsigned int i_nlink;
-		unsigned int __i_nlink;
 	};
     // 设备号
 	dev_t			i_rdev;
     // 文件长度
 	loff_t			i_size;
     // 最后访问时间
-	struct timespec64	i_atime;
+	struct timespec64	__i_atime;
     // 最后修改时间
-	struct timespec64	i_mtime;
+	struct timespec64	__i_mtime;
     // 最后修改 inode 时间
-	struct timespec64	i_ctime;
+	struct timespec64	__i_ctime;
 	spinlock_t		i_lock;	/* i_blocks, i_bytes, maybe i_size */
 	unsigned short          i_bytes;
     // 以位为单位块大小
