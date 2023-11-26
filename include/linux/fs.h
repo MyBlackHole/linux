@@ -698,6 +698,7 @@ struct inode {
 	union {
         // 硬连接总数
 		const unsigned int i_nlink;
+		unsigned int __i_nlink;
 	};
     // 设备号
 	dev_t			i_rdev;
