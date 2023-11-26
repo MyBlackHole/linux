@@ -2773,6 +2773,7 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 
 		if (op->opdesc->op_get_currentstateid)
 			op->opdesc->op_get_currentstateid(cstate, &op->u);
+        // 执行相应的操作 (不如删除 nfsd4_remove 等)
 		op->status = op->opdesc->op_func(rqstp, cstate, &op->u);
 
 		/* Only from SEQUENCE */

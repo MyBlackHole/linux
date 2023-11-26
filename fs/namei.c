@@ -53,8 +53,8 @@
  * The new code replaces the old recursive symlink resolution with
  * an iterative one (in case of non-nested symlink chains).  It does
  * this with calls to <fs>_follow_link().
- * As a side effect, dir_namei(), _namei() and follow_link() are now 
- * replaced with a single function lookup_dentry() that can handle all 
+ * As a side effect, dir_namei(), _namei() and follow_link() are now
+ * replaced with a single function lookup_dentry() that can handle all
  * the special cases of the former code.
  *
  * With the new dcache, the pathname is stored at each inode, at least as
@@ -566,13 +566,19 @@ EXPORT_SYMBOL(path_put);
 #define EMBEDDED_LEVELS 2
 // 路径查询辅助结构
 struct nameidata {
+    // 查找到的路径
 	struct path	path;
+    // 路径名的最后一个分量, (当 LOOKUP_PARENT 标志被设置时使用)
 	struct qstr	last;
+    // 进程根路径
 	struct path	root;
 	struct inode	*inode; /* path.dentry.d_inode */
+    // 查找标志
 	unsigned int	flags, state;
 	unsigned	seq, next_seq, m_seq, r_seq;
+    // 最后一个分量类型, (当 LOOKUP_PARENT 标志被设置时使用)
 	int		last_type;
+    // 符号连接嵌套的当前级别， 必须小于 6
 	unsigned	depth;
 	int		total_link_count;
 	struct saved {
@@ -2625,6 +2631,7 @@ struct dentry *user_path_locked_at(int dfd, const char __user *name, struct path
 }
 EXPORT_SYMBOL(user_path_locked_at);
 
+// 获取输入路径的 path
 int kern_path(const char *name, unsigned int flags, struct path *path)
 {
 	struct filename *filename = getname_kernel(name);
@@ -4195,6 +4202,9 @@ SYSCALL_DEFINE2(mkdir, const char __user *, pathname, umode_t, mode)
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
  */
+/*
+ * 删除目录
+ */
 int vfs_rmdir(struct mnt_idmap *idmap, struct inode *dir,
 		     struct dentry *dentry)
 {
@@ -4324,6 +4334,9 @@ SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
  */
+/*
+ * 删除文件(连接数减一)
+ */
 int vfs_unlink(struct mnt_idmap *idmap, struct inode *dir,
 	       struct dentry *dentry, struct inode **delegated_inode)
 {
@@ -4338,10 +4351,13 @@ int vfs_unlink(struct mnt_idmap *idmap, struct inode *dir,
 
 	inode_lock(target);
 	if (IS_SWAPFILE(target))
+        // 交换文件
 		error = -EPERM;
 	else if (is_local_mountpoint(dentry))
+        // 不能删除本地挂载点
 		error = -EBUSY;
 	else {
+        // 安全的取消连接
 		error = security_inode_unlink(dir, dentry);
 		if (!error) {
 			error = try_break_deleg(target, delegated_inode);

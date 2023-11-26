@@ -847,6 +847,8 @@ static struct bus_attribute bus_attr_uevent = __ATTR(uevent, 0200, NULL,
  * Once we have that, we register the bus with the kobject
  * infrastructure, then register the children subsystems it has:
  * the devices and drivers that belong to the subsystem.
+ *
+ * 注册驱动到总线
  */
 int bus_register(const struct bus_type *bus)
 {
@@ -932,6 +934,8 @@ EXPORT_SYMBOL_GPL(bus_register);
  *
  * Unregister the child subsystems and the bus itself.
  * Finally, we call bus_put() to release the refcount
+ *
+ * 从总线注销
  */
 void bus_unregister(const struct bus_type *bus)
 {

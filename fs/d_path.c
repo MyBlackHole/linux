@@ -261,6 +261,8 @@ static void get_fs_root_rcu(struct fs_struct *fs, struct path *root)
  * into the buffer, and may leave 0 bytes at the start.
  *
  * "buflen" should be positive.
+ *
+ * 获取 path 路径
  */
 char *d_path(const struct path *path, char *buf, int buflen)
 {
@@ -277,6 +279,16 @@ char *d_path(const struct path *path, char *buf, int buflen)
 	 * Some pseudo inodes are mountable.  When they are mounted
 	 * path->dentry == path->mnt->mnt_root.  In that case don't call d_dname
 	 * and instead have d_path return the mounted path.
+     *
+     * 我们有各种从未安装的合成文件系统。 在
+     * 这些文件系统目录项从不用于查找目的，并且
+     * 因此不需要进行哈希处理。 他们也不需要名字，直到
+     * 用户想要识别/proc/pid/fd/中的对象。 小黑客
+     * 下面允许我们根据需要为这些对象生成名称：
+     *
+     * 一些伪 inode 是可安装的。 当它们被安装时
+     * 路径->dentry == 路径->mnt->mnt_root。 在这种情况下，不要调用 d_dname
+     * 并让 d_path 返回安装路径。
 	 */
 	if (path->dentry->d_op && path->dentry->d_op->d_dname &&
 	    (!IS_ROOT(path->dentry) || path->dentry != path->mnt->mnt_root))

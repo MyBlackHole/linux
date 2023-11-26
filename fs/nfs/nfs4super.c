@@ -325,6 +325,7 @@ static void __exit exit_nfs_v4(void)
 	/* Not called in the _init(), conditionally loaded */
 	nfs4_pnfs_v3_ds_connect_unload();
 
+    // 注销 nfs v4 到 nfs_version
 	unregister_nfs_version(&nfs_v4);
 #ifdef CONFIG_NFS_V4_2
 	nfs4_xattr_cache_exit();

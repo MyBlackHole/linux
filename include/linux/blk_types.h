@@ -204,7 +204,12 @@ typedef unsigned int blk_qc_t;
  * stacking drivers)
  */
 struct bio {
+    /* 若一个req中包含多个bio，
+     * 这些bio通过bi_next组成单向链表，
+     * 链表以NULL结尾。（bio merge导致一个req中存在多个bio，如果没有merge，一个bio对应一个req） 
+     * */
 	struct bio		*bi_next;	/* request queue link */
+    /* bio 待操作的存储设备 */
 	struct block_device	*bi_bdev;
 	blk_opf_t		bi_opf;		/* bottom bits REQ_OP, top bits
 						 * req_flags.
@@ -396,6 +401,7 @@ enum req_flag_bits {
 #define REQ_PREFLUSH	(__force blk_opf_t)(1ULL << __REQ_PREFLUSH)
 #define REQ_RAHEAD	(__force blk_opf_t)(1ULL << __REQ_RAHEAD)
 #define REQ_BACKGROUND	(__force blk_opf_t)(1ULL << __REQ_BACKGROUND)
+// 非堵塞?
 #define REQ_NOWAIT	(__force blk_opf_t)(1ULL << __REQ_NOWAIT)
 #define REQ_POLLED	(__force blk_opf_t)(1ULL << __REQ_POLLED)
 #define REQ_ALLOC_CACHE	(__force blk_opf_t)(1ULL << __REQ_ALLOC_CACHE)

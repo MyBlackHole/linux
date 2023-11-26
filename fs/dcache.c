@@ -3186,6 +3186,7 @@ void __init vfs_caches_init(void)
 	inode_init();
 	files_init();
 	files_maxfiles_init();
+    // 初始化挂载系统
 	mnt_init();
 	bdev_cache_init();
 	chrdev_init();

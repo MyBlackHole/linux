@@ -859,6 +859,7 @@ struct nfsd4_compoundargs {
 
 	char *				tag;
 	u32				taglen;
+    // 小版本
 	u32				minorversion;
 	u32				client_opcnt;
 	u32				opcnt;

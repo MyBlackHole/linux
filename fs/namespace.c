@@ -72,7 +72,9 @@ static DEFINE_IDA(mnt_group_ida);
 /* Don't allow confusion with old 32bit mount ID */
 static atomic64_t mnt_id_ctr = ATOMIC64_INIT(1ULL << 32);
 
+// 全局挂载链表
 static struct hlist_head *mount_hashtable __ro_after_init;
+// 全局点挂载链表
 static struct hlist_head *mountpoint_hashtable __ro_after_init;
 static struct kmem_cache *mnt_cache __ro_after_init;
 static DECLARE_RWSEM(namespace_sem);
@@ -3299,6 +3301,7 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
 		mntput(mnt);
 		return PTR_ERR(mp);
 	}
+    // 记录 vfsmount 到命名空间目录树
 	error = do_add_mount(real_mount(mnt), mp, mountpoint, mnt_flags);
 	unlock_mount(mp);
 	if (error < 0)
@@ -3309,6 +3312,7 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
 /*
  * create a new mount for userspace and request it to be added into the
  * namespace's tree
+ * 为用户空间创建一个新的挂载并请求将其添加到命名空间的树
  */
 static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 			int mnt_flags, const char *name, void *data)
@@ -3321,6 +3325,7 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 	if (!fstype)
 		return -EINVAL;
 
+    // 查找已注册 file_system_type
 	type = get_fs_type(fstype);
 	if (!type)
 		return -ENODEV;
@@ -3359,6 +3364,7 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 	if (!err)
 		err = vfs_get_tree(fc);
 	if (!err)
+        // 是他
 		err = do_new_mount_fc(fc, path, mnt_flags);
 
 	put_fs_context(fc);
@@ -3626,6 +3632,7 @@ int path_mount(const char *dev_name, struct path *path,
 	if (flags & MS_NOUSER)
 		return -EINVAL;
 
+    // 验证挂载
 	ret = security_sb_mount(dev_name, path, type_page, flags, data_page);
 	if (ret)
 		return ret;
@@ -3684,6 +3691,7 @@ int path_mount(const char *dev_name, struct path *path,
 	if (flags & MS_MOVE)
 		return do_move_mount_old(path, dev_name);
 
+    // 进入挂载流程
 	return do_new_mount(path, type_page, sb_flags, mnt_flags, dev_name,
 			    data_page);
 }
@@ -5145,13 +5153,16 @@ static void __init init_mount_tree(void)
 	struct mnt_namespace *ns;
 	struct path root;
 
+    // 挂载根文件系统
 	mnt = vfs_kern_mount(&rootfs_fs_type, 0, "rootfs", NULL);
 	if (IS_ERR(mnt))
 		panic("Can't create rootfs");
 
+    // 分配用户命名空间
 	ns = alloc_mnt_ns(&init_user_ns, false);
 	if (IS_ERR(ns))
 		panic("Can't allocate initial namespace");
+    // 获取 mount
 	m = real_mount(mnt);
 	ns->root = m;
 	ns->nr_mounts = 1;
@@ -5167,18 +5178,22 @@ static void __init init_mount_tree(void)
 	set_fs_root(current->fs, &root);
 }
 
+// 挂载初始化
 void __init mnt_init(void)
 {
 	int err;
 
+    // 分配挂载缓存
 	mnt_cache = kmem_cache_create("mnt_cache", sizeof(struct mount),
 			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT, NULL);
 
+    // 分配全局挂载链表
 	mount_hashtable = alloc_large_system_hash("Mount-cache",
 				sizeof(struct hlist_head),
 				mhash_entries, 19,
 				HASH_ZERO,
 				&m_hash_shift, &m_hash_mask, 0, 0);
+    // 分配全局挂载点链表
 	mountpoint_hashtable = alloc_large_system_hash("Mountpoint-cache",
 				sizeof(struct hlist_head),
 				mphash_entries, 19,

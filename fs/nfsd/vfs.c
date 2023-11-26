@@ -1947,6 +1947,9 @@ out:
 /*
  * Unlink a file or directory
  * N.B. After this call fhp needs an fh_put
+ *
+ * 取消文件或目录的链接 
+ * 注意： 在此调用之后 fhp 需要一个 fh_put
  */
 __be32
 nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
@@ -2171,6 +2174,10 @@ static __be32 nfsd_buffered_readdir(struct file *file, struct svc_fh *fhp,
  *
  * Returns nfs_ok on success, otherwise an nfsstat code is
  * returned.
+ */
+/*
+从目录中读取条目。
+我们暂时忽略 NFSv3/4 验证器。
  */
 __be32
 nfsd_readdir(struct svc_rqst *rqstp, struct svc_fh *fhp, loff_t *offsetp, 

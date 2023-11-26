@@ -45,6 +45,7 @@
  */
 
 struct knfsd_fh {
+    // 文件句柄长度
 	unsigned int	fh_size;	/*
 					 * Points to the current size while
 					 * building a new file handle.
@@ -75,9 +76,14 @@ static inline ino_t u32_to_ino_t(__u32 uino)
  * This is the internal representation of an NFS handle used in knfsd.
  * pre_mtime/post_version will be used to support wcc_attr's in NFSv3.
  */
+/*
+这是 knfsd 中使用的 NFS 句柄的内部表示。
+pre_mtime/post_version 将用于支持 NFSv3 中的 wcc_attr。
+ */
 typedef struct svc_fh {
 	struct knfsd_fh		fh_handle;	/* FH data */
 	int			fh_maxsize;	/* max size for fh_handle */
+    // 
 	struct dentry *		fh_dentry;	/* validated dentry */
 	struct svc_export *	fh_export;	/* export pointer */
 
@@ -111,13 +117,26 @@ typedef struct svc_fh {
 #define HAS_FH_FLAG(c, f) ((c)->fh_flags & (f))
 
 enum nfsd_fsid {
+    // 4字节设备编号, 4字节文件系统根节点索引编号
 	FSID_DEV = 0,
+    // 如果用户在导出文件系统时设置了fsid
+    // 则是这种方式，每个文件系统用一个fsid表示
+    // 4字节fsid.
 	FSID_NUM,
+    // 这种方式已经废弃了
 	FSID_MAJOR_MINOR,
+    // 4字节设备编号(经过编码了)
+    // 4字节文件系统根节点索引编号
 	FSID_ENCODE_DEV,
+    // 4字节文件系统根设备索引节点
+    // 4字节UUID
 	FSID_UUID4_INUM,
+    // 8字节UUID
 	FSID_UUID8,
+    // 16字节UUID
 	FSID_UUID16,
+    // 8字节文件系统根节点编号
+    // 16字节UUID
 	FSID_UUID16_INUM,
 };
 

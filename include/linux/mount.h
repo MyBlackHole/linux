@@ -68,8 +68,11 @@ struct path;
 
 // 描述一个独立文件系统的挂在信息
 struct vfsmount {
+    // 被 mount 的文件系统根目录项
 	struct dentry *mnt_root;	/* root of the mounted tree */
+    // 指向被 mount 的文件系统 superblock
 	struct super_block *mnt_sb;	/* pointer to superblock */
+    // 此文件系统的挂载标志
 	int mnt_flags;
 	struct mnt_idmap *mnt_idmap;
 } __randomize_layout;

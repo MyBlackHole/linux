@@ -34,6 +34,9 @@ EXPORT_SYMBOL_GPL(init_binfmt_misc);
  * userns count is 1 for root user, 1 for init_uts_ns,
  * and 1 for... ?
  */
+/*
+ * 默认用户的命名空间
+ */
 struct user_namespace init_user_ns = {
 	.uid_map = {
 		.nr_extents = 1,

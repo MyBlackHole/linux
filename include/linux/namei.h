@@ -18,8 +18,11 @@ enum { MAX_NESTED_LINKS = 8 };
 enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT};
 
 /* pathwalk mode */
+// 最后分量是符号连接
 #define LOOKUP_FOLLOW		0x0001	/* follow links at the end */
+// 最后分量必须是目录
 #define LOOKUP_DIRECTORY	0x0002	/* require a directory */
+// 强制终端自动挂载
 #define LOOKUP_AUTOMOUNT	0x0004  /* force terminal automount */
 #define LOOKUP_EMPTY		0x4000	/* accept empty path [user_... only] */
 #define LOOKUP_DOWN		0x8000	/* follow mounts in the starting point */
@@ -29,7 +32,9 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT};
 #define LOOKUP_RCU		0x0040	/* RCU pathwalk mode; semi-internal */
 
 /* These tell filesystem methods that we are dealing with the final component... */
+// 尝试打开文件
 #define LOOKUP_OPEN		0x0100	/* ... in open */
+// 试图创建文件(文件不存在)
 #define LOOKUP_CREATE		0x0200	/* ... in object creation */
 #define LOOKUP_EXCL		0x0400	/* ... in exclusive creation */
 #define LOOKUP_RENAME_TARGET	0x0800	/* ... in destination of rename() */

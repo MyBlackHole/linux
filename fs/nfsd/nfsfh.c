@@ -150,6 +150,8 @@ static inline __be32 check_pseudo_root(struct svc_rqst *rqstp,
  * Use the given filehandle to look up the corresponding export and
  * dentry.  On success, the results are used to set fh_export and
  * fh_dentry.
+ * 使用给定的文件句柄查找相应的目录并导出
+ * 成功后，结果将用于设置 fh_export 和 fh_dentry。
  */
 static __be32 nfsd_set_fh_dentry(struct svc_rqst *rqstp, struct svc_fh *fhp)
 {
@@ -236,6 +238,7 @@ static __be32 nfsd_set_fh_dentry(struct svc_rqst *rqstp, struct svc_fh *fhp)
 
 	/*
 	 * Look up the dentry using the NFS file handle.
+     * 使用 NFS 文件句柄查找 dentry
 	 */
 	error = nfserr_stale;
 	if (rqstp->rq_vers > 2)
@@ -323,6 +326,34 @@ out:
  *
  * @access is formed from the NFSD_MAY_* constants defined in
  * fs/nfsd/vfs.h.
+ *
+ */
+/**
+fh_verify - 文件句柄查找和访问检查
+@rqstp：指向当前rpc请求的指针
+@fhp：要验证的文件句柄
+@type：文件句柄指向的对象的预期类型
+@access：对象所需的访问类型
+
+从在线文件句柄中查找 dentry，检查客户端的
+访问导出，并设置当前任务的凭据。
+
+无论 fh_verify() 成功还是失败，fh_put() 都应该是
+当调用者完成文件句柄时调用@fhp。
+
+fh_verify() 可以在给定的文件句柄上多次调用，例如
+例如，在处理 NFSv4 化合物时。 第一个电话会看起来
+使用在线文件句柄创建目录项。 后续调用将
+跳过查找并仅执行其他检查并可能进行更改
+当前任务的凭据。
+
+@type 使用 S_IF* 之一指定期望的对象类型
+include/linux/stat.h 中定义的常量。 调用者可以使用零
+表示不关心，或负整数表示
+它期望的东西不是给定类型的。
+
+@access 由 NFSD_MAY_* 中定义的常量组成
+fs/nfsd/vfs.h。
  */
 __be32
 fh_verify(struct svc_rqst *rqstp, struct svc_fh *fhp, umode_t type, int access)

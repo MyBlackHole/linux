@@ -483,6 +483,7 @@ nfsd3_proc_remove(struct svc_rqst *rqstp)
 				argp->name);
 
 	/* Unlink. -S_IFDIR means file must not be a directory */
+    /* 取消链接。 -S_IFDIR 表示文件不能是目录 */
 	fh_copy(&resp->fh, &argp->fh);
 	resp->status = nfsd_unlink(rqstp, &resp->fh, -S_IFDIR,
 				   argp->name, argp->len);

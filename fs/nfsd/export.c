@@ -1175,6 +1175,7 @@ rqst_exp_find(struct svc_rqst *rqstp, int fsid_type, u32 *fsidv)
 		goto gss;
 
 	/* First try the auth_unix client: */
+    /* 首先尝试 auth_unix 客户端: */
 	exp = exp_find(cd, rqstp->rq_client, fsid_type,
 		       fsidv, &rqstp->rq_chandle);
 	if (PTR_ERR(exp) == -ENOENT)

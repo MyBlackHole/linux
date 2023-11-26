@@ -419,6 +419,7 @@ static void __init kernfs_lock_init(void)
 	kernfs_mutex_init();
 }
 
+// 初始化内核文件系统缓存节点
 void __init kernfs_init(void)
 {
 	kernfs_node_cache = kmem_cache_create("kernfs_node_cache",

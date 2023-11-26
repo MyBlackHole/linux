@@ -61,14 +61,23 @@ struct export_stats {
 };
 
 struct svc_export {
+    // cache 缓存
 	struct cache_head	h;
 	struct auth_domain *	ex_client;
+    // 导出文件系统标志位
 	int			ex_flags;
+    // 导出的文件系统信息
+    // fsid=0, ex_fsid=0
 	int			ex_fsid;
+    // 文件系统根节点路径
 	struct path		ex_path;
+    // 匿名用户 id
 	kuid_t			ex_anon_uid;
+    // 匿名用户组 id
 	kgid_t			ex_anon_gid;
+    // 文件系统 uuid
 	unsigned char *		ex_uuid; /* 16 byte fsid */
+    // nfs4 文件系统位置
 	struct nfsd4_fs_locations ex_fslocs;
 	uint32_t		ex_nflavors;
 	struct exp_flavor_info	ex_flavors[MAX_SECINFO_LIST];
@@ -84,13 +93,22 @@ struct svc_export {
  * svc_export for a given client.  There can be several per export,
  * for the different fsid types.
  */
+/*
+“导出密钥”（expkey）将文件句柄片段映射到
+给定客户端的 svc_export。 每个导出可以有多个，
+对于不同的 fsid 类型。
+ */
 struct svc_expkey {
+    // cache 缓存
 	struct cache_head	h;
 
+    // 认证域
 	struct auth_domain *	ek_client;
+    // 导出的文件系统信息
 	int			ek_fsidtype;
 	u32			ek_fsid[6];
 
+    // 文件系统根节点的路径.
 	struct path		ek_path;
 	struct rcu_head		ek_rcu;
 };

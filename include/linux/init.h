@@ -305,6 +305,7 @@ extern struct module __this_module;
 #define arch_initcall_sync(fn)		__define_initcall(fn, 3s)
 #define subsys_initcall(fn)		__define_initcall(fn, 4)
 #define subsys_initcall_sync(fn)	__define_initcall(fn, 4s)
+// 系统内核添加一个功能函数
 #define fs_initcall(fn)			__define_initcall(fn, 5)
 #define fs_initcall_sync(fn)		__define_initcall(fn, 5s)
 #define rootfs_initcall(fn)		__define_initcall(fn, rootfs)

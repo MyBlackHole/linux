@@ -368,7 +368,6 @@ static ssize_t write_filehandle(struct file *file, char *buf, size_t size)
 
 /*
  * write_threads - Start NFSD, or report the current number of running threads
- * write_threads - 启动 NFSD，或者报告当前正在运行的线程数
  *
  * Input:
  *			buf:		ignored
@@ -394,6 +393,8 @@ static ssize_t write_filehandle(struct file *file, char *buf, size_t size)
  *			running NFSD threads;
  *			return code is the size in bytes of the string
  *	On error:	return code is zero or a negative errno value
+ *
+ * write_threads - 启动 NFSD，或者报告当前正在运行的线程数
  */
 static ssize_t write_threads(struct file *file, char *buf, size_t size)
 {

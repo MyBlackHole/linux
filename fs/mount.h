@@ -14,6 +14,7 @@ struct mnt_namespace {
 	u64			seq;	/* Sequence number to prevent loops */
 	wait_queue_head_t poll;
 	u64 event;
+	// 命名空间中的挂载数量
 	unsigned int		nr_mounts; /* # of mounts in the namespace */
 	unsigned int		pending_mounts;
 } __randomize_layout;
@@ -31,9 +32,13 @@ struct mountpoint {
 };
 
 struct mount {
+	// 用于连接到全局已挂载文件系统的链表
 	struct hlist_node mnt_hash;
+	// 指向此文件系统的挂载点所属的文件系统，即父文件系统
 	struct mount *mnt_parent;
+	// 指向此文件系统的挂载点的 dentry
 	struct dentry *mnt_mountpoint;
+	// 指向此文件系统的 vfsmount 实例
 	struct vfsmount mnt;
 	union {
 		struct rcu_head mnt_rcu;
@@ -45,19 +50,30 @@ struct mount {
 	int mnt_count;
 	int mnt_writers;
 #endif
+	// 挂载在此文件系统下的所有子文件系统
 	struct list_head mnt_mounts;	/* list of children, anchored here */
+	// 连接到此文件系统的父文件系统
 	struct list_head mnt_child;	/* and going through their mnt_child */
+	// 连接到 sb->s_mounts 的 mount 实例
 	struct list_head mnt_instance;	/* mount instance on sb->s_mounts */
+	// 挂载设备名，比如 /dev/sda1
 	const char *mnt_devname;	/* Name of device e.g. /dev/dsk/hda1 */
 	union {
 		struct rb_node mnt_node;	/* Under ns->mounts */
+		// 连接到进程命名空间
 		struct list_head mnt_list;
 	};
+	// 链接到一些文件系统专有的过期链表，如NFS
 	struct list_head mnt_expire;	/* link in fs-specific expiry list */
+	// 链接到共享挂载的循环链表中
 	struct list_head mnt_share;	/* circular list of shared mounts */
+	// 此文件系统的 slave mount 链表的表头
 	struct list_head mnt_slave_list;/* list of slave mounts */
+	// 连接到 master 文件系统的 mnt_slave_list
 	struct list_head mnt_slave;	/* slave list entry */
+	// 指向此文件系统的 master 文件系统
 	struct mount *mnt_master;	/* slave is on master->mnt_slave_list */
+	// 指向包含这个文件系统的进程的 namespace
 	struct mnt_namespace *mnt_ns;	/* containing namespace */
 	struct mountpoint *mnt_mp;	/* where is it mounted */
 	union {
@@ -79,6 +95,7 @@ struct mount {
 
 #define MNT_NS_INTERNAL ERR_PTR(-EINVAL) /* distinct from any mnt_namespace */
 
+// 通过 vfsmount 获取 mount
 static inline struct mount *real_mount(struct vfsmount *mnt)
 {
 	return container_of(mnt, struct mount, mnt);

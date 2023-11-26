@@ -284,6 +284,14 @@ static int propagate_one(struct mount *m, struct mountpoint *dest_mp)
  * @source_mnt: source mount.
  * @tree_list : list of heads of trees to be attached.
  */
+/*
+将“source_mnt”挂载到目标“dest_mnt”下
+目录项“dest_dentry”。 并将其传播到
+'dest_mnt' 的所有对等和从属挂载。
+将所有新安装链接到以
+source_mnt。 还使用 ->mnt_list 链接所有新安装
+指向 source_mnt 的 ->mnt_list
+ */
 int propagate_mnt(struct mount *dest_mnt, struct mountpoint *dest_mp,
 		    struct mount *source_mnt, struct hlist_head *tree_list)
 {
