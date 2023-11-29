@@ -403,6 +403,8 @@ EXPORT_SYMBOL_GPL(mnt_get_write_access);
  * it, and makes sure that writes are allowed (mount is read-write, filesystem
  * is not frozen) before returning success.  When the write operation is
  * finished, mnt_drop_write() must be called.  This is effectively a refcount.
+ *
+ * 对挂载点获取写访问权限
  */
 int mnt_want_write(struct vfsmount *m)
 {

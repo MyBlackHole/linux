@@ -644,6 +644,8 @@ out_negative:
 /**
  * fh_fill_pre_attrs - Fill in pre-op attributes
  * @fhp: file handle to be updated
+ * 
+ * 填充预备操作属性
  *
  */
 __be32 __must_check fh_fill_pre_attrs(struct svc_fh *fhp)

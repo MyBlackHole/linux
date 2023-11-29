@@ -158,6 +158,7 @@ __be32		nfsd_permission(struct svc_rqst *, struct svc_export *,
 
 void		nfsd_filp_close(struct file *fp);
 
+// nfs 获取挂载点(想)写权限
 static inline int fh_want_write(struct svc_fh *fh)
 {
 	int ret;
@@ -170,6 +171,7 @@ static inline int fh_want_write(struct svc_fh *fh)
 	return ret;
 }
 
+// nfs 取消(想)写权限
 static inline void fh_drop_write(struct svc_fh *fh)
 {
 	if (fh->fh_want_write) {

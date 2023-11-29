@@ -83,8 +83,9 @@ pre_mtime/post_version 将用于支持 NFSv3 中的 wcc_attr。
 typedef struct svc_fh {
 	struct knfsd_fh		fh_handle;	/* FH data */
 	int			fh_maxsize;	/* max size for fh_handle */
-    // 
+    // 验证目录项
 	struct dentry *		fh_dentry;	/* validated dentry */
+    // 导出路径
 	struct svc_export *	fh_export;	/* export pointer */
 
 	bool			fh_want_write;	/* remount protection taken */

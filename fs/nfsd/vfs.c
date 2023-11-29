@@ -356,6 +356,7 @@ commit_reset_write_verifier(struct nfsd_net *nn, struct svc_rqst *rqstp,
 
 /*
  * Commit metadata changes to stable storage.
+ * 将元数据更改提交到稳定存储。
  */
 static int
 commit_inode_metadata(struct inode *inode)
@@ -367,6 +368,7 @@ commit_inode_metadata(struct inode *inode)
 	return sync_inode_metadata(inode, 1);
 }
 
+// 提交元数据
 static int
 commit_metadata(struct svc_fh *fhp)
 {
@@ -1968,14 +1970,17 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 	if (err)
 		goto out;
 
+    // 想写
 	host_err = fh_want_write(fhp);
 	if (host_err)
 		goto out_nfserr;
 
 	dentry = fhp->fh_dentry;
 	dirp = d_inode(dentry);
+    // 上锁
 	inode_lock_nested(dirp, I_MUTEX_PARENT);
 
+    // 查询(在 dentry 里查询 fname)与申请目录项
 	rdentry = lookup_one_len(fname, dentry, flen);
 	host_err = PTR_ERR(rdentry);
 	if (IS_ERR(rdentry))
@@ -1986,11 +1991,14 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 		host_err = -ENOENT;
 		goto out_unlock;
 	}
+    // 申请 inode
 	rinode = d_inode(rdentry);
+    // 属性前置处理
 	err = fh_fill_pre_attrs(fhp);
 	if (err != nfs_ok)
 		goto out_unlock;
 
+    // 持有此 inode
 	ihold(rinode);
 	if (!type)
 		type = d_inode(rdentry)->i_mode & S_IFMT;
@@ -2004,6 +2012,7 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 		for (retries = 1;;) {
 			host_err = vfs_unlink(&nop_mnt_idmap, dirp, rdentry, NULL);
 			if (host_err != -EAGAIN || !retries--)
+                // 不等于重试或 retries = 0
 				break;
 			if (!nfsd_wait_for_delegreturn(rqstp, rinode))
 				break;
@@ -2011,15 +2020,20 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 	} else {
 		host_err = vfs_rmdir(&nop_mnt_idmap, dirp, rdentry);
 	}
+    // 属性后置处理
 	fh_fill_post_attrs(fhp);
 
+    // 解锁
 	inode_unlock(dirp);
 	if (!host_err)
 		host_err = commit_metadata(fhp);
+    // 释放目录项
 	dput(rdentry);
+    // 释放 inode
 	iput(rinode);    /* truncate the inode here */
 
 out_drop_write:
+    // 不想写了
 	fh_drop_write(fhp);
 out_nfserr:
 	if (host_err == -EBUSY) {
@@ -2036,6 +2050,7 @@ out_nfserr:
 out:
 	return err;
 out_unlock:
+    // 解锁
 	inode_unlock(dirp);
 	goto out_drop_write;
 }
