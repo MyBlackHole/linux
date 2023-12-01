@@ -253,6 +253,9 @@ _xfs_buf_alloc(
 	 * Set length and io_length to the same value initially.
 	 * I/O routines should use io_length, which will be the same in
 	 * most cases but may be reset (e.g. XFS recovery).
+     *
+     * 最初将 length 和 io_length 设置为相同的值
+     * I/O 例程应使用 io_length，在大多数情况下它是相同的，但可能会被重置（例如 XFS 恢复）
 	 */
 	error = xfs_buf_get_maps(bp, nmaps);
 	if (error)  {

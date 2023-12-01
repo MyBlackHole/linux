@@ -1250,6 +1250,8 @@ xfs_fs_warn_deprecated(
  * Set mount state from a mount option.
  *
  * NOTE: mp->m_super is NULL here!
+ *
+ * 自定义参数设置
  */
 static int
 xfs_fs_parse_param(
@@ -1499,6 +1501,7 @@ xfs_fs_fill_super(
 	struct super_block	*sb,
 	struct fs_context	*fc)
 {
+    // 去除 xfs 私有数据
 	struct xfs_mount	*mp = sb->s_fs_info;
 	struct inode		*root;
 	int			flags = 0, error;
@@ -2000,6 +2003,7 @@ static const struct fs_context_operations xfs_context_ops = {
  * mount option parsing having already been performed as this can be called from
  * fsopen() before any parameters have been set.
  */
+// 初始化文件系统上下文
 static int xfs_init_fs_context(
 	struct fs_context	*fc)
 {
@@ -2009,6 +2013,7 @@ static int xfs_init_fs_context(
 	if (!mp)
 		return -ENOMEM;
 
+	// 一系列初始化操作
 	spin_lock_init(&mp->m_sb_lock);
 	INIT_RADIX_TREE(&mp->m_perag_tree, GFP_ATOMIC);
 	spin_lock_init(&mp->m_perag_lock);
@@ -2033,6 +2038,7 @@ static int xfs_init_fs_context(
 
 	xfs_hooks_init(&mp->m_dir_update_hooks);
 
+	// 填充私有内容
 	fc->s_fs_info = mp;
 	fc->ops = &xfs_context_ops;
 

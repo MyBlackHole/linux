@@ -406,13 +406,26 @@ static inline bool is_sync_kiocb(struct kiocb *kiocb)
 // 地址空间操作
 struct address_space_operations {
     // 页面写操作 (page -> file)
+    // VM调用，用于将脏页写入后端存储
+    // 参数wbc->sync_mode显示是什么原因触发，'sync'或者'flush'（释放内存）
+    // 调用时PG_Dirty已经被清除，并且PageLocked已经设置
+    // writepage开始写入数据时需要设置PG_Writeback，并且写入结束时清除该标记。无论是同步还是异步写入，都要保证函数返回时page处于unlocked状态。
+    // 如果wbc->sync_mode是WB_SYNC_NONE（不等待），则writepage遇到困难时可以不那么努力的写入，而是返回AOP_WRITEPAGE_ACTIVATE，这样VM不会老是来写该page
 	int (*writepage)(struct page *page, struct writeback_control *wbc);
     // 页面读操作 (file -> page)
+    // VM调用，用于从后端存储读取数据
+    // 调用时，page处于lock状态，并且在读取结束时需要设置为unlock状态，并设置uptodate
+    // 如果readpage处理过程中需要unlock page，则unlcok之后需要返回AOP_TRUNCATED_PAGE，调用者将重新定位page并重新lock，成功之后会再次调用readpage
+    // 接口已有改变
 	int (*read_folio)(struct file *, struct folio *);
 
 	/* Write back some dirty pages from this mapping. */
     // 回写脏页
-	int (*writepages)(struct address_space *, struct writeback_control *);
+    // VM调用，将address space里所有Dirty的pages写入后端存储
+    // 如果wbc->sync_mode是WBC_SYNC_ALL，则writeback_control会选取一个范围的pages必须写入
+    // 如果是WBC_SYNC_NONE，则根据参数nr_to_write尽可能写入这么多pages
+    // 如果没有设置，则默认调用mpage_writepages()
+    int (*writepages)(struct address_space *, struct writeback_control *);
 
 	/* Mark a folio dirty.  Return true if this dirtied it */
     // 标记为脏页
@@ -431,7 +444,13 @@ struct address_space_operations {
 
 	/* Unfortunately this kludge is needed for FIBMAP. Don't use it */
     /* 不幸的是，FIBMAP 需要这个拼凑。 不要使用它*/
+	// VFS调用用于映射逻辑块的偏移和物理块编号
+	// 该方法由FIBMAP ioctl使用，并且是swap文件
+	// swap系统不直接进入文件系统，而是通过BMAP方式建立内存地址和文件的块映射，然后直接使用内存地址
 	sector_t (*bmap)(struct address_space *, sector_t);
+	// 如果设置了 PagePrivate，则当Page部分或者全部从address space里删除时调用该方法
+	// 通常是因为 address space 里执行了一个截断或者是失效所有数据
+	// 关联的私有信息需要更新，或者直接被释放（如果失效的offset为0的话，整个page将被释放）
 	void (*invalidate_folio) (struct folio *, size_t offset, size_t len);
 	bool (*release_folio)(struct folio *, gfp_t);
 	void (*free_folio)(struct folio *folio);
@@ -2194,26 +2213,46 @@ struct inode_operations {
 
 	int (*readlink) (struct dentry *, char __user *,int);
 
+    // 由open和create系统调用使用
+    // 入参inode为父目录的inode，入参dentry为新创建的，没有对应的inode（negative dentry）
+    // 底层文件系统需要调用d_instantiate()将dentry和新创建的inode进行关联
+    // 只有目录类型的inode才会调用该函数指针
 	int (*create) (struct mnt_idmap *, struct inode *,struct dentry *,
 		       umode_t, bool);
+    // link系统调用使用，用于创建硬链接
+    // 同样需要调用d_instantiate()来关联dentry和inode
 	int (*link) (struct dentry *,struct inode *,struct dentry *);
+    // unlink系统调用使用，用于删除一个inode关联的文件或目录
 	int (*unlink) (struct inode *,struct dentry *);
+    // symlink系统调用使用，用于创建一个软链接
 	int (*symlink) (struct mnt_idmap *, struct inode *,struct dentry *,
 			const char *);
+    // mkdir系统调用使用，用于创建一个子目录
 	int (*mkdir) (struct mnt_idmap *, struct inode *,struct dentry *,
 		      umode_t);
+    // rmdir系统调用使用，用于删除一个子目录
 	int (*rmdir) (struct inode *,struct dentry *);
+    // mknod系统调用使用，用于创建一个设备inode(char,block)或者一个named pipe (FIFO)或者一个socket
 	int (*mknod) (struct mnt_idmap *, struct inode *,struct dentry *,
 		      umode_t,dev_t);
+    // rename系统调用使用，用于改名
 	int (*rename) (struct mnt_idmap *, struct inode *, struct dentry *,
 			struct inode *, struct dentry *, unsigned int);
+    // VFS调用，用于设置文件的attr属性。它将被chmod等相关系统调用使用
 	int (*setattr) (struct mnt_idmap *, struct dentry *, struct iattr *);
+    // VFS调用，用于获取文件的attr属性。它将被stat等相关系统调用使用
 	int (*getattr) (struct mnt_idmap *, const struct path *,
 			struct kstat *, u32, unsigned int);
+    // VFS调用，用于列出给定文件的所有扩展属性。它将被listxattr系统调用使用
 	ssize_t (*listxattr) (struct dentry *, char *, size_t);
 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
 		      u64 len);
+    // VFS调用，用于更新inode的时间（如atime）或者i_version字段。如果该函数没有指定，则VFS将自己更新inode并调用mark_inode_dirty_sync
 	int (*update_time)(struct inode *, int);
+    // 该可选的函数，用于性能优化
+    // 它将lookup、可能的create操作以及open操作在一个接口里完成
+    // 只有negative dentry才会调用该函数
+    // 在dentry cache里的positive dentry直接通过f_op->open()函数来打开文件即可
 	int (*atomic_open)(struct inode *, struct dentry *,
 			   struct file *, unsigned open_flag,
 			   umode_t create_mode);
@@ -2276,24 +2315,44 @@ enum freeze_holder {
 };
 
 struct super_operations {
+    // 被inode_alloc()函数调用用于分配inode内存并进行inode结构初始化
+    // 如果函数未定义，则简单的分配一个'struct inode'
+    // 通常alloc_inode用于底层文件系统分配一个包含inode结构体的更大的结构体（特定的inode结构，如：fuse_inode）
    	struct inode *(*alloc_inode)(struct super_block *sb);
+    // 被destroy_inode()函数调用用于释放inode相关申请的资源
+    // 只有alloc_inode定义了才需要定义destroy_inode，并且释放的也是alloc_inode里申请的相关资源
 	void (*destroy_inode)(struct inode *);
 	void (*free_inode)(struct inode *);
 
+    // 由VFS调用标记inode dirty（元数据信息被修改过并且没有同步到磁盘或服务器）
    	void (*dirty_inode) (struct inode *, int flags);
+    // 由VFS调用用于将inode同步到磁盘。第二个参数用于标识是否同步写盘
 	int (*write_inode) (struct inode *, struct writeback_control *wbc);
+    // VFS在当inode的引用计数减为0时，调用该函数
+    // 调用者已经持有了inode->i_lock
+    // 该函数返回0，则inode将可能被丢到LRU链表里，返回1则会由调用者继续调用evict_inode和destroy_inode
+    // 如果文件系统不需要缓存inode，则该函数可以设置为NULL或者generic_delete_inode（函数里直接return 1）
 	int (*drop_inode) (struct inode *);
 	void (*evict_inode) (struct inode *);
+    // VFS想要释放sb时调用（如umount操作）
+    // 调用者已经持有sb的lock
 	void (*put_super) (struct super_block *);
+    // VFS想要把该文件系统所有的脏数据刷盘时调用
 	int (*sync_fs)(struct super_block *sb, int wait);
 	int (*freeze_super) (struct super_block *, enum freeze_holder who);
+    // 目前只有LVM使用。用于冻结文件系统，不能进行写入操作
 	int (*freeze_fs) (struct super_block *);
 	int (*thaw_super) (struct super_block *, enum freeze_holder who);
+    // 解冻
 	int (*unfreeze_fs) (struct super_block *);
+    // 用于获取文件系统的统计信息
 	int (*statfs) (struct dentry *, struct kstatfs *);
+    // 用于重新挂载文件系统，调用者持有kernel lock
 	int (*remount_fs) (struct super_block *, int *, char *);
+    // 用于umount文件系统
 	void (*umount_begin) (struct super_block *);
 
+    // 用于/proc/mounts里显示文件系统的mount选项
 	int (*show_options)(struct seq_file *, struct dentry *);
 	int (*show_devname)(struct seq_file *, struct dentry *);
 	int (*show_path)(struct seq_file *, struct dentry *);

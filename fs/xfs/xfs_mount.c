@@ -827,6 +827,8 @@ xfs_mountfs(
 	 * Log's mount-time initialization. The first part of recovery can place
 	 * some items on the AIL, to be handled when recovery is finished or
 	 * cancelled.
+     * 日志的安装时初始化。 恢复的第一部分可以放置
+     * AIL 上的某些项目需要在恢复完成后处理，或者取消。
 	 */
 	error = xfs_log_mount(mp, mp->m_logdev_targp,
 			      XFS_FSB_TO_DADDR(mp, sbp->sb_logstart),
