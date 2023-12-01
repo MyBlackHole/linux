@@ -1409,6 +1409,8 @@ svc_process_common(struct svc_rqst *rqstp)
 		svc_reserve_auth(rqstp, procp->pc_xdrressize<<2);
 
 	/* Call the function that processes the request. */
+    /* 调用处理请求的函数 */
+    // 到业务函数了
 	rc = process.dispatch(rqstp);
 	if (procp->pc_release)
 		procp->pc_release(rqstp);

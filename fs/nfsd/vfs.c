@@ -1950,7 +1950,7 @@ out:
  * Unlink a file or directory
  * N.B. After this call fhp needs an fh_put
  *
- * 取消文件或目录的链接 
+ * 取消文件或目录的链接
  * 注意： 在此调用之后 fhp 需要一个 fh_put
  */
 __be32
@@ -1998,7 +1998,7 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 	if (err != nfs_ok)
 		goto out_unlock;
 
-    // 持有此 inode
+	// 持有此 inode
 	ihold(rinode);
 	if (!type)
 		type = d_inode(rdentry)->i_mode & S_IFMT;

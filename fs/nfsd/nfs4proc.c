@@ -2662,6 +2662,8 @@ check_if_stalefh_allowed(struct nfsd4_compoundargs *args)
 
 /*
  * COMPOUND call.
+ *
+ * nfs4 复合调用
  */
 static __be32
 nfsd4_proc_compound(struct svc_rqst *rqstp)
@@ -2773,7 +2775,7 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 
 		if (op->opdesc->op_get_currentstateid)
 			op->opdesc->op_get_currentstateid(cstate, &op->u);
-        // 执行相应的操作 (不如删除 nfsd4_remove 等)
+        // 执行相应的操作 (例如删除 nfsd4_remove 等)
 		op->status = op->opdesc->op_func(rqstp, cstate, &op->u);
 
 		/* Only from SEQUENCE */

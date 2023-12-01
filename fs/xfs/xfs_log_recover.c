@@ -2982,6 +2982,13 @@ xlog_valid_rec_header(
  * the physical log separately.  The pass parameter is passed through
  * to the routines called to process the data and is not looked at
  * here.
+ *
+ * 从尾到头读取日志，并对找到的日志记录进行处理。
+ * 处理尾部和头部同周期的两种情况
+ * 以及日志的活动部分围绕末尾的位置
+ * 单独的物理日志。 pass参数是通过
+ * 调用来处理数据的例程并且不被查看
+ * 这里。
  */
 STATIC int
 xlog_do_recovery_pass(

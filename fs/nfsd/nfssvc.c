@@ -993,6 +993,7 @@ int nfsd_dispatch(struct svc_rqst *rqstp)
 	 */
 	start = xdr_stream_pos(&rqstp->rq_arg_stream);
 	len = xdr_stream_remaining(&rqstp->rq_arg_stream);
+    // 解码
 	if (!proc->pc_decode(rqstp, &rqstp->rq_arg_stream))
 		goto out_decode_err;
 
@@ -1016,10 +1017,13 @@ int nfsd_dispatch(struct svc_rqst *rqstp)
 	}
 
 	nfs_reply = xdr_inline_decode(&rqstp->rq_res_stream, 0);
+    // 执行不同版本的 nfs compound (例如: nfsd4_proc_compound 聚合处理调用)
+    // 进入 nfs 对应版本处理函数业务
 	*statp = proc->pc_func(rqstp);
 	if (test_bit(RQ_DROPME, &rqstp->rq_flags))
 		goto out_update_drop;
 
+    // 编码
 	if (!proc->pc_encode(rqstp, &rqstp->rq_res_stream))
 		goto out_encode_err;
 
