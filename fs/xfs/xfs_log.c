@@ -630,6 +630,8 @@ xlog_state_release_iclog(
  * num_bblocks	- Number of BBSIZE blocks in on-disk log
  *
  * Return error or zero.
+ *
+ * 挂载日志文件系统
  */
 int
 xfs_log_mount(

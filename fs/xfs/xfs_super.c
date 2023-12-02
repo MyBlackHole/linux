@@ -1991,6 +1991,7 @@ xfs_fs_free(
 		xfs_mount_free(mp);
 }
 
+// 文件系统上下文操作
 static const struct fs_context_operations xfs_context_ops = {
 	.parse_param = xfs_fs_parse_param,
 	.get_tree    = xfs_fs_get_tree,

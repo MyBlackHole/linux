@@ -319,6 +319,7 @@ char *dynamic_dname(char *, int, const char *, ...);
 
 extern char *__d_path(const struct path *, const struct path *, char *, int);
 extern char *d_absolute_path(const struct path *, char *, int);
+// 获取 path 的绝对路径(是返回值，不是第二个 char *)
 extern char *d_path(const struct path *, char *, int);
 extern char *dentry_path_raw(const struct dentry *, char *, int);
 extern char *dentry_path(const struct dentry *, char *, int);

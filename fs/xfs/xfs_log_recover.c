@@ -3305,6 +3305,18 @@ xlog_do_recovery_pass(
  * The table of items which have cancel records in the log is allocated
  * and freed at this level, since only here do we know when all of
  * the log recovery has been completed.
+ *
+ * 进行日志的恢复。 
+ * 实际上分两个阶段进行此操作。
+ * 为了实现该功能，需要两次传递取消写入日志的记录。 
+ * 第一遍确定那些已被取消的事情
+ * 第二遍正常重播日志项目
+ * 除了那些已被取消重播和取消的处理
+ * 发生在日志项类型特定例程中。
+ *                                                                      
+ * 分配日志中有取消记录的项目表并在这个级别上释放，
+ * 因为只有在这里我们才知道什么时候所有日志恢复已完成。
+ *
  */
 STATIC int
 xlog_do_log_recovery(
@@ -3324,6 +3336,8 @@ xlog_do_log_recovery(
 	if (error)
 		return error;
 
+    // 第一阶段
+    // 确认需要取消的
 	error = xlog_do_recovery_pass(log, head_blk, tail_blk,
 				      XLOG_RECOVER_PASS1, NULL);
 	if (error != 0)
@@ -3333,6 +3347,8 @@ xlog_do_log_recovery(
 	 * Then do a second pass to actually recover the items in the log.
 	 * When it is complete free the table of buf cancel items.
 	 */
+    // 然后执行第二遍以实际恢复日志中的项目。
+    // 完成后，释放 buf 取消项目表。
 	error = xlog_do_recovery_pass(log, head_blk, tail_blk,
 				      XLOG_RECOVER_PASS2, NULL);
 	if (!error)
@@ -3344,6 +3360,8 @@ out_cancel:
 
 /*
  * Do the actual recovery
+ *
+ * 真正开始恢复
  */
 STATIC int
 xlog_do_recover(
@@ -3360,6 +3378,8 @@ xlog_do_recover(
 
 	/*
 	 * First replay the images in the log.
+     *
+     * 重放日志
 	 */
 	error = xlog_do_log_recovery(log, head_blk, tail_blk);
 	if (error)
@@ -3419,6 +3439,9 @@ xlog_do_recover(
  * Perform recovery and re-initialize some log variables in xlog_find_tail.
  *
  * Return error or zero.
+ *
+ * 执行恢复并重新初始化xlog_find_tail中的一些日志变量。
+ * 返回错误或零。
  */
 int
 xlog_recover(
@@ -3428,6 +3451,7 @@ xlog_recover(
 	int		error;
 
 	/* find the tail of the log */
+    // 找到头部尾部
 	error = xlog_find_tail(log, &head_blk, &tail_blk);
 	if (error)
 		return error;

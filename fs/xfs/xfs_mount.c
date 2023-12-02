@@ -637,6 +637,16 @@ xfs_agbtree_compute_maxlevels(
  *	- allocate inode hash table for fs
  *	- init directory manager
  *	- perform recovery and init the log manager
+ *
+ *  此函数在文件系统的初始安装上执行以下操作：
+ *  - 从磁盘读取超级块并初始化挂载结构
+ *  - 如果我们是 32 位内核，请对超级块进行大小检查
+ *  - 所以我们不挂载太字节的文件系统
+ *  - 初始化挂载结构体实时字段
+ *  - 为fs分配inode哈希表
+ *  - 初始化目录管理器
+ *  - 执行恢复并初始化日志管理器
+ *
  */
 int
 xfs_mountfs(
