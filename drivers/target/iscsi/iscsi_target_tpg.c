@@ -450,6 +450,7 @@ static bool iscsit_tpg_check_network_portal(
 	return match;
 }
 
+// target 网络添加入口
 struct iscsi_tpg_np *iscsit_tpg_add_network_portal(
 	struct iscsi_portal_group *tpg,
 	struct sockaddr_storage *sockaddr,

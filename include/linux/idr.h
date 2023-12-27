@@ -16,6 +16,7 @@
 #include <linux/gfp.h>
 #include <linux/percpu.h>
 
+// 基数树结构体
 struct idr {
 	struct radix_tree_root	idr_rt;
 	unsigned int		idr_base;

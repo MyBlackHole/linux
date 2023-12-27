@@ -9,6 +9,7 @@
 #define SOL_SOCKET	1
 
 #define SO_DEBUG	1
+// socket 可复用重复绑定 (存在刚释放 socket 还没释放时可以设置此参数)
 #define SO_REUSEADDR	2
 #define SO_TYPE		3
 #define SO_ERROR	4

@@ -478,6 +478,7 @@ static struct config_group *target_fabric_make_np(
 		return ERR_PTR(-ENOSYS);
 	}
 
+    // 执行对应目标构造操作集 fabric_make_np, 例如 iSCSI 是 lio_target_call_addnptotpg
 	se_tpg_np = tf->tf_ops->fabric_make_np(se_tpg, group, name);
 	if (!se_tpg_np || IS_ERR(se_tpg_np))
 		return ERR_PTR(-EINVAL);
@@ -1152,6 +1153,7 @@ static struct configfs_group_operations target_fabric_wwn_group_ops = {
 TF_CIT_SETUP_DRV(wwn, NULL, &target_fabric_wwn_group_ops);
 TF_CIT_SETUP_DRV(discovery, NULL, NULL);
 
+// 初始化所有构造器 target_fabric_configfs 信息
 int target_fabric_setup_cits(struct target_fabric_configfs *tf)
 {
 	int ret;

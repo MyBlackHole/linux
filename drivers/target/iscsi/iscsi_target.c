@@ -53,6 +53,7 @@ static struct idr tiqn_idr;
 DEFINE_IDA(sess_ida);
 struct mutex auth_id_lock;
 
+// 全局 iscsi
 struct iscsit_global *iscsit_global;
 
 struct kmem_cache *lio_qr_cache;
@@ -371,6 +372,7 @@ struct iscsi_np *iscsit_add_np(
 		return ERR_PTR(ret);
 	}
 
+    // 创建内核线程异步运行登陆操作
 	np->np_thread = kthread_run(iscsi_target_login_thread, np, "iscsi_np");
 	if (IS_ERR(np->np_thread)) {
 		pr_err("Unable to create kthread: iscsi_np\n");
@@ -658,6 +660,7 @@ static enum target_prot_op iscsit_get_sup_prot_ops(struct iscsit_conn *conn)
 	return TARGET_PROT_NORMAL;
 }
 
+// iscsi 传输操作集
 static struct iscsit_transport iscsi_target_transport = {
 	.name			= "iSCSI/TCP",
 	.transport_type		= ISCSI_TCP,
@@ -679,6 +682,8 @@ static struct iscsit_transport iscsi_target_transport = {
 	.iscsit_get_sup_prot_ops = iscsit_get_sup_prot_ops,
 };
 
+// iscsi target 交接 mod
+// iscsi target 的开始
 static int __init iscsi_target_init_module(void)
 {
 	int ret = 0, size;
@@ -690,8 +695,10 @@ static int __init iscsi_target_init_module(void)
 
 	spin_lock_init(&iscsit_global->ts_bitmap_lock);
 	mutex_init(&auth_id_lock);
+    // 初始化基数树
 	idr_init(&tiqn_idr);
 
+    // 注册到 target 架构的模板全局配置链表
 	ret = target_register_template(&iscsi_ops);
 	if (ret)
 		goto out;
@@ -707,6 +714,7 @@ static int __init iscsi_target_init_module(void)
 	}
 	cpumask_setall(iscsit_global->allowed_cpumask);
 
+    // 分配请求队列缓存
 	lio_qr_cache = kmem_cache_create("lio_qr_cache",
 			sizeof(struct iscsi_queue_req),
 			__alignof__(struct iscsi_queue_req), 0, NULL);
@@ -743,6 +751,7 @@ static int __init iscsi_target_init_module(void)
 		goto ooo_out;
 	}
 
+    // 注册传输操作到全局链表
 	iscsit_register_transport(&iscsi_target_transport);
 
 	if (iscsit_load_discovery_tpg() < 0)
@@ -772,6 +781,7 @@ out:
 	return -ENOMEM;
 }
 
+// iscsi target 的结束
 static void __exit iscsi_target_cleanup_module(void)
 {
 	iscsit_release_discovery_tpg();

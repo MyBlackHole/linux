@@ -47,6 +47,9 @@ bool kthread_is_per_cpu(struct task_struct *k);
  *
  * Description: Convenient wrapper for kthread_create() followed by
  * wake_up_process().  Returns the kthread or ERR_PTR(-ENOMEM).
+ *
+ * 创建线程
+ * 唤醒线程
  */
 #define kthread_run(threadfn, data, namefmt, ...)			   \
 ({									   \

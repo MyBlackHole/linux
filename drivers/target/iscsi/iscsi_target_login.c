@@ -1194,6 +1194,7 @@ old_sess_out:
 	iscsit_free_conn(conn);
 }
 
+// 目标登陆线程
 static int __iscsi_target_login_thread(struct iscsi_np *np)
 {
 	u8 *buffer, zero_tsih = 0;

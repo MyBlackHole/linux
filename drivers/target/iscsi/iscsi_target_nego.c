@@ -1022,6 +1022,8 @@ static int iscsi_target_handle_csg_one(struct iscsit_conn *conn, struct iscsi_lo
  *  1 = Login successful
  * -1 = Login failed
  *  0 = More PDU exchanges required
+ *
+ *  登陆 target 处理
  */
 static int iscsi_target_do_login(struct iscsit_conn *conn, struct iscsi_login *login)
 {
@@ -1106,6 +1108,8 @@ static void iscsi_initiatorname_tolower(
 
 /*
  * Processes the first Login Request..
+ *
+ * 处理登陆请求
  */
 int iscsi_target_locate_portal(
 	struct iscsi_np *np,
@@ -1122,6 +1126,7 @@ int iscsi_target_locate_portal(
 	u32 payload_length, queue_depth = 0;
 	int sessiontype = 0, ret = 0, tag_num, tag_size;
 
+    // 初始化 work
 	INIT_DELAYED_WORK(&conn->login_work, iscsi_target_do_login_rx);
 	iscsi_target_set_sock_callbacks(conn);
 

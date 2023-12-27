@@ -893,7 +893,9 @@ struct iscsit_global {
 	spinlock_t		ts_bitmap_lock;
 	cpumask_var_t		allowed_cpumask;
 	/* Used for iSCSI discovery session authentication */
+    // 发现会话校验域
 	struct iscsi_node_acl	discovery_acl;
+    // 入口组
 	struct iscsi_portal_group	*discovery_tpg;
 };
 

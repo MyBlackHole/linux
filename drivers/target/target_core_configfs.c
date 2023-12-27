@@ -66,6 +66,7 @@ static void target_core_setup_##_name##_cit(struct target_backend *tb)	\
 
 extern struct t10_alua_lu_gp *default_lu_gp;
 
+// 全局操作集合配置链表
 static LIST_HEAD(g_tf_list);
 static DEFINE_MUTEX(g_tf_lock);
 
@@ -438,6 +439,7 @@ static int target_fabric_tf_ops_check(const struct target_core_fabric_ops *tfo)
 	return 0;
 }
 
+// 检查为空的设置默认操作函数
 static void target_set_default_ops(struct target_core_fabric_ops *tfo)
 {
 	if (!tfo->tpg_check_demo_mode)
@@ -465,12 +467,14 @@ static void target_set_default_ops(struct target_core_fabric_ops *tfo)
 		tfo->get_cmd_state = target_default_get_cmd_state;
 }
 
+// 注册 target 构造操作集合
 int target_register_template(const struct target_core_fabric_ops *fo)
 {
 	struct target_core_fabric_ops *tfo;
 	struct target_fabric_configfs *tf;
 	int ret;
 
+    // 校验
 	ret = target_fabric_tf_ops_check(fo);
 	if (ret)
 		return ret;
@@ -487,11 +491,13 @@ int target_register_template(const struct target_core_fabric_ops *fo)
 		return -ENOMEM;
 	}
 	memcpy(tfo, fo, sizeof(*tfo));
+    // 设置为空的默认操作集合
 	target_set_default_ops(tfo);
 
 	INIT_LIST_HEAD(&tf->tf_list);
 	atomic_set(&tf->tf_access_cnt, 0);
 	tf->tf_ops = tfo;
+    // 初始化构造器
 	target_fabric_setup_cits(tf);
 
 	mutex_lock(&g_tf_lock);
@@ -3725,6 +3731,8 @@ static int __init target_core_init_configfs(void)
 
 	/*
 	 * Register the target_core_mod subsystem with configfs.
+     *
+     * 在 configfs 注册 target 子系统
 	 */
 	ret = configfs_register_subsystem(subsys);
 	if (ret < 0) {

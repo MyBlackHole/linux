@@ -1242,6 +1242,7 @@ extern int send_sigurg(struct fown_struct *fown);
  *	Umount options
  */
 
+// 尝试强制卸载
 #define MNT_FORCE	0x00000001	/* Attempt to forcibily umount */
 #define MNT_DETACH	0x00000002	/* Just detach from the tree */
 #define MNT_EXPIRE	0x00000004	/* Mark for expiry */

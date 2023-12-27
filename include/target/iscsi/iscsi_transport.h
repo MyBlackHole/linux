@@ -10,6 +10,7 @@ struct iscsit_transport {
 	bool rdma_shutdown;
 	int priv_size;
 	struct module *owner;
+    // 用于挂载到全局链表
 	struct list_head t_node;
 	int (*iscsit_setup_np)(struct iscsi_np *, struct sockaddr_storage *);
 	int (*iscsit_accept_np)(struct iscsi_np *, struct iscsit_conn *);

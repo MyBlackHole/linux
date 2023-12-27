@@ -1448,6 +1448,7 @@ struct block_device_operations {
 			unsigned cmd, unsigned long arg);
 	int (*compat_ioctl)(struct block_device *bdev, blk_mode_t mode,
 			unsigned cmd, unsigned long arg);
+    // 检查磁盘是否有修改
 	unsigned int (*check_events) (struct gendisk *disk,
 				      unsigned int clearing);
 	void (*unlock_native_capacity) (struct gendisk *);
@@ -1462,6 +1463,7 @@ struct block_device_operations {
 	/* returns the length of the identifier or a negative errno: */
 	int (*get_unique_id)(struct gendisk *disk, u8 id[16],
 			enum blk_unique_id id_type);
+    // 指向拥有这个结构的模块，常取值为THIS_MODULE
 	struct module *owner;
 	const struct pr_ops *pr_ops;
 
