@@ -137,8 +137,10 @@ static ssize_t lio_target_np_cxgbit_store(struct config_item *item,
 	return lio_target_np_driver_store(item, page, count,
 					  ISCSI_CXGBIT, "cxgbit");
 }
+// 会把 lio_target_np_cxgbit_store, lio_target_np_cxgbit_show 创建 configfs_attribute 设置到 show 与 store 函数
 CONFIGFS_ATTR(lio_target_np_, cxgbit);
 
+// 组合 cxgbit\isert 到一个属性组上
 static struct configfs_attribute *lio_target_portal_attrs[] = {
 	&lio_target_np_attr_iser,
 	&lio_target_np_attr_cxgbit,

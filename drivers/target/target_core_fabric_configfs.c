@@ -937,10 +937,13 @@ static struct config_group *target_fabric_make_tpg(
 		return ERR_PTR(-ENOSYS);
 	}
 
+    // iscsi: lio_target_tiqn_addtpg
+    // 构建 tgp_x /sys/kernel/config/target/iscsi/%iqn/tpg_x/
 	se_tpg = tf->tf_ops->fabric_make_tpg(wwn, name);
 	if (!se_tpg || IS_ERR(se_tpg))
 		return ERR_PTR(-EINVAL);
 
+    // 构建 tgp_x /sys/kernel/config/target/iscsi/%iqn/tpg_x/****
 	config_group_init_type_name(&se_tpg->tpg_group, name,
 			&tf->tf_tpg_base_cit);
 

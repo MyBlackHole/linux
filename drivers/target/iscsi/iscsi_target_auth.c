@@ -568,6 +568,7 @@ out:
 	return auth_ret;
 }
 
+// chap 校验主例程
 u32 chap_main_loop(
 	struct iscsit_conn *conn,
 	struct iscsi_node_auth *auth,
@@ -586,6 +587,7 @@ u32 chap_main_loop(
 		return 0;
 	} else if (chap->chap_state == CHAP_STAGE_SERVER_AIC) {
 		convert_null_to_semi(in_text, *in_len);
+        // 比较计算 hash
 		if (chap_server_compute_hash(conn, auth, in_text, out_text,
 				out_len) < 0) {
 			chap_close(conn);

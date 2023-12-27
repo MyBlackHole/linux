@@ -145,6 +145,7 @@ static u32 iscsi_handle_authentication(
 	if (strstr("None", authtype))
 		return 1;
 	else if (strstr("CHAP", authtype))
+        // chap 校验
 		return chap_main_loop(conn, auth, in_buf, out_buf,
 				&in_length, out_length);
 	/* SRP, SPKM1, SPKM2 and KRB5 are unsupported */
@@ -749,6 +750,7 @@ static int iscsi_target_check_for_existing_instances(
 				login->initial_exp_statsn);
 }
 
+// 目标-校验
 static int iscsi_target_do_authentication(
 	struct iscsit_conn *conn,
 	struct iscsi_login *login)
@@ -767,6 +769,7 @@ static int iscsi_target_do_authentication(
 	if (!param)
 		return -1;
 
+    // 进入校验逻辑
 	authret = iscsi_handle_authentication(
 			conn,
 			login->req_buf,
@@ -863,6 +866,7 @@ static int iscsi_target_handle_csg_zero(
 	if (!param)
 		return -1;
 
+    // 解码数据
 	ret = iscsi_decode_text_input(
 			PHASE_SECURITY|PHASE_DECLARATIVE,
 			SENDER_INITIATOR|SENDER_RECEIVER,
@@ -939,6 +943,7 @@ static int iscsi_target_handle_csg_zero(
 
 	return 0;
 do_auth:
+    // 登陆检验逻辑例程
 	return iscsi_target_do_authentication(conn, login);
 }
 
@@ -1024,6 +1029,7 @@ static int iscsi_target_handle_csg_one(struct iscsit_conn *conn, struct iscsi_lo
  *  0 = More PDU exchanges required
  *
  *  登陆 target 处理
+ *
  */
 static int iscsi_target_do_login(struct iscsit_conn *conn, struct iscsi_login *login)
 {
@@ -1044,6 +1050,7 @@ static int iscsi_target_do_login(struct iscsit_conn *conn, struct iscsi_login *l
 
 		switch (ISCSI_LOGIN_CURRENT_STAGE(login_req->flags)) {
 		case 0:
+            // 登陆
 			login_rsp->flags &= ~ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK;
 			if (iscsi_target_handle_csg_zero(conn, login) < 0)
 				return -1;
