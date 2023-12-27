@@ -1602,8 +1602,10 @@ static DECLARE_TRANSPORT_CLASS(iscsi_connection_class,
 static struct sock *nls;
 static DEFINE_MUTEX(rx_queue_mutex);
 
+// 全局会话链表
 static LIST_HEAD(sesslist);
 static DEFINE_SPINLOCK(sesslock);
+// 全局链接链表
 static LIST_HEAD(connlist);
 static DEFINE_SPINLOCK(connlock);
 
@@ -2089,6 +2091,7 @@ int iscsi_add_session(struct iscsi_cls_session *session, unsigned int target_id)
 	session->target_state = ISCSI_SESSION_TARGET_ALLOCATED;
 	spin_unlock_irqrestore(&session->lock, flags);
 
+    // /sys/class/iscsi_session/session7 名称拼接
 	dev_set_name(&session->dev, "session%u", session->sid);
 	err = device_add(&session->dev);
 	if (err) {
@@ -2104,6 +2107,7 @@ int iscsi_add_session(struct iscsi_cls_session *session, unsigned int target_id)
 	}
 
 	spin_lock_irqsave(&sesslock, flags);
+    // 挂载上会话链表
 	list_add(&session->sess_list, &sesslist);
 	spin_unlock_irqrestore(&sesslock, flags);
 
@@ -2453,6 +2457,7 @@ iscsi_alloc_conn(struct iscsi_cls_session *session, int dd_size, uint32_t cid)
 	if (!get_device(&session->dev))
 		goto free_conn;
 
+    // /sys/class/iscsi_connection/connection7:0 是这里拼接名称？
 	dev_set_name(&conn->dev, "connection%d:%u", session->sid, cid);
 	device_initialize(&conn->dev);
 	conn->dev.parent = &session->dev;
@@ -2553,6 +2558,7 @@ iscsi_if_transport_lookup(struct iscsi_transport *tt)
 	return NULL;
 }
 
+// 广播消息
 static int
 iscsi_multicast_skb(struct sk_buff *skb, uint32_t group, gfp_t gfp)
 {
@@ -2879,6 +2885,8 @@ iscsi_if_get_stats(struct iscsi_transport *transport, struct nlmsghdr *nlh)
  * iscsi_session_event - send session destr. completion event
  * @session: iscsi class session
  * @event: type of event
+ *
+ * 发送会话命令, 完成事件
  */
 int iscsi_session_event(struct iscsi_cls_session *session,
 			enum iscsi_uevent_e event)
@@ -2895,6 +2903,7 @@ int iscsi_session_event(struct iscsi_cls_session *session,
 		return -EINVAL;
 	shost = iscsi_session_to_shost(session);
 
+    // 分配 tcp 包
 	skb = alloc_skb(len, GFP_KERNEL);
 	if (!skb) {
 		iscsi_cls_session_printk(KERN_ERR, session,
@@ -2903,6 +2912,7 @@ int iscsi_session_event(struct iscsi_cls_session *session,
 		return -ENOMEM;
 	}
 
+    // 消息构建
 	nlh = __nlmsg_put(skb, 0, 0, 0, (len - sizeof(*nlh)), 0);
 	ev = nlmsg_data(nlh);
 	ev->transport_handle = iscsi_handle(session->transport);
@@ -2955,6 +2965,7 @@ iscsi_if_create_session(struct iscsi_internal *priv, struct iscsi_endpoint *ep,
 	struct iscsi_cls_session *session;
 	struct Scsi_Host *shost;
 
+    // 调用会话创建
 	session = transport->create_session(ep, cmds_max, queue_depth,
 					    initial_cmdsn);
 	if (!session)
@@ -3902,6 +3913,7 @@ static int iscsi_if_transport_conn(struct iscsi_transport *transport,
 	return err;
 }
 
+// 处理 socket 包
 static int
 iscsi_if_recv_msg(struct sk_buff *skb, struct nlmsghdr *nlh, uint32_t *group)
 {
@@ -3922,9 +3934,11 @@ iscsi_if_recv_msg(struct sk_buff *skb, struct nlmsghdr *nlh, uint32_t *group)
 	else
 		*group = ISCSI_NL_GRP_ISCSID;
 
+    // 取出内部数据
 	priv = iscsi_if_transport_lookup(iscsi_ptr(ev->transport_handle));
 	if (!priv)
 		return -EINVAL;
+    // 取出传输结构体
 	transport = priv->iscsi_transport;
 
 	if (!try_module_get(transport->owner))
@@ -4855,6 +4869,8 @@ static int iscsi_host_match(struct attribute_container *cont,
         return &priv->t.host_attrs.ac == cont;
 }
 
+// iscsi client 传输协议模板注册
+// 初始化 sysfs
 struct scsi_transport_template *
 iscsi_register_transport(struct iscsi_transport *tt)
 {
@@ -4878,6 +4894,7 @@ iscsi_register_transport(struct iscsi_transport *tt)
 
 	priv->dev.class = &iscsi_transport_class;
 	dev_set_name(&priv->dev, "%s", tt->name);
+    // iscsi_tcp: 注册 /sys/class/iscsi_transport/tcp
 	err = device_register(&priv->dev);
 	if (err)
 		goto put_dev;
@@ -4891,18 +4908,21 @@ iscsi_register_transport(struct iscsi_transport *tt)
 	priv->t.host_attrs.ac.match = iscsi_host_match;
 	priv->t.host_attrs.ac.grp = &iscsi_host_group;
 	priv->t.host_size = sizeof(struct iscsi_cls_host);
+    // 注册 /sys/class/iscsi_host
 	transport_container_register(&priv->t.host_attrs);
 
 	/* connection parameters */
 	priv->conn_cont.ac.class = &iscsi_connection_class.class;
 	priv->conn_cont.ac.match = iscsi_conn_match;
 	priv->conn_cont.ac.grp = &iscsi_conn_group;
+    // 注册 /sys/class/iscsi_connection
 	transport_container_register(&priv->conn_cont);
 
 	/* session parameters */
 	priv->session_cont.ac.class = &iscsi_session_class.class;
 	priv->session_cont.ac.match = iscsi_session_match;
 	priv->session_cont.ac.grp = &iscsi_session_group;
+    // 注册 /sys/class/iscsi_session
 	transport_container_register(&priv->session_cont);
 
 	spin_lock_irqsave(&iscsi_transport_lock, flags);
@@ -4966,6 +4986,7 @@ static __init int iscsi_transport_init(void)
 	int err;
 	struct netlink_kernel_cfg cfg = {
 		.groups	= 1,
+        // 输入调用
 		.input	= iscsi_if_rx,
 	};
 	printk(KERN_INFO "Loading iSCSI transport class v%s.\n",
@@ -4973,14 +4994,17 @@ static __init int iscsi_transport_init(void)
 
 	atomic_set(&iscsi_session_nr, 0);
 
+    // 注册 /sys/class/iscsi_transport
 	err = class_register(&iscsi_transport_class);
 	if (err)
 		return err;
 
+    // 注册 /sys/class/iscsi_endpoint
 	err = class_register(&iscsi_endpoint_class);
 	if (err)
 		goto unregister_transport_class;
 
+    // 注册 /sys/class/iscsi_iface
 	err = class_register(&iscsi_iface_class);
 	if (err)
 		goto unregister_endpoint_class;
@@ -4997,16 +5021,19 @@ static __init int iscsi_transport_init(void)
 	if (err)
 		goto unregister_conn_class;
 
+    // 总线注册
 	err = bus_register(&iscsi_flashnode_bus);
 	if (err)
 		goto unregister_session_class;
 
+    // 注册内核网络链
 	nls = netlink_kernel_create(&init_net, NETLINK_ISCSI, &cfg);
 	if (!nls) {
 		err = -ENOBUFS;
 		goto unregister_flashnode_bus;
 	}
 
+    // 创建连接清理 work 队列
 	iscsi_conn_cleanup_workq = alloc_workqueue("%s",
 			WQ_SYSFS | WQ_MEM_RECLAIM | WQ_UNBOUND, 0,
 			"iscsi_conn_cleanup");

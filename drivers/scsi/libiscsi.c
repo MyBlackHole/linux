@@ -3087,6 +3087,7 @@ iscsi_session_setup(struct iscsi_transport *iscsit, struct Scsi_Host *shost,
 	if (!try_module_get(iscsit->owner))
 		goto module_get_fail;
 
+    // 添加会话
 	if (iscsi_add_session(cls_session, id))
 		goto cls_session_fail;
 

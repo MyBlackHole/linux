@@ -73,19 +73,24 @@ struct iscsi_bus_flash_conn;
  */
 struct iscsi_transport {
 	struct module *owner;
+    // 传输名
 	char *name;
 	unsigned int caps;
 
+    // 创建会话
 	struct iscsi_cls_session *(*create_session) (struct iscsi_endpoint *ep,
 					uint16_t cmds_max, uint16_t qdepth,
 					uint32_t sn);
+    // 销毁会话
 	void (*destroy_session) (struct iscsi_cls_session *session);
 	struct iscsi_cls_conn *(*create_conn) (struct iscsi_cls_session *sess,
 				uint32_t cid);
 	void (*unbind_conn) (struct iscsi_cls_conn *conn, bool is_active);
+    // 连接会话
 	int (*bind_conn) (struct iscsi_cls_session *session,
 			  struct iscsi_cls_conn *cls_conn,
 			  uint64_t transport_eph, int is_leading);
+    // 设置连接
 	int (*start_conn) (struct iscsi_cls_conn *conn);
 	void (*stop_conn) (struct iscsi_cls_conn *conn, int flag);
 	void (*destroy_conn) (struct iscsi_cls_conn *conn);
