@@ -365,6 +365,7 @@ struct iscsi_np *iscsit_add_np(
 	init_completion(&np->np_restart_comp);
 	INIT_LIST_HEAD(&np->np_list);
 
+    // 绑定与监听
 	ret = iscsi_target_setup_login_socket(np, sockaddr);
 	if (ret != 0) {
 		kfree(np);
@@ -372,7 +373,7 @@ struct iscsi_np *iscsit_add_np(
 		return ERR_PTR(ret);
 	}
 
-    // 创建内核线程异步运行登陆操作
+    // 创建内核线程异步运行: 处理登陆操作
 	np->np_thread = kthread_run(iscsi_target_login_thread, np, "iscsi_np");
 	if (IS_ERR(np->np_thread)) {
 		pr_err("Unable to create kthread: iscsi_np\n");

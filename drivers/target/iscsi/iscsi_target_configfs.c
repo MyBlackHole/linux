@@ -91,6 +91,7 @@ static ssize_t lio_target_np_driver_store(struct config_item *item,
 			}
 		}
 
+        // tpg 网络添加入口
 		tpg_np_new = iscsit_tpg_add_network_portal(tpg,
 					&np->np_sockaddr, tpg_np, type);
 		if (IS_ERR(tpg_np_new)) {
@@ -140,6 +141,7 @@ static ssize_t lio_target_np_cxgbit_store(struct config_item *item,
 // 会把 lio_target_np_cxgbit_store, lio_target_np_cxgbit_show 创建 configfs_attribute 设置到 show 与 store 函数
 CONFIGFS_ATTR(lio_target_np_, cxgbit);
 
+// // /sys/kernel/config/target/iscsi/%iqn/%tpgt_X/np
 // 组合 cxgbit\isert 到一个属性组上
 static struct configfs_attribute *lio_target_portal_attrs[] = {
 	&lio_target_np_attr_iser,
@@ -232,6 +234,8 @@ static struct se_tpg_np *lio_target_call_addnptotpg(
 	 *
 	 * can be enabled with attributes under
 	 * sys/kernel/config/iscsi/$IQN/$TPG/np/$IP:$PORT/
+     *
+     * 处理生成 sys/kernel/config/iscsi/$IQN/$TPG/np/$IP:$PORT/
 	 *
 	 */
 	tpg_np = iscsit_tpg_add_network_portal(tpg, &sockaddr, NULL,

@@ -773,6 +773,8 @@ static inline bool schedule_delayed_work_on(int cpu, struct delayed_work *dwork,
  *
  * After waiting for a given time this puts a job in the kernel-global
  * workqueue.
+ *
+ * 等待给定时间后，将进程放入内核全局工作队列
  */
 static inline bool schedule_delayed_work(struct delayed_work *dwork,
 					 unsigned long delay)

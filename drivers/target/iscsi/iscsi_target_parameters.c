@@ -14,6 +14,7 @@
 #include "iscsi_target_util.h"
 #include "iscsi_target_parameters.h"
 
+// 读取 login 数据
 int iscsi_login_rx_data(
 	struct iscsit_conn *conn,
 	char *buf,

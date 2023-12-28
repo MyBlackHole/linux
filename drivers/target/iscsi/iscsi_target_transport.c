@@ -8,6 +8,7 @@
 static LIST_HEAD(g_transport_list);
 static DEFINE_MUTEX(transport_mutex);
 
+// 获取 type 传输结构
 struct iscsit_transport *iscsit_get_transport(int type)
 {
 	struct iscsit_transport *t;

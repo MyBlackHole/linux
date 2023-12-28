@@ -12,12 +12,16 @@ struct iscsit_transport {
 	struct module *owner;
     // 用于挂载到全局链表
 	struct list_head t_node;
+    // sock 创建、绑定、监听
 	int (*iscsit_setup_np)(struct iscsi_np *, struct sockaddr_storage *);
+    // 接收链接
 	int (*iscsit_accept_np)(struct iscsi_np *, struct iscsit_conn *);
 	void (*iscsit_free_np)(struct iscsi_np *);
 	void (*iscsit_wait_conn)(struct iscsit_conn *);
 	void (*iscsit_free_conn)(struct iscsit_conn *);
+    // 登陆处理-接收
 	int (*iscsit_get_login_rx)(struct iscsit_conn *, struct iscsi_login *);
+    // 登陆处理-发送
 	int (*iscsit_put_login_tx)(struct iscsit_conn *, struct iscsi_login *, u32);
 	int (*iscsit_immediate_queue)(struct iscsit_conn *, struct iscsit_cmd *, int);
 	int (*iscsit_response_queue)(struct iscsit_conn *, struct iscsit_cmd *, int);

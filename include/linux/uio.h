@@ -14,6 +14,7 @@ struct page;
 
 typedef unsigned int __bitwise iov_iter_extraction_t;
 
+// 描述内核态的一段空间
 struct kvec {
 	void *iov_base; /* and that should *never* hold a userland pointer */
 	size_t iov_len;

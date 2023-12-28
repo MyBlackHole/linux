@@ -110,14 +110,23 @@ static inline int groups_search(const struct group_info *group_info, kgid_t grp)
  */
 struct cred {
 	atomic_long_t	usage;
+	// 任务真实 uid
 	kuid_t		uid;		/* real UID of the task */
+	// 任务真实 gid
 	kgid_t		gid;		/* real GID of the task */
+	// 保存任务 uid
 	kuid_t		suid;		/* saved UID of the task */
+	// 保存任务 gid
 	kgid_t		sgid;		/* saved GID of the task */
+	// 任务有效 uid
 	kuid_t		euid;		/* effective UID of the task */
+	// 任务有效 gid
 	kgid_t		egid;		/* effective GID of the task */
+	// vfs uid
 	kuid_t		fsuid;		/* UID for VFS ops */
+	// vfs gid
 	kgid_t		fsgid;		/* GID for VFS ops */
+	// suid 标志位
 	unsigned	securebits;	/* SUID-less security management */
 	kernel_cap_t	cap_inheritable; /* caps our children can inherit */
 	kernel_cap_t	cap_permitted;	/* caps we're permitted */
@@ -133,6 +142,7 @@ struct cred {
 	struct key	*request_key_auth; /* assumed request_key authority */
 #endif
 #ifdef CONFIG_SECURITY
+    // LSM (Linux Security Module)
 	void		*security;	/* LSM security */
 #endif
 	struct user_struct *user;	/* real user ID subscription */

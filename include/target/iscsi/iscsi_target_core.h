@@ -708,8 +708,11 @@ struct iscsi_login {
 	u32 rsp_length;
 	u16 cid;
 	u16 tsih;
+    // 请求头
 	char req[ISCSI_HDR_LEN];
+    // 响应头
 	char rsp[ISCSI_HDR_LEN];
+    // 有效数据存放位置
 	char *req_buf;
 	char *rsp_buf;
 	struct iscsit_conn *conn;
@@ -795,6 +798,7 @@ struct iscsi_np {
 	enum np_flags_table	np_flags;
 	spinlock_t		np_thread_lock;
 	struct completion	np_restart_comp;
+    // 监听的 sock
 	struct socket		*np_socket;
 	struct sockaddr_storage np_sockaddr;
 	struct task_struct	*np_thread;

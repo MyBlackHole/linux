@@ -477,6 +477,7 @@ struct iscsi_tpg_np *iscsit_tpg_add_network_portal(
 		return ERR_PTR(-ENOMEM);
 	}
 
+    // 开启网络监听与启动登陆处理内核线程
 	np = iscsit_add_np(sockaddr, network_transport);
 	if (IS_ERR(np)) {
 		kfree(tpg_np);

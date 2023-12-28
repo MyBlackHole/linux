@@ -1231,14 +1231,18 @@ struct task_struct {
 #endif
 
 	/* Process credentials: */
+    // 进程凭证
 
 	/* Tracer's credentials at attach: */
+    /* Tracer 在附加时的凭据：*/
 	const struct cred __rcu		*ptracer_cred;
 
 	/* Objective and real subjective task credentials (COW): */
+    /* 客观和真实的主观任务凭证（COW）： */
 	const struct cred __rcu		*real_cred;
 
 	/* Effective (overridable) subjective task credentials (COW): */
+    /* 有效的（可重写的）主观任务凭证（COW）：*/
 	const struct cred __rcu		*cred;
 
 #ifdef CONFIG_KEYS

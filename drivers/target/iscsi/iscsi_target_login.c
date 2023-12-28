@@ -811,6 +811,7 @@ void iscsi_post_login_handler(
 	iscsit_dec_conn_usage_count(conn);
 }
 
+// 设置 sock 创建绑定监听
 int iscsit_setup_np(
 	struct iscsi_np *np,
 	struct sockaddr_storage *sockaddr)
@@ -837,6 +838,7 @@ int iscsit_setup_np(
 		return -EINVAL;
 	}
 
+    // 创建 sock
 	ret = sock_create(sockaddr->ss_family, np->np_sock_type,
 			np->np_ip_proto, &sock);
 	if (ret < 0) {
@@ -863,12 +865,14 @@ int iscsit_setup_np(
 	sock_set_reuseaddr(sock->sk);
 	ip_sock_set_freebind(sock->sk);
 
+    // iscsi sock 绑定地址
 	ret = kernel_bind(sock, (struct sockaddr *)&np->np_sockaddr, len);
 	if (ret < 0) {
 		pr_err("kernel_bind() failed: %d\n", ret);
 		goto fail;
 	}
 
+    // iscsi sock 监听
 	ret = kernel_listen(sock, backlog);
 	if (ret != 0) {
 		pr_err("kernel_listen() failed: %d\n", ret);
@@ -882,6 +886,7 @@ fail:
 	return ret;
 }
 
+// 设置绑定监听
 int iscsi_target_setup_login_socket(
 	struct iscsi_np *np,
 	struct sockaddr_storage *sockaddr)
@@ -911,6 +916,7 @@ int iscsit_accept_np(struct iscsi_np *np, struct iscsit_conn *conn)
 	struct sockaddr_in6 sock_in6;
 	int rc;
 
+    // 接收链接
 	rc = kernel_accept(sock, &new_sock, 0);
 	if (rc < 0)
 		return rc;
@@ -965,14 +971,17 @@ int iscsit_accept_np(struct iscsi_np *np, struct iscsit_conn *conn)
 	return 0;
 }
 
+// 登陆处理
 int iscsit_get_login_rx(struct iscsit_conn *conn, struct iscsi_login *login)
 {
 	struct iscsi_login_req *login_req;
 	u32 padding = 0, payload_length;
 
+    // 读取头数据到 req
 	if (iscsi_login_rx_data(conn, login->req, ISCSI_HDR_LEN) < 0)
 		return -1;
 
+    // 转换类型
 	login_req = (struct iscsi_login_req *)login->req;
 	payload_length	= ntoh24(login_req->dlength);
 	padding = ((-payload_length) & 3);
@@ -1003,6 +1012,7 @@ int iscsit_get_login_rx(struct iscsit_conn *conn, struct iscsi_login *login)
 		return -1;
 
 	memset(login->req_buf, 0, MAX_KEY_VALUE_PAIRS);
+    // 读取其他有效数据
 	if (iscsi_login_rx_data(conn, login->req_buf,
 				payload_length + padding) < 0)
 		return -1;
@@ -1039,6 +1049,7 @@ iscsit_conn_set_transport(struct iscsit_conn *conn, struct iscsit_transport *t)
 	return 0;
 }
 
+// 分配初始化链接
 static struct iscsit_conn *iscsit_alloc_conn(struct iscsi_np *np)
 {
 	struct iscsit_conn *conn;
@@ -1076,6 +1087,7 @@ static struct iscsit_conn *iscsit_alloc_conn(struct iscsi_np *np)
 	timer_setup(&conn->nopin_response_timer,
 		    iscsit_handle_nopin_response_timeout, 0);
 	timer_setup(&conn->nopin_timer, iscsit_handle_nopin_timeout, 0);
+    // login 超时定时器初始化
 	timer_setup(&conn->login_timer, iscsit_login_timeout, 0);
 
 	if (iscsit_conn_set_transport(conn, np->np_transport) < 0)
@@ -1222,12 +1234,14 @@ static int __iscsi_target_login_thread(struct iscsi_np *np)
 	}
 	spin_unlock_bh(&np->np_thread_lock);
 
+    // 创建链接对象
 	conn = iscsit_alloc_conn(np);
 	if (!conn) {
 		/* Get another socket */
 		return 1;
 	}
 
+    // 接收客户端链接(设置客户端信息到 conn)
 	rc = np->np_transport->iscsit_accept_np(np, conn);
 	if (rc == -ENOSYS) {
 		complete(&np->np_restart_comp);
@@ -1249,18 +1263,23 @@ static int __iscsi_target_login_thread(struct iscsi_np *np)
 	}
 	/*
 	 * Perform the remaining iSCSI connection initialization items..
+     *
+     * login 初始化
 	 */
 	login = iscsi_login_init_conn(conn);
 	if (!login) {
 		goto new_sess_out;
 	}
 
+    // 设置定时器
 	iscsit_start_login_timer(conn, current);
 
 	pr_debug("Moving to TARG_CONN_STATE_XPT_UP.\n");
 	conn->conn_state = TARG_CONN_STATE_XPT_UP;
 	/*
 	 * This will process the first login request + payload..
+     *
+     * 校验登陆请求
 	 */
 	rc = np->np_transport->iscsit_get_login_rx(conn, login);
 	if (rc == 1)
@@ -1269,6 +1288,7 @@ static int __iscsi_target_login_thread(struct iscsi_np *np)
 		goto new_sess_out;
 
 	buffer = &login->req[0];
+    // 取出头
 	pdu = (struct iscsi_login_req *)buffer;
 	/*
 	 * Used by iscsit_tx_login_rsp() for Login Resonses PDUs

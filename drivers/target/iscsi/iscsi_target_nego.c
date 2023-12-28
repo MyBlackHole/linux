@@ -157,6 +157,7 @@ static void iscsi_remove_failed_auth_entry(struct iscsit_conn *conn)
 	kfree(conn->auth_protocol);
 }
 
+// 验证登陆请求
 int iscsi_target_check_login_request(
 	struct iscsit_conn *conn,
 	struct iscsi_login *login)
@@ -1355,6 +1356,7 @@ out:
 	return ret;
 }
 
+// 开始协商
 int iscsi_target_start_negotiation(
 	struct iscsi_login *login,
 	struct iscsit_conn *conn)

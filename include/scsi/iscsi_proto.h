@@ -19,6 +19,7 @@
 #define ISCSI_LISTEN_PORT	3260
 
 /* iSCSI header length */
+// 头大小
 #define ISCSI_HDR_LEN		48
 
 /* iSCSI CRC32C length */
