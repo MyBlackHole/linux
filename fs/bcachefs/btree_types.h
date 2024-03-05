@@ -463,6 +463,7 @@ struct btree_trans_paths {
 	struct btree_path	paths[];
 };
 
+// b 树事务描述结构体
 struct btree_trans {
 	struct bch_fs		*c;
 

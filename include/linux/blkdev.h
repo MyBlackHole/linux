@@ -1223,6 +1223,7 @@ static inline unsigned int bdev_max_segments(struct block_device *bdev)
 	return queue_max_segments(bdev_get_queue(bdev));
 }
 
+// 队列逻辑块大小
 static inline unsigned queue_logical_block_size(const struct request_queue *q)
 {
 	int retval = 512;
@@ -1233,6 +1234,7 @@ static inline unsigned queue_logical_block_size(const struct request_queue *q)
 	return retval;
 }
 
+// 块逻辑块大小
 static inline unsigned int bdev_logical_block_size(struct block_device *bdev)
 {
 	return queue_logical_block_size(bdev_get_queue(bdev));

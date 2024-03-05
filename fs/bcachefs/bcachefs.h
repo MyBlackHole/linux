@@ -493,6 +493,7 @@ struct io_count {
 	u64			sectors[2][BCH_DATA_NR];
 };
 
+// 文件系统内部设备描述
 struct bch_dev {
 	struct kobject		kobj;
 #ifdef CONFIG_BCACHEFS_DEBUG
@@ -556,6 +557,7 @@ struct bch_dev {
 
 	atomic64_t		rebalance_work;
 
+    // 日志设备
 	struct journal_device	journal;
 	u64			prev_journal_sector;
 
@@ -691,6 +693,7 @@ enum bch_write_ref {
 	BCH_WRITE_REF_NR,
 };
 
+// 文件系统表达结构
 struct bch_fs {
 	struct closure		cl;
 
@@ -711,6 +714,7 @@ struct bch_fs {
 	struct task_struct	*stdio_filter;
 
 	/* ro/rw, add/remove/resize devices: */
+    /* ro/rw，添加/删除/调整设备大小：*/
 	struct rw_semaphore	state_lock;
 
 	/* Counts outstanding writes, for clean transition to read-only */

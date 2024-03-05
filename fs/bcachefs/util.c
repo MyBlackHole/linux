@@ -600,6 +600,7 @@ void bch2_pd_controller_debug_to_text(struct printbuf *out, struct bch_pd_contro
 
 /* misc: */
 
+// 映射 page 到 bio_vec
 void bch2_bio_map(struct bio *bio, void *base, size_t size)
 {
 	while (size) {

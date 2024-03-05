@@ -207,6 +207,7 @@ static inline void rwsem_assert_held_write(const struct rw_semaphore *sem)
 
 /*
  * lock for reading
+ * 获取读锁
  */
 extern void down_read(struct rw_semaphore *sem);
 extern int __must_check down_read_interruptible(struct rw_semaphore *sem);
@@ -219,6 +220,7 @@ extern int down_read_trylock(struct rw_semaphore *sem);
 
 /*
  * lock for writing
+ * 获取写锁
  */
 extern void down_write(struct rw_semaphore *sem);
 extern int __must_check down_write_killable(struct rw_semaphore *sem);
@@ -230,11 +232,13 @@ extern int down_write_trylock(struct rw_semaphore *sem);
 
 /*
  * release a read lock
+ * 释放读锁
  */
 extern void up_read(struct rw_semaphore *sem);
 
 /*
  * release a write lock
+ * 释放写锁
  */
 extern void up_write(struct rw_semaphore *sem);
 

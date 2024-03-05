@@ -7,6 +7,7 @@ struct bch_sb_handle {
 	struct file		*s_bdev_file;
 	struct block_device	*bdev;
 	char			*sb_name;
+	// 块 io 对象
 	struct bio		*bio;
 	void			*holder;
 	size_t			buffer_size;

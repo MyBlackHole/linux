@@ -161,6 +161,7 @@ int bch2_sb_realloc(struct bch_sb_handle *sb, unsigned u64s)
 	if (sb->bdev)
 		new_bytes = max_t(size_t, new_bytes, bdev_logical_block_size(sb->bdev));
 
+    // 向上取整(2的次幂)
 	new_buffer_size = roundup_pow_of_two(new_bytes);
 
 	if (sb->sb && sb->buffer_size >= new_buffer_size)
@@ -205,6 +206,7 @@ int bch2_sb_realloc(struct bch_sb_handle *sb, unsigned u64s)
 		sb->bio = bio;
 	}
 
+    // 设置 buf 大小
 	sb->buffer_size = new_buffer_size;
 
 	return 0;
@@ -306,6 +308,7 @@ static int validate_sb_layout(struct bch_sb_layout *layout, struct printbuf *out
 	return 0;
 }
 
+// 兼容检查
 static int bch2_sb_compatible(struct bch_sb *sb, struct printbuf *out)
 {
 	u16 version		= le16_to_cpu(sb->version);
@@ -619,16 +622,19 @@ int bch2_sb_from_fs(struct bch_fs *c, struct bch_dev *ca)
 }
 
 /* read superblock: */
-
+// 读取超级块
 static int read_one_super(struct bch_sb_handle *sb, u64 offset, struct printbuf *err)
 {
 	size_t bytes;
 	int ret;
 reread:
+    // 设置读取扇区操作
 	bio_reset(sb->bio, sb->bdev, REQ_OP_READ|REQ_SYNC|REQ_META);
 	sb->bio->bi_iter.bi_sector = offset;
+    // 映射内存地址到 bio
 	bch2_bio_map(sb->bio, sb->sb, sb->buffer_size);
 
+    // 向块驱动层请求数据页
 	ret = submit_bio_wait(sb->bio);
 	if (ret) {
 		prt_printf(err, "IO error: %i", ret);
@@ -643,6 +649,7 @@ reread:
 		return -BCH_ERR_invalid_sb_magic;
 	}
 
+    // 校验版本之类的
 	ret = bch2_sb_compatible(sb->sb, err);
 	if (ret)
 		return ret;
@@ -717,6 +724,7 @@ retry:
 	if (!opt_get(*opts, nochanges))
 		sb->mode |= BLK_OPEN_WRITE;
 
+	// 打开获取对应路径的块设备结构
 	sb->s_bdev_file = bdev_file_open_by_path(path, sb->mode, sb->holder, &bch2_sb_handle_bdev_ops);
 	if (IS_ERR(sb->s_bdev_file) &&
 	    PTR_ERR(sb->s_bdev_file) == -EACCES &&
@@ -735,6 +743,7 @@ retry:
 	}
 	sb->bdev = file_bdev(sb->s_bdev_file);
 
+    // 从新分配 buf size
 	ret = bch2_sb_realloc(sb, 0);
 	if (ret) {
 		prt_printf(&err, "error allocating memory for superblock");
@@ -747,6 +756,7 @@ retry:
 		goto err;
 	}
 
+    // 真正的读取超级块逻辑
 	ret = read_one_super(sb, offset, &err);
 	if (!ret)
 		goto got_super;
@@ -768,6 +778,7 @@ retry:
 	 * Error reading primary superblock - read location of backup
 	 * superblocks:
 	 */
+    // 读取备份的超级块
 	bio_reset(sb->bio, sb->bdev, REQ_OP_READ|REQ_SYNC|REQ_META);
 	sb->bio->bi_iter.bi_sector = BCH_SB_LAYOUT_SECTOR;
 	/*

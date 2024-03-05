@@ -684,6 +684,7 @@ static int bch2_fs_online(struct bch_fs *c)
 		return -EINVAL;
 	}
 
+    // 字符设备初始化
 	ret = bch2_fs_chardev_init(c);
 	if (ret) {
 		bch_err(c, "error creating character device");
@@ -723,6 +724,7 @@ err:
 	return ret;
 }
 
+// 创建初始化文件系统实例
 static struct bch_fs *bch2_fs_alloc(struct bch_sb *sb, struct bch_opts opts)
 {
 	struct bch_fs *c;
@@ -943,6 +945,7 @@ static struct bch_fs *bch2_fs_alloc(struct bch_sb *sb, struct bch_opts opts)
 			(sizeof(struct jset_entry_clock) / sizeof(u64)) * 2);
 
 	mutex_lock(&bch_fs_list_lock);
+    // 上线文件系统
 	ret = bch2_fs_online(c);
 	mutex_unlock(&bch_fs_list_lock);
 
@@ -1065,6 +1068,8 @@ err:
 	return ret;
 }
 
+// 检查桶大小
+// 检查块大小
 static int bch2_dev_may_add(struct bch_sb *sb, struct bch_fs *c)
 {
 	struct bch_member m = bch2_sb_member_get(sb, sb->dev_idx);
@@ -1274,6 +1279,7 @@ static int bch2_dev_sysfs_online(struct bch_fs *c, struct bch_dev *ca)
 	return 0;
 }
 
+// 使用 member 构建 bch_dev
 static struct bch_dev *__bch2_dev_alloc(struct bch_fs *c,
 					struct bch_member *member)
 {
@@ -1362,6 +1368,7 @@ err:
 	return -BCH_ERR_ENOMEM_dev_alloc;
 }
 
+// sb 附加到 ca
 static int __bch2_dev_attach_bdev(struct bch_dev *ca, struct bch_sb_handle *sb)
 {
 	unsigned ret;
@@ -1717,6 +1724,7 @@ err:
 }
 
 /* Add new device to running filesystem: */
+/* 将新设备添加到正在运行的文件系统: */
 int bch2_dev_add(struct bch_fs *c, const char *path)
 {
 	struct bch_opts opts = bch2_opts_empty();
@@ -1729,11 +1737,13 @@ int bch2_dev_add(struct bch_fs *c, const char *path)
 	struct printbuf label = PRINTBUF;
 	int ret;
 
+    // 读取设备块描述信息
 	ret = bch2_read_super(path, &opts, &sb);
 	bch_err_msg(c, ret, "reading super");
 	if (ret)
 		goto err;
 
+    // 获取成员信息
 	dev_mi = bch2_sb_member_get(sb.sb, sb.sb->dev_idx);
 
 	if (BCH_MEMBER_GROUP(&dev_mi)) {
@@ -1744,18 +1754,22 @@ int bch2_dev_add(struct bch_fs *c, const char *path)
 		}
 	}
 
+    // 检查桶与块大小
 	ret = bch2_dev_may_add(sb.sb, c);
 	if (ret)
 		goto err;
 
+    // 分配 bch_dev
 	ca = __bch2_dev_alloc(c, &dev_mi);
 	if (!ca) {
 		ret = -ENOMEM;
 		goto err;
 	}
 
+    // bch2_dev 使用初始化
 	bch2_dev_usage_init(ca);
 
+    // sb 附加到 ca
 	ret = __bch2_dev_attach_bdev(ca, &sb);
 	if (ret)
 		goto err;
@@ -1844,6 +1858,7 @@ have_slot:
 	if (ret)
 		goto err_late;
 
+    // 文件系统空间初始化
 	ret = bch2_fs_freespace_init(c);
 	bch_err_msg(ca, ret, "initializing free space");
 	if (ret)
@@ -2036,6 +2051,7 @@ struct bch_dev *bch2_dev_lookup(struct bch_fs *c, const char *name)
 }
 
 /* Filesystem open: */
+// 打开文件系统
 
 static inline int sb_cmp(struct bch_sb *l, struct bch_sb *r)
 {
@@ -2099,6 +2115,7 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 			goto err_print;
 	}
 
+    // 分配初始化文件系统
 	c = bch2_fs_alloc(best->sb, opts);
 	ret = PTR_ERR_OR_ZERO(c);
 	if (ret)
@@ -2142,6 +2159,7 @@ err:
 }
 
 /* Global interfaces/init */
+// 全局接口初始化
 
 static void bcachefs_exit(void)
 {

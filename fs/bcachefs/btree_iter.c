@@ -3039,6 +3039,8 @@ static void bch2_trans_srcu_lock(struct btree_trans *trans)
  * may return BCH_ERR_transaction_restart when the trylock fails. When this
  * occurs bch2_trans_begin() should be called and the transaction retried.
  */
+// 在尝试中断后重置事务
+// @trans：要重置的交易
 u32 bch2_trans_begin(struct btree_trans *trans)
 {
 	struct btree_path *path;

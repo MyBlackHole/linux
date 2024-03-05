@@ -45,6 +45,7 @@ static inline void set_bkey_val_bytes(struct bkey *k, unsigned bytes)
 	((_k)->type == KEY_TYPE_deleted || (_k)->type == KEY_TYPE_whiteout)
 
 /* bkey with split value, const */
+/* 带分割值的 bkey, const */
 struct bkey_s_c {
 	const struct bkey	*k;
 	const struct bch_val	*v;

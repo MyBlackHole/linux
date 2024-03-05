@@ -45,6 +45,7 @@ struct linger {
 	int		l_linger;	/* How long to linger for	*/
 };
 
+// 存储套接字地址信息
 #define sockaddr_storage __kernel_sockaddr_storage
 
 /*
@@ -188,6 +189,7 @@ struct ucred {
 
 /* Supported address families. */
 #define AF_UNSPEC	0
+// Unix 域套接字
 #define AF_UNIX		1	/* Unix domain sockets 		*/
 #define AF_LOCAL	1	/* POSIX name for AF_UNIX	*/
 #define AF_INET		2	/* Internet IP Protocol 	*/

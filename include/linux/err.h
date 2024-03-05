@@ -102,6 +102,7 @@ static inline void * __must_check ERR_CAST(__force const void *ptr)
  *
  * Return: The error code within @ptr if it is an error pointer; 0 otherwise.
  */
+// 指针检查
 static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
 {
 	if (IS_ERR(ptr))

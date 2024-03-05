@@ -302,6 +302,7 @@ static long bch2_ioctl_stop(struct bch_fs *c)
 }
 #endif
 
+// 设备添加
 static long bch2_ioctl_disk_add(struct bch_fs *c, struct bch_ioctl_disk arg)
 {
 	char *path;
@@ -318,12 +319,14 @@ static long bch2_ioctl_disk_add(struct bch_fs *c, struct bch_ioctl_disk arg)
 	if (ret)
 		return ret;
 
+    // 添加 dev 到运行中的文件系统
 	ret = bch2_dev_add(c, path);
 	kfree(path);
 
 	return ret;
 }
 
+// 设备移除
 static long bch2_ioctl_disk_remove(struct bch_fs *c, struct bch_ioctl_disk arg)
 {
 	struct bch_dev *ca;
@@ -967,6 +970,8 @@ void bch2_fs_chardev_exit(struct bch_fs *c)
 		idr_remove(&bch_chardev_minor, c->minor);
 }
 
+// 字符设备初始化
+// 同时注册了 bch_fs 结构实例到 idr
 int bch2_fs_chardev_init(struct bch_fs *c)
 {
 	c->minor = idr_alloc(&bch_chardev_minor, c, 0, 0, GFP_KERNEL);

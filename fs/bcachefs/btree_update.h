@@ -159,6 +159,9 @@ __printf(2, 3) int bch2_journal_log_msg(struct bch_fs *, const char *, ...);
  * -EROFS: filesystem read only
  * -EIO: journal or btree node IO error
  */
+// 事务提交
+// 在给定的迭代器位置插入键
+// 这是 btree 更新的主要入口点。
 static inline int bch2_trans_commit(struct btree_trans *trans,
 				    struct disk_reservation *disk_res,
 				    u64 *journal_seq,

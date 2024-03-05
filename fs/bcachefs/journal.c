@@ -907,7 +907,7 @@ struct journal_buf *bch2_next_write_buffer_flush_journal_buf(struct journal *j, 
 }
 
 /* allocate journal on a device: */
-
+/* 在设备上分配日志：*/
 static int __bch2_set_nr_journal_buckets(struct bch_dev *ca, unsigned nr,
 					 bool new_fs, struct closure *cl)
 {
@@ -1106,12 +1106,15 @@ int bch2_dev_journal_alloc(struct bch_dev *ca)
 	}
 
 	/* 1/128th of the device by default: */
+    /* 默认为设备的 1/128: */
 	nr = ca->mi.nbuckets >> 7;
 
 	/*
 	 * clamp journal size to 8192 buckets or 8GB (in sectors), whichever
 	 * is smaller:
 	 */
+    // 将日志大小限制为 8192 个存储桶或 8GB（以扇区为单位），
+    // 以较小者为准：
 	nr = clamp_t(unsigned, nr,
 		     BCH_JOURNAL_BUCKETS_MIN,
 		     min(1 << 13,

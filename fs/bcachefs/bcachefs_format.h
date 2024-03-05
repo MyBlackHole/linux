@@ -212,6 +212,7 @@ struct bkey {
 #endif
 
 	/* Type of the value */
+    /* 值的类型 */
 	__u8		type;
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -765,6 +766,19 @@ struct bch_sb_layout {
  *		  superblock is written
  * @features	- enabled incompatible features
  */
+// @offset - 写入此 sb 的扇区
+//   @version - 磁盘格式版本
+//   @version_min - 该文件系统包含的最旧的元数据版本； 所以我们可以
+//   安全地删除兼容性代码并拒绝挂载文件系统
+//   我们需要它
+//   @magic - 标识为 bcachefs 超级块 (BCHFS_MAGIC)
+//   @seq - 每次写入超级块时递增
+//   @uuid - 用于生成各种幻数并识别
+//   会员设备，永不改变
+//   @user_uuid - 用户可见的UUID，可以更改
+//   @label - 文件系统标签
+//   @seq - 标识最近的超级块，每次写入超级块递增
+//   @features - 启用不兼容的功能
 struct bch_sb {
 	struct bch_csum		csum;
 	__le16			version;

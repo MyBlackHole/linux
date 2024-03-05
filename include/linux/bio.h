@@ -437,6 +437,7 @@ static inline struct bio *bio_alloc(struct block_device *bdev,
 	return bio_alloc_bioset(bdev, nr_vecs, opf, gfp_mask, &fs_bio_set);
 }
 
+// 向块层请求 bio bio_vec 映射的页
 void submit_bio(struct bio *bio);
 
 extern void bio_endio(struct bio *);
@@ -468,6 +469,7 @@ static inline int bio_iov_vecs_to_alloc(struct iov_iter *iter, int max_segs)
 
 struct request_queue;
 
+// 同 submit_bio，向块层请求 bio bio_vec 映射的页
 extern int submit_bio_wait(struct bio *bio);
 void bio_init(struct bio *bio, struct block_device *bdev, struct bio_vec *table,
 	      unsigned short max_vecs, blk_opf_t opf);
@@ -475,6 +477,7 @@ extern void bio_uninit(struct bio *);
 void bio_reset(struct bio *bio, struct block_device *bdev, blk_opf_t opf);
 void bio_chain(struct bio *, struct bio *);
 
+// 把 page 加入到 bio bio_vec 中
 int __must_check bio_add_page(struct bio *bio, struct page *page, unsigned len,
 			      unsigned off);
 bool __must_check bio_add_folio(struct bio *bio, struct folio *folio,

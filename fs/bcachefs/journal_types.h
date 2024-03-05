@@ -307,6 +307,8 @@ struct journal {
  * Embedded in struct bch_dev. First three fields refer to the array of journal
  * buckets, in bch_sb.
  */
+// 嵌入在 struct bch_dev 中。 
+// 前三个字段引用 bch_sb 中的日志桶数组。
 struct journal_device {
 	/*
 	 * For each journal bucket, contains the max sequence number of the

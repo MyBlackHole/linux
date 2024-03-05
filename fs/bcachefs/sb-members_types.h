@@ -3,9 +3,12 @@
 #define _BCACHEFS_SB_MEMBERS_TYPES_H
 
 struct bch_member_cpu {
+	// 设备大小
 	u64			nbuckets;	/* device size */
 	u64			nbuckets_minus_first;
+	// 使用的第一个桶的索引
 	u16			first_bucket;   /* index of first bucket used */
+	// 扇区大小
 	u16			bucket_size;	/* sectors */
 	u16			group;
 	u8			state;

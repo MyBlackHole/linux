@@ -35,10 +35,14 @@ enum bch_member_error_type {
 	BCH_MEMBER_ERROR_NR
 };
 
+// 设备成员描述结构
 struct bch_member {
 	__uuid_t		uuid;
+	// 设备大小
 	__le64			nbuckets;	/* device size */
+	// 使用的第一个桶的索引
 	__le16			first_bucket;   /* index of first bucket used */
+	// 扇区大小
 	__le16			bucket_size;	/* sectors */
 	__u8			btree_bitmap_shift;
 	__u8			pad[3];

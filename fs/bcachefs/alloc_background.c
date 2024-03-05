@@ -627,7 +627,7 @@ int bch2_alloc_read(struct bch_fs *c)
 }
 
 /* Free space/discard btree: */
-
+// 释放空间/丢弃btree
 static int bch2_bucket_do_index(struct btree_trans *trans,
 				struct bch_dev *ca,
 				struct bkey_s_c alloc_k,
@@ -2030,6 +2030,7 @@ void bch2_do_invalidates(struct bch_fs *c)
 		bch2_write_ref_put(c, BCH_WRITE_REF_invalidate);
 }
 
+// 设备空闲空间初始化
 int bch2_dev_freespace_init(struct bch_fs *c, struct bch_dev *ca,
 			    u64 bucket_start, u64 bucket_end)
 {
@@ -2045,6 +2046,7 @@ int bch2_dev_freespace_init(struct bch_fs *c, struct bch_dev *ca,
 	BUG_ON(bucket_start > bucket_end);
 	BUG_ON(bucket_end > ca->mi.nbuckets);
 
+    // 初始化迭代器
 	bch2_trans_iter_init(trans, &iter, BTREE_ID_alloc,
 		POS(ca->dev_idx, max_t(u64, ca->mi.first_bucket, bucket_start)),
 		BTREE_ITER_prefetch);
@@ -2052,6 +2054,9 @@ int bch2_dev_freespace_init(struct bch_fs *c, struct bch_dev *ca,
 	 * Scan the alloc btree for every bucket on @ca, and add buckets to the
 	 * freespace/need_discard/need_gc_gens btrees as needed:
 	 */
+    // 扫描 ca 上每个桶的分配树
+    // 并根据需要将存储桶添加到
+    // freespace/need_discard/need_gc_gens btree
 	while (1) {
 		if (last_updated + HZ * 10 < jiffies) {
 			bch_info(ca, "%s: currently at %llu/%llu",
@@ -2059,6 +2064,7 @@ int bch2_dev_freespace_init(struct bch_fs *c, struct bch_dev *ca,
 			last_updated = jiffies;
 		}
 
+        // 开启事务
 		bch2_trans_begin(trans);
 
 		if (bkey_ge(iter.pos, end)) {
@@ -2130,6 +2136,7 @@ bkey_err:
 	return 0;
 }
 
+// 初始化文件系统空闲空间
 int bch2_fs_freespace_init(struct bch_fs *c)
 {
 	int ret = 0;
@@ -2139,6 +2146,8 @@ int bch2_fs_freespace_init(struct bch_fs *c)
 	 * We can crash during the device add path, so we need to check this on
 	 * every mount:
 	 */
+    // 我们可能会在设备添加路径期间崩溃，
+    // 因此我们需要在每次安装时检查这一点：
 
 	for_each_member_device(c, ca) {
 		if (ca->mi.freespace_initialized)
@@ -2149,6 +2158,7 @@ int bch2_fs_freespace_init(struct bch_fs *c)
 			doing_init = true;
 		}
 
+        // 设备空间初始化
 		ret = bch2_dev_freespace_init(c, ca, 0, ca->mi.nbuckets);
 		if (ret) {
 			bch2_dev_put(ca);

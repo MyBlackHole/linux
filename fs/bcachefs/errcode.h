@@ -260,6 +260,8 @@ enum bch_errcode {
 	BCH_ERR_START		= 2048,
 #define x(class, err) BCH_ERR_##err,
 	BCH_ERRCODES()
+    // BCH_ERR_mismatched_block_size: 错误块大小
+    // BCH_ERR_bucket_size_too_small: 桶大小异常
 #undef x
 	BCH_ERR_MAX
 };

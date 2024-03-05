@@ -1876,6 +1876,8 @@ static int bch2_test_super(struct super_block *s, void *data)
 	return true;
 }
 
+// 来啦小老弟
+// 就等你了
 static struct dentry *bch2_mount(struct file_system_type *fs_type,
 				 int flags, const char *dev_name, void *data)
 {
@@ -2035,10 +2037,13 @@ static void bch2_kill_sb(struct super_block *sb)
 	bch2_fs_free(c);
 }
 
+// 文件系统类型定义
 static struct file_system_type bcache_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "bcachefs",
+    // 挂载
 	.mount		= bch2_mount,
+    // 取消挂载
 	.kill_sb	= bch2_kill_sb,
 	.fs_flags	= FS_REQUIRES_DEV,
 };
@@ -2059,6 +2064,7 @@ int __init bch2_vfs_init(void)
 	if (!bch2_inode_cache)
 		goto err;
 
+    // 注册文件系统到内核全局文件系统类型列表
 	ret = register_filesystem(&bcache_fs_type);
 	if (ret)
 		goto err;

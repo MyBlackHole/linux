@@ -138,6 +138,7 @@ static inline struct bch_dev *bch2_get_next_dev(struct bch_fs *c, struct bch_dev
 #define __for_each_member_device(_c, _ca)				\
 	for (;	(_ca = bch2_get_next_dev(_c, _ca));)
 
+// 如果你提前休息，你必须将你的参考放在当前设备上
 #define for_each_member_device(_c, _ca)					\
 	for (struct bch_dev *_ca = NULL;				\
 	     (_ca = bch2_get_next_dev(_c, _ca));)

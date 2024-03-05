@@ -28,6 +28,10 @@ struct page;
  *
  * This holds because page_is_mergeable() checks the above property.
  */
+// struct bio_vec - 连续的物理内存地址范围
+//   @bv_page：与地址范围关联的第一页。
+//   @bv_len：地址范围内的字节数。
+//   @bv_offset：相对于@bv_page 开头的地址范围的开头。
 struct bio_vec {
 	struct page	*bv_page;
 	unsigned int	bv_len;
@@ -75,12 +79,16 @@ static inline void bvec_set_virt(struct bio_vec *bv, void *vaddr,
 }
 
 struct bvec_iter {
+    // 512 字节扇区中的设备地址偏移量
 	sector_t		bi_sector;	/* device address in 512 byte
 						   sectors */
+    // 剩余数量
 	unsigned int		bi_size;	/* residual I/O count */
 
+    // bvl_vec 的当前索引
 	unsigned int		bi_idx;		/* current index into bvl_vec */
 
+    // 当前 bvec 中完成的字节数
 	unsigned int            bi_bvec_done;	/* number of bytes completed in
 						   current bvec */
 } __packed __aligned(4);
