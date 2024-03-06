@@ -1570,6 +1570,7 @@ err:
  * If op->discard is true, instead of inserting the data it invalidates the
  * region of the cache represented by op->bio and op->inode.
  */
+// 处理对缓存设备或仅闪存卷的写入
 CLOSURE_CALLBACK(bch2_write)
 {
 	closure_type(op, struct bch_write_op, cl);

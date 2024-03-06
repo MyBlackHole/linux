@@ -770,6 +770,7 @@ struct inode {
 	atomic64_t		i_sequence; /* see futex */
     // 文件引用计数器
 	atomic_t		i_count;
+    // 直接 io 计数
 	atomic_t		i_dio_count;
 	atomic_t		i_writecount;
 #if defined(CONFIG_IMA) || defined(CONFIG_FILE_LOCKING)
@@ -3394,6 +3395,9 @@ void inode_dio_wait(struct inode *inode);
  * This is called once we've finished processing a direct I/O request,
  * and is used to wake up callers waiting for direct I/O to be quiesced.
  */
+// 发出直接 I/O 请求开始的信号
+// 一旦我们处理完直接 I/O 请求，就会调用此函数，
+// 用于唤醒等待直接 I/O 停顿的调用者。
 static inline void inode_dio_begin(struct inode *inode)
 {
 	atomic_inc(&inode->i_dio_count);
@@ -3406,6 +3410,7 @@ static inline void inode_dio_begin(struct inode *inode)
  * This is called once we've finished processing a direct I/O request,
  * and is used to wake up callers waiting for direct I/O to be quiesced.
  */
+// 直接 I/O 请求的信号完成
 static inline void inode_dio_end(struct inode *inode)
 {
 	if (atomic_dec_and_test(&inode->i_dio_count))

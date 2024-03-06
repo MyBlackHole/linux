@@ -971,6 +971,7 @@ err:
 	goto out;
 }
 
+//  打印挂在参数
 noinline_for_stack
 static void print_mount_opts(struct bch_fs *c)
 {
@@ -1011,6 +1012,7 @@ int bch2_fs_start(struct bch_fs *c)
 	time64_t now = ktime_get_real_seconds();
 	int ret;
 
+    // 打印挂载信息
 	print_mount_opts(c);
 
 	down_write(&c->state_lock);

@@ -14,6 +14,7 @@
  */
 
 #define RLIMIT_CPU		0	/* CPU time in sec */
+// 最大文件大小
 #define RLIMIT_FSIZE		1	/* Maximum filesize */
 #define RLIMIT_DATA		2	/* max data size */
 #define RLIMIT_STACK		3	/* max stack size */

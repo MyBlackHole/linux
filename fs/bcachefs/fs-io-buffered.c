@@ -1028,6 +1028,7 @@ static ssize_t bch2_buffered_write(struct kiocb *iocb, struct iov_iter *iter)
 			goto unlock;
 	}
 
+	// 更新文件时间?
 	ret = file_update_time(file);
 	if (ret)
 		goto unlock;
@@ -1106,6 +1107,7 @@ again:
 		if (0) {
 get_inode_lock:
 			bch2_pagecache_add_put(inode);
+			// 获取 inode 锁
 			inode_lock(&inode->v);
 			inode_locked = true;
 			bch2_pagecache_add_get(inode);
@@ -1117,6 +1119,7 @@ get_inode_lock:
 		}
 	} while (iov_iter_count(iter));
 	bch2_pagecache_add_put(inode);
+
 unlock:
 	if (inode_locked)
 		inode_unlock(&inode->v);

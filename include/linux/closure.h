@@ -147,6 +147,7 @@ struct closure {
 			struct workqueue_struct *wq;
 			struct closure_syncer	*s;
 			struct llist_node	list;
+            // 需要执行的目标函数
 			closure_fn		*fn;
 		};
 		struct work_struct	work;
@@ -397,6 +398,7 @@ do {									\
  * asynchronously out of a new closure - @parent will then wait for @cl to
  * finish.
  */
+// 在新的、未初始化的闭包中执行 @fn
 static inline void closure_call(struct closure *cl, closure_fn fn,
 				struct workqueue_struct *wq,
 				struct closure *parent)

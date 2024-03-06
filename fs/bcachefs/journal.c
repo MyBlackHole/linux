@@ -645,6 +645,7 @@ out:
 }
 
 /* journal flushing: */
+// 日志刷新
 
 /**
  * bch2_journal_flush_seq_async - wait for a journal entry to be written
@@ -657,6 +658,12 @@ out:
  * Like bch2_journal_wait_on_seq, except that it triggers a write immediately if
  * necessary
  */
+// 等待写入日志条目
+// j: 日志对象
+// seq: 顺序刷新
+// parent: 等待的闭包对象
+// return:
+// seq 被刷新则返回 1, 正在刷新则返回 0, -EIO seq 永远不会被刷新
 int bch2_journal_flush_seq_async(struct journal *j, u64 seq,
 				 struct closure *parent)
 {

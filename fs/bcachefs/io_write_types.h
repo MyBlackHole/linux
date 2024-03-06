@@ -13,6 +13,7 @@
 #include <linux/llist.h>
 #include <linux/workqueue.h>
 
+// 文件系统写表达结构
 struct bch_write_bio {
 	struct_group(wbio,
 	struct bch_fs		*c;
@@ -40,6 +41,7 @@ struct bch_write_bio {
 struct bch_write_op {
 	struct closure		cl;
 	struct bch_fs		*c;
+    // io 结束回调
 	void			(*end_io)(struct bch_write_op *);
 	u64			start_time;
 

@@ -62,6 +62,7 @@ int bch2_extent_update(struct btree_trans *, subvol_inum,
 		       struct btree_iter *, struct bkey_i *,
 		       struct disk_reservation *, u64, s64 *, bool);
 
+// 写操作初始化
 static inline void bch2_write_op_init(struct bch_write_op *op, struct bch_fs *c,
 				      struct bch_io_opts opts)
 {

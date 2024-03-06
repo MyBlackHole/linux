@@ -213,8 +213,10 @@ out:
 }
 
 /* O_DIRECT writes */
+// 直接写
 
 struct dio_write {
+    // 文件侧表示
 	struct kiocb			*req;
 	struct address_space		*mapping;
 	struct bch_inode_info		*inode;
@@ -227,10 +229,12 @@ struct dio_write {
 	struct quota_res		quota_res;
 	u64				written;
 
+    // 数据内存侧表示
 	struct iov_iter			iter;
 	struct iovec			inline_vecs[2];
 
 	/* must be last: */
+    /* 必须是最后一个 */
 	struct bch_write_op		op;
 };
 
@@ -432,6 +436,7 @@ static __always_inline void bch2_dio_write_end(struct dio_write *dio)
 		set_bit(EI_INODE_ERROR, &inode->ei_flags);
 }
 
+// 循环写逻辑
 static __always_inline long bch2_dio_write_loop(struct dio_write *dio)
 {
 	struct bch_fs *c = dio->op.c;
@@ -528,6 +533,7 @@ static __always_inline long bch2_dio_write_loop(struct dio_write *dio)
 			dio->sync = sync = true;
 
 		dio->loop = true;
+        // 在闭包中执行 bch2_write
 		closure_call(&dio->op.cl, bch2_write, NULL, NULL);
 
 		if (!sync)
@@ -576,6 +582,7 @@ static void bch2_dio_write_loop_async(struct bch_write_op *op)
 		bch2_dio_write_continue(dio);
 }
 
+// 直接 io 写
 ssize_t bch2_direct_write(struct kiocb *req, struct iov_iter *iter)
 {
 	struct file *file = req->ki_filp;
@@ -597,6 +604,7 @@ ssize_t bch2_direct_write(struct kiocb *req, struct iov_iter *iter)
 
 	inode_lock(&inode->v);
 
+    // 校验
 	ret = generic_write_checks(req, iter);
 	if (unlikely(ret <= 0))
 		goto err_put_write_ref;
@@ -614,15 +622,18 @@ ssize_t bch2_direct_write(struct kiocb *req, struct iov_iter *iter)
 		goto err_put_write_ref;
 	}
 
+    // 开始直接 io
 	inode_dio_begin(&inode->v);
 	bch2_pagecache_block_get(inode);
 
 	extending = req->ki_pos + iter->count > inode->v.i_size;
 	if (!extending) {
+        // 不是延展不用加锁
 		inode_unlock(&inode->v);
 		locked = false;
 	}
 
+    // 申请 bio
 	bio = bio_alloc_bioset(NULL,
 			       bio_iov_vecs_to_alloc(iter, BIO_MAX_VECS),
 			       REQ_OP_WRITE | REQ_SYNC | REQ_IDLE,
@@ -651,6 +662,7 @@ ssize_t bch2_direct_write(struct kiocb *req, struct iov_iter *iter)
 			goto err_put_bio;
 	}
 
+    // bio 写循环
 	ret = bch2_dio_write_loop(dio);
 out:
 	if (locked)
@@ -658,7 +670,9 @@ out:
 	return ret;
 err_put_bio:
 	bch2_pagecache_block_put(inode);
+    // 释放 bio
 	bio_put(bio);
+    // 写完了
 	inode_dio_end(&inode->v);
 err_put_write_ref:
 	bch2_write_ref_put(c, BCH_WRITE_REF_dio_write);

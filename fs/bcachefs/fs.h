@@ -38,6 +38,7 @@ struct bch_inode_info {
 	struct bch_devs_mask	ei_devs_need_flush;
 
 	/* copy of inode in btree: */
+    /* btree 中 inode 的副本: */
 	struct bch_inode_unpacked ei_inode;
 };
 

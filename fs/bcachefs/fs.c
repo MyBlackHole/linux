@@ -192,6 +192,7 @@ static struct bch_inode_info *bch2_inode_insert(struct bch_fs *c, struct bch_ino
 		inode = old;
 	} else {
 		mutex_lock(&c->vfs_inodes_lock);
+		// 挂载 inode
 		list_add(&inode->ei_vfs_inode_list, &c->vfs_inodes_list);
 		mutex_unlock(&c->vfs_inodes_lock);
 		/*
@@ -1149,6 +1150,7 @@ static int bch2_open(struct inode *vinode, struct file *file)
 	return generic_file_open(vinode, file);
 }
 
+// 文件操作集
 static const struct file_operations bch_file_operations = {
 	.open		= bch2_open,
 	.llseek		= bch2_llseek,
@@ -1166,6 +1168,7 @@ static const struct file_operations bch_file_operations = {
 	.remap_file_range = bch2_remap_file_range,
 };
 
+// 文件 inode 操作集
 static const struct inode_operations bch_file_inode_operations = {
 	.getattr	= bch2_getattr,
 	.setattr	= bch2_setattr,
@@ -1177,6 +1180,7 @@ static const struct inode_operations bch_file_inode_operations = {
 #endif
 };
 
+// 目录 inode 操作集
 static const struct inode_operations bch_dir_inode_operations = {
 	.lookup		= bch2_lookup,
 	.create		= bch2_create,
@@ -1197,6 +1201,7 @@ static const struct inode_operations bch_dir_inode_operations = {
 #endif
 };
 
+// 目录操作集
 static const struct file_operations bch_dir_file_operations = {
 	.llseek		= bch2_dir_llseek,
 	.read		= generic_read_dir,
@@ -1208,6 +1213,7 @@ static const struct file_operations bch_dir_file_operations = {
 #endif
 };
 
+// 软连 inode 操作集
 static const struct inode_operations bch_symlink_inode_operations = {
 	.get_link	= page_get_link,
 	.getattr	= bch2_getattr,
@@ -1219,6 +1225,7 @@ static const struct inode_operations bch_symlink_inode_operations = {
 #endif
 };
 
+// 特殊 inode 操作集
 static const struct inode_operations bch_special_inode_operations = {
 	.getattr	= bch2_getattr,
 	.setattr	= bch2_setattr,
@@ -1229,6 +1236,7 @@ static const struct inode_operations bch_special_inode_operations = {
 #endif
 };
 
+// 地址空间操作集
 static const struct address_space_operations bch_address_space_operations = {
 	.read_folio	= bch2_read_folio,
 	.writepages	= bch2_writepages,
@@ -1478,6 +1486,7 @@ static const struct export_operations bch_export_ops = {
 	.get_name	= bch2_get_name,
 };
 
+// vfs 层 inode 实现初始化
 static void bch2_vfs_inode_init(struct btree_trans *trans, subvol_inum inum,
 				struct bch_inode_info *inode,
 				struct bch_inode_unpacked *bi,
