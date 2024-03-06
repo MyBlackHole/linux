@@ -970,8 +970,7 @@ void bch2_fs_chardev_exit(struct bch_fs *c)
 		idr_remove(&bch_chardev_minor, c->minor);
 }
 
-// 字符设备初始化
-// 同时注册了 bch_fs 结构实例到 idr
+// 注册 bch_fs 结构实例到 idr, 与绑定字符设备到文件系统
 int bch2_fs_chardev_init(struct bch_fs *c)
 {
 	c->minor = idr_alloc(&bch_chardev_minor, c, 0, 0, GFP_KERNEL);
@@ -995,10 +994,13 @@ void bch2_chardev_exit(void)
 		unregister_chrdev(bch_chardev_major, "bcachefs");
 }
 
+// 字符设备初始化
 int __init bch2_chardev_init(void)
 {
 	int ret;
 
+	// 注册字符设备
+	// 绑定字符操作集
 	bch_chardev_major = register_chrdev(0, "bcachefs-ctl", &bch_chardev_fops);
 	if (bch_chardev_major < 0)
 		return bch_chardev_major;
@@ -1007,6 +1009,7 @@ int __init bch2_chardev_init(void)
 	if (ret)
 		goto major_out;
 
+	// 创建字符设备
 	bch_chardev = device_create(&bch_chardev_class, NULL,
 				    MKDEV(bch_chardev_major, U8_MAX),
 				    NULL, "bcachefs-ctl");

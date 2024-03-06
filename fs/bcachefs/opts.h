@@ -53,7 +53,9 @@ void SET_BCH2_NO_SB_OPT(struct bch_sb *, u64);
 
 /* When can be set: */
 enum opt_flags {
+    // 文件系统选项
 	OPT_FS		= (1 << 0),	/* Filesystem option */
+    // 设备选项
 	OPT_DEVICE	= (1 << 1),	/* Device option */
 	OPT_INODE	= (1 << 2),	/* Inode option */
 	OPT_FORMAT	= (1 << 3),	/* May be specified at format time */
@@ -478,6 +480,7 @@ enum fsck_err_opts {
 	  NULL,		"BTREE_ITER_prefetch casuse btree nodes to be\n"\
 	  " prefetched sequentially")
 
+// 文件系统设置选项
 struct bch_opts {
 #define x(_name, _bits, ...)	unsigned _name##_defined:1;
 	BCH_OPTS()
@@ -508,6 +511,7 @@ do {									\
 	(_opts)._name = _v;						\
 } while (0)
 
+// 初始化的文件系统选项
 static inline struct bch_opts bch2_opts_empty(void)
 {
 	return (struct bch_opts) { 0 };

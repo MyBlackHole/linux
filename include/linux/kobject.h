@@ -176,6 +176,7 @@ struct kset {
 void kset_init(struct kset *kset);
 int __must_check kset_register(struct kset *kset);
 void kset_unregister(struct kset *kset);
+// 注册 name 到 parent_kobj(例如 /sys/fs)
 struct kset * __must_check kset_create_and_add(const char *name, const struct kset_uevent_ops *u,
 					       struct kobject *parent_kobj);
 

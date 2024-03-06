@@ -164,6 +164,7 @@ KTYPE(bch2_fs_opts_dir);
 KTYPE(bch2_fs_time_stats);
 KTYPE(bch2_dev);
 
+// /sys/fs/bcachefs
 static struct kset *bcachefs_kset;
 static LIST_HEAD(bch_fs_list);
 static DEFINE_MUTEX(bch_fs_list_lock);
@@ -175,6 +176,7 @@ static int bch2_dev_alloc(struct bch_fs *, unsigned);
 static int bch2_dev_sysfs_online(struct bch_fs *, struct bch_dev *);
 static void __bch2_dev_read_only(struct bch_fs *, struct bch_dev *);
 
+// dev_t 到 bch_fs
 struct bch_fs *bch2_dev_to_fs(dev_t dev)
 {
 	struct bch_fs *c;
@@ -673,6 +675,7 @@ void bch2_fs_stop(struct bch_fs *c)
 	bch2_fs_free(c);
 }
 
+// 上线文件系统
 static int bch2_fs_online(struct bch_fs *c)
 {
 	int ret = 0;
@@ -693,6 +696,10 @@ static int bch2_fs_online(struct bch_fs *c)
 
 	bch2_fs_debug_init(c);
 
+    // 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/
+    // 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/internal/
+    // 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/options/
+    // ...
 	ret = kobject_add(&c->kobj, NULL, "%pU", c->sb.user_uuid.b) ?:
 	    kobject_add(&c->internal, &c->kobj, "internal") ?:
 	    kobject_add(&c->opts_dir, &c->kobj, "options") ?:
@@ -718,6 +725,7 @@ static int bch2_fs_online(struct bch_fs *c)
 	}
 
 	BUG_ON(!list_empty(&c->list));
+    // 把 bch_fs 绑定到全局 bch_fs_list
 	list_add(&c->list, &bch_fs_list);
 err:
 	up_write(&c->state_lock);
@@ -824,12 +832,14 @@ static struct bch_fs *bch2_fs_alloc(struct bch_sb *sb, struct bch_opts opts)
 		goto err;
 
 	mutex_lock(&c->sb_lock);
+	// sb 赋值到 bch_fs
 	ret = bch2_sb_to_fs(c, sb);
 	mutex_unlock(&c->sb_lock);
 
 	if (ret)
 		goto err;
 
+	// 打印 uuid
 	pr_uuid(&name, c->sb.user_uuid.b);
 	ret = name.allocation_failure ? -BCH_ERR_ENOMEM_fs_name_alloc : 0;
 	if (ret)
@@ -847,11 +857,13 @@ static struct bch_fs *bch2_fs_alloc(struct bch_sb *sb, struct bch_opts opts)
 	    !BCH_SB_JOURNAL_RECLAIM_DELAY(sb))
 		SET_BCH_SB_JOURNAL_RECLAIM_DELAY(sb, 100);
 
+	// 设置默认参数
 	c->opts = bch2_opts_default;
 	ret = bch2_opts_from_sb(&c->opts, sb);
 	if (ret)
 		goto err;
 
+	// 更新用户设置参数
 	bch2_opts_apply(&c->opts, opts);
 
 	c->btree_key_cache_btrees |= 1U << BTREE_ID_alloc;
@@ -2062,6 +2074,7 @@ static inline int sb_cmp(struct bch_sb *l, struct bch_sb *r)
 struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 			    struct bch_opts opts)
 {
+    // 声明 bch_sb_handle 数组
 	DARRAY(struct bch_sb_handle) sbs = { 0 };
 	struct bch_fs *c = NULL;
 	struct bch_sb_handle *best = NULL;
@@ -2076,6 +2089,7 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 		goto err;
 	}
 
+    // 创建指定大小
 	ret = darray_make_room(&sbs, nr_devices);
 	if (ret)
 		goto err;
@@ -2083,10 +2097,12 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 	for (unsigned i = 0; i < nr_devices; i++) {
 		struct bch_sb_handle sb = { NULL };
 
+        // path to bch_sb_handle
 		ret = bch2_read_super(devices[i], &opts, &sb);
 		if (ret)
 			goto err;
 
+        // sb 添加到 sbs 数组
 		BUG_ON(darray_push(&sbs, sb));
 	}
 
@@ -2115,6 +2131,7 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 			goto err_print;
 	}
 
+    // 每个 bch_fs 会记录所有设备信息
     // 分配初始化文件系统
 	c = bch2_fs_alloc(best->sb, opts);
 	ret = PTR_ERR_OR_ZERO(c);
@@ -2175,6 +2192,8 @@ static int __init bcachefs_init(void)
 {
 	bch2_bkey_pack_test();
 
+    // vfs_init: 注册文件系统类型
+    // chardev_init: 注册字符设备
 	if (!(bcachefs_kset = kset_create_and_add("bcachefs", NULL, fs_kobj)) ||
 	    bch2_btree_key_cache_init() ||
 	    bch2_chardev_init() ||

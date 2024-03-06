@@ -226,6 +226,7 @@ static inline void uuid_unparse_lower(u8 *uuid, char *out)
 #include <uuid/uuid.h>
 #endif
 
+// 打印 uuid
 static inline void pr_uuid(struct printbuf *out, u8 *uuid)
 {
 	char uuid_str[40];

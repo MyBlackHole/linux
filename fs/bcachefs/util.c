@@ -840,6 +840,7 @@ void bch2_darray_str_exit(darray_str *d)
 	darray_exit(d);
 }
 
+// 解析切分 devs
 int bch2_split_devs(const char *_dev_name, darray_str *ret)
 {
 	darray_init(ret);

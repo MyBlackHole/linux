@@ -772,9 +772,9 @@ struct bch_fs {
 		u64		btrees_lost_data;
 	}			sb;
 
-
 	struct bch_sb_handle	disk_sb;
 
+    // 扇区数量 对数
 	unsigned short		block_bits;	/* ilog2(block_size) */
 
 	u16			btree_foreground_merge_threshold;
@@ -1020,6 +1020,7 @@ struct bch_fs {
 	size_t			reflink_gc_nr;
 
 	/* fs.c */
+    // 挂载 inode 的列表
 	struct list_head	vfs_inodes_list;
 	struct mutex		vfs_inodes_lock;
 

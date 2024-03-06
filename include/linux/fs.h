@@ -1206,6 +1206,7 @@ extern int send_sigurg(struct fown_struct *fown);
  * sb->s_flags.  Note that these mirror the equivalent MS_* flags where
  * represented in both.
  */
+// 只读挂载
 #define SB_RDONLY       BIT(0)	/* Mount read-only */
 #define SB_NOSUID       BIT(1)	/* Ignore suid and sgid bits */
 #define SB_NODEV        BIT(2)	/* Disallow access to device special files */
@@ -1223,6 +1224,7 @@ extern int send_sigurg(struct fown_struct *fown);
 #define SB_LAZYTIME     BIT(25)	/* Update the on-disk [acm]times lazily */
 
 /* These sb flags are internal to the kernel */
+/* 这些 sb 标志是内核内部的 */
 #define SB_DEAD         BIT(21)
 #define SB_DYING        BIT(24)
 #define SB_SUBMOUNT     BIT(26)
@@ -2652,6 +2654,7 @@ int kiocb_modified(struct kiocb *iocb);
 
 int sync_inode_metadata(struct inode *inode, int wait);
 
+// 文件系统类型描述结构
 struct file_system_type {
 	// 名 如:xfs
 	const char *name;

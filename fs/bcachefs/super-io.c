@@ -542,6 +542,7 @@ static void bch2_sb_update(struct bch_fs *c)
 	}
 }
 
+// 移动 src 内容到 bch_sb_handle 的 sb
 static int __copy_super(struct bch_sb_handle *dst_handle, struct bch_sb *src)
 {
 	struct bch_sb_field *src_f, *dst_f;
@@ -847,6 +848,7 @@ err_no_print:
 	goto out;
 }
 
+// 读取指定路径转换为 bch_sb_handle
 int bch2_read_super(const char *path, struct bch_opts *opts,
 		    struct bch_sb_handle *sb)
 {

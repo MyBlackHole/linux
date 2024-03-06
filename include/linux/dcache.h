@@ -278,6 +278,7 @@ extern void shrink_dcache_parent(struct dentry *);
 extern void d_invalidate(struct dentry *);
 
 /* only used at mount-time */
+/* 仅在挂载时使用 */
 extern struct dentry * d_make_root(struct inode *);
 
 extern void d_mark_tmpfile(struct file *, struct inode *);

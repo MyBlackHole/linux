@@ -1519,6 +1519,7 @@ static inline void bio_end_io_acct(struct bio *bio, unsigned long start_time)
 int bdev_read_only(struct block_device *bdev);
 int set_blocksize(struct file *file, int size);
 
+// 通过路径获取内核 dev_t
 int lookup_bdev(const char *pathname, dev_t *dev);
 
 void blkdev_show(struct seq_file *seqf, off_t offset);

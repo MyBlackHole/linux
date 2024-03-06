@@ -62,8 +62,10 @@ static inline int __darray_make_room(darray_char *d, size_t t_size, size_t more,
 	_ret;								\
 })
 
+// 添加元素到数组
 #define darray_push(_d, _item)	darray_push_gfp(_d, _item, GFP_KERNEL)
 
+// 从数组移除元素
 #define darray_pop(_d)		((_d)->data[--(_d)->nr])
 
 #define darray_first(_d)	((_d).data[0])
@@ -85,9 +87,11 @@ static inline int __darray_make_room(darray_char *d, size_t t_size, size_t more,
 #define __darray_for_each(_d, _i)						\
 	for ((_i) = (_d).data; _i < (_d).data + (_d).nr; _i++)
 
+// 遍历数组
 #define darray_for_each(_d, _i)						\
 	for (typeof(&(_d).data[0]) _i = (_d).data; _i < (_d).data + (_d).nr; _i++)
 
+// 反向遍历数组
 #define darray_for_each_reverse(_d, _i)					\
 	for (typeof(&(_d).data[0]) _i = (_d).data + (_d).nr - 1; _i >= (_d).data; --_i)
 

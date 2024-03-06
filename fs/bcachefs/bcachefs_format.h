@@ -766,29 +766,27 @@ struct bch_sb_layout {
  *		  superblock is written
  * @features	- enabled incompatible features
  */
-// @offset - 写入此 sb 的扇区
-//   @version - 磁盘格式版本
-//   @version_min - 该文件系统包含的最旧的元数据版本； 所以我们可以
-//   安全地删除兼容性代码并拒绝挂载文件系统
-//   我们需要它
-//   @magic - 标识为 bcachefs 超级块 (BCHFS_MAGIC)
-//   @seq - 每次写入超级块时递增
-//   @uuid - 用于生成各种幻数并识别
-//   会员设备，永不改变
-//   @user_uuid - 用户可见的UUID，可以更改
-//   @label - 文件系统标签
-//   @seq - 标识最近的超级块，每次写入超级块递增
-//   @features - 启用不兼容的功能
 struct bch_sb {
 	struct bch_csum		csum;
+	// 磁盘格式版本
 	__le16			version;
+	// 该文件系统包含的最旧的元数据版本； 所以我们可以
+	// 安全地删除兼容性代码并拒绝挂载文件系统
+	// 我们需要它
 	__le16			version_min;
 	__le16			pad[2];
+	// 标识为 bcachefs 超级块 (BCHFS_MAGIC)
 	__uuid_t		magic;
+	// 用于生成各种幻数并识别
+	// 永不改变
 	__uuid_t		uuid;
+	// 用户可见的UUID，可以更改
 	__uuid_t		user_uuid;
+	// 文件系统标签
 	__u8			label[BCH_SB_LABEL_SIZE];
+	// 写入此 sb 的扇区
 	__le64			offset;
+	// 标识最近的超级块，每次写入超级块递增
 	__le64			seq;
 
 	__le16			block_size;
@@ -802,6 +800,7 @@ struct bch_sb {
 
 	__le64			flags[7];
 	__le64			write_time;
+	// 启用不兼容的功能
 	__le64			features[2];
 	__le64			compat[2];
 

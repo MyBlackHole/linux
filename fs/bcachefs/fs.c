@@ -1692,6 +1692,7 @@ static int bch2_sync_fs(struct super_block *sb, int wait)
 	return bch2_err_class(ret);
 }
 
+// 通过 path 到 bch_fs
 static struct bch_fs *bch2_path_to_fs(const char *path)
 {
 	struct bch_fs *c;
@@ -1889,6 +1890,7 @@ static struct dentry *bch2_mount(struct file_system_type *fs_type,
 
 	opt_set(opts, read_only, (flags & SB_RDONLY) != 0);
 
+	// 参数解析设置
 	ret = bch2_parse_mount_opts(NULL, &opts, data);
 	if (ret) {
 		ret = bch2_err_class(ret);
@@ -1899,11 +1901,14 @@ static struct dentry *bch2_mount(struct file_system_type *fs_type,
 		return ERR_PTR(-EINVAL);
 
 	darray_str devs;
+	// 获取设备数量与切分字符串
 	ret = bch2_split_devs(dev_name, &devs);
 	if (ret)
 		return ERR_PTR(ret);
 
 	darray_fs devs_to_fs = {};
+	// 遍历所有设备路径
+	// devs_to_fs 都是空的?
 	darray_for_each(devs, i) {
 		ret = darray_push(&devs_to_fs, bch2_path_to_fs(*i));
 		if (ret) {

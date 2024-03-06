@@ -140,6 +140,7 @@ enum closure_state {
 #define CLOSURE_REMAINING_MASK		(CLOSURE_BITS_START - 1)
 #define CLOSURE_REMAINING_INITIALIZER	(1|CLOSURE_RUNNING)
 
+// 内核闭包实现
 struct closure {
 	union {
 		struct {
@@ -168,6 +169,7 @@ struct closure {
 };
 
 void closure_sub(struct closure *cl, int v);
+// 减少闭包引用次数
 void closure_put(struct closure *cl);
 void __closure_wake_up(struct closure_waitlist *list);
 bool closure_wait(struct closure_waitlist *list, struct closure *cl);
@@ -272,6 +274,7 @@ static inline void closure_queue(struct closure *cl)
 /**
  * closure_get - increment a closure's refcount
  */
+// 增加闭包的引用计数
 static inline void closure_get(struct closure *cl)
 {
 	cl->closure_get_happened = true;

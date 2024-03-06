@@ -16,14 +16,21 @@ typedef void * (mempool_alloc_t)(gfp_t gfp_mask, void *pool_data);
 typedef void (mempool_free_t)(void *element, void *pool_data);
 
 typedef struct mempool_s {
+	// 保护内存池的自旋锁
 	spinlock_t lock;
+	// 内存池中最少可分配的元素数目
 	int min_nr;		/* nr of elements at *elements */
+	// 尚余可分配的元素数目
 	int curr_nr;		/* Current nr of elements at *elements */
+	// 指向元素池的指针
 	void **elements;
-
+	// 内存源，即池中元素真实的分配处
 	void *pool_data;
+	// 分配元素的方法
 	mempool_alloc_t *alloc;
+	// 回收元素的方法
 	mempool_free_t *free;
+	// 被阻塞的等待队列
 	wait_queue_head_t wait;
 } mempool_t;
 
@@ -47,6 +54,7 @@ int mempool_init_noprof(mempool_t *pool, int min_nr, mempool_alloc_t *alloc_fn,
 #define mempool_init(...)						\
 	alloc_hooks(mempool_init_noprof(__VA_ARGS__))
 
+// 创建内存池
 extern mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
 			mempool_free_t *free_fn, void *pool_data);
 
@@ -61,13 +69,16 @@ extern mempool_t *mempool_create_node_noprof(int min_nr, mempool_alloc_t *alloc_
 			    GFP_KERNEL, NUMA_NO_NODE)
 
 extern int mempool_resize(mempool_t *pool, int new_min_nr);
+// 销毁内存池
 extern void mempool_destroy(mempool_t *pool);
 
 extern void *mempool_alloc_noprof(mempool_t *pool, gfp_t gfp_mask) __malloc;
+/* 申请内存池内存 */
 #define mempool_alloc(...)						\
 	alloc_hooks(mempool_alloc_noprof(__VA_ARGS__))
 
 extern void *mempool_alloc_preallocated(mempool_t *pool) __malloc;
+/* 释放内存池内存 */
 extern void mempool_free(void *element, mempool_t *pool);
 
 /*
