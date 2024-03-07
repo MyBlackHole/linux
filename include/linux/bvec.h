@@ -29,12 +29,12 @@ struct page;
  * This holds because page_is_mergeable() checks the above property.
  */
 // struct bio_vec - 连续的物理内存地址范围
-//   @bv_page：与地址范围关联的第一页。
-//   @bv_len：地址范围内的字节数。
-//   @bv_offset：相对于@bv_page 开头的地址范围的开头。
 struct bio_vec {
+    // 与地址范围关联的第一页。
 	struct page	*bv_page;
+    // 地址范围内的字节数。
 	unsigned int	bv_len;
+    // 相对于@bv_page 开头的地址范围的开头。
 	unsigned int	bv_offset;
 };
 

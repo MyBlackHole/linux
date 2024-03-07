@@ -890,6 +890,7 @@ struct bch_fs {
 	struct mutex		usage_scratch_lock;
 	struct bch_fs_usage_online *usage_scratch;
 
+    // 读|写锁
 	struct io_clock		io_clock[2];
 
 	/* JOURNAL SEQ BLACKLIST */
@@ -973,6 +974,7 @@ struct bch_fs {
 
 	atomic64_t		key_version;
 
+    // 大型 bkey 池
 	mempool_t		large_bkey_pool;
 
 	/* MOVE.C */
@@ -1177,6 +1179,7 @@ static inline unsigned bucket_bytes(const struct bch_dev *ca)
 	return ca->mi.bucket_size << 9;
 }
 
+// 块大小
 static inline unsigned block_bytes(const struct bch_fs *c)
 {
 	return c->opts.block_size;

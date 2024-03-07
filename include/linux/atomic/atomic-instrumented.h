@@ -1694,6 +1694,7 @@ atomic64_add(s64 i, atomic64_t *v)
  *
  * Return: The updated value of @v.
  */
+// 原子添加
 static __always_inline s64
 atomic64_add_return(s64 i, atomic64_t *v)
 {

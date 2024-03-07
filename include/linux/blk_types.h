@@ -205,19 +205,20 @@ typedef unsigned int blk_qc_t;
  * main unit of I/O for the block layer and lower layers (ie drivers and
  * stacking drivers)
  */
-// 块层和下层I/O的主要单元（即驱动程序和堆栈驱动程序）
+/* 块层和下层I/O的主要单元（即驱动程序和堆栈驱动程序） */
 struct bio {
-    /* 若一个req中包含多个bio，
-     * 这些bio通过bi_next组成单向链表，
-     * 链表以NULL结尾。（bio merge导致一个req中存在多个bio，如果没有merge，一个bio对应一个req）
-     * */
+	/*
+	 * 若一个req中包含多个bio，
+	 * 这些bio通过bi_next组成单向链表，
+	 * 链表以NULL结尾。（bio merge导致一个req中存在多个bio，如果没有merge，一个bio对应一个req）
+	 */
 	struct bio		*bi_next;	/* request queue link */
-    /* bio 待操作的存储设备 */
+	/* bio 待操作的存储设备 */
 	struct block_device	*bi_bdev;
 	blk_opf_t		bi_opf;		/* bottom bits REQ_OP, top bits
 						 * req_flags.
 						 */
-    // 状态和命令标志
+	// 状态和命令标志
 	unsigned short		bi_flags;	/* BIO_* below */
 	unsigned short		bi_ioprio;
 	enum rw_hint		bi_write_hint;
@@ -232,6 +233,7 @@ struct bio {
 		/* for plugged zoned writes only: */
 		unsigned int		__bi_nr_segments;
 	};
+	// io 结束回调
 	bio_end_io_t		*bi_end_io;
 	void			*bi_private;
 #ifdef CONFIG_BLK_CGROUP

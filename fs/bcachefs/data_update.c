@@ -89,6 +89,7 @@ static void trace_move_extent_fail2(struct data_update *m,
 	printbuf_exit(&buf);
 }
 
+// 更新数据、索引, 内部实现
 static int __bch2_data_update_index_update(struct btree_trans *trans,
 					   struct bch_write_op *op)
 {
@@ -100,10 +101,12 @@ static int __bch2_data_update_index_update(struct btree_trans *trans,
 	struct bkey_buf _new, _insert;
 	int ret = 0;
 
+    // 初始化 bkey_buf
 	bch2_bkey_buf_init(&_new);
 	bch2_bkey_buf_init(&_insert);
 	bch2_bkey_buf_realloc(&_insert, c, U8_MAX);
 
+    // 迭代初始化
 	bch2_trans_iter_init(trans, &iter, m->btree_id,
 			     bkey_start_pos(&bch2_keylist_front(keys)->k),
 			     BTREE_ITER_slots|BTREE_ITER_intent);
@@ -336,6 +339,7 @@ out:
 	return ret;
 }
 
+// 更新数据、索引
 int bch2_data_update_index_update(struct bch_write_op *op)
 {
 	return bch2_trans_run(op->c, __bch2_data_update_index_update(trans, op));

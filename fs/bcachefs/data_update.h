@@ -19,6 +19,7 @@ struct data_update_opts {
 
 struct data_update {
 	/* extent being updated: */
+    /* 更新范围*/
 	enum btree_id		btree_id;
 	struct bkey_buf		k;
 	struct data_update_opts	data_opts;

@@ -131,7 +131,7 @@ struct bkey_format {
 };
 
 /* Btree keys - all units are in sectors */
-
+/* Btree 键 - 所有单元都在扇区中 */
 struct bpos {
 	/*
 	 * Word order matches machine byte order - btree code treats a bpos as a
@@ -143,6 +143,7 @@ struct bpos {
 	 */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	__u32		snapshot;
+     // 扇区数?
 	__u64		offset;
 	__u64		inode;
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -198,9 +199,11 @@ __aligned(4)
 
 struct bkey {
 	/* Size of combined key and value, in u64s */
+    /* 组合键和值的大小, 单位 64 位 */
 	__u8		u64s;
 
 	/* Format of key (0 for format local to btree node) */
+    /* 键的格式（0 for Bormat local to btree 节点） */
 #if defined(__LITTLE_ENDIAN_BITFIELD)
 	__u8		format:7,
 			needs_whiteout:1;
@@ -298,6 +301,7 @@ typedef struct {
 	__le64			hi;
 } bch_le128;
 
+// 键大小(单位64位)
 #define BKEY_U64s			(sizeof(struct bkey) / sizeof(__u64))
 #define BKEY_U64s_MAX			U8_MAX
 #define BKEY_VAL_U64s_MAX		(BKEY_U64s_MAX - BKEY_U64s)
@@ -335,6 +339,7 @@ enum bch_bkey_fields {
 })
 
 /* bkey with inline value */
+/* 带有内联价值的bkey */
 struct bkey_i {
 	__u64			_data[0];
 
@@ -964,6 +969,7 @@ static inline void SET_BCH_SB_BACKGROUND_COMPRESSION_TYPE(struct bch_sb *sb, __u
 enum bch_sb_feature {
 #define x(f, n) BCH_FEATURE_##f,
 	BCH_SB_FEATURES()
+    // BCH_FEATURE_inline_data: 内联数据
 #undef x
 	BCH_FEATURE_NR,
 };

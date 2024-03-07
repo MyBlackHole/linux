@@ -7,6 +7,7 @@
 
 struct bkey_buf {
 	struct bkey_i	*k;
+    // 栈
 	u64		onstack[12];
 };
 

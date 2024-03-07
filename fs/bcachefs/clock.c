@@ -127,6 +127,7 @@ void bch2_kthread_io_clock_wait(struct io_clock *clock,
 	bch2_io_timer_del(clock, &wait.io_timer);
 }
 
+// 获取过期定时器
 static struct io_timer *get_expired_timer(struct io_clock *clock,
 					  unsigned long now)
 {

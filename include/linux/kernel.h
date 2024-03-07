@@ -42,6 +42,7 @@
 #define STACK_MAGIC	0xdeadbeef
 
 /* generic data direction definitions */
+/* 通用数据方向定义 */
 #define READ			0
 #define WRITE			1
 

@@ -43,8 +43,10 @@ struct bch_write_op {
 	struct bch_fs		*c;
     // io 结束回调
 	void			(*end_io)(struct bch_write_op *);
+    // 开始时间
 	u64			start_time;
 
+    // 扇区
 	unsigned		written; /* sectors */
 	u16			flags;
 	s16			error; /* dio write path expects it to hold -ERESTARTSYS... */
@@ -83,16 +85,20 @@ struct bch_write_op {
 
 	struct bch_devs_mask	failed;
 
+    // 插入 key 列表
 	struct keylist		insert_keys;
+    // 内联 key
 	u64			inline_keys[BKEY_EXTENT_U64s_MAX * 2];
 
 	/*
 	 * Bitmask of devices that have had nocow writes issued to them since
 	 * last flush:
 	 */
+    // 自上次刷新以来已向其发出 nocow 写入的设备的位掩码：
 	struct bch_devs_mask	*devs_need_flush;
 
 	/* Must be last: */
+    /* 必须是最后一个 */
 	struct bch_write_bio	wbio;
 };
 

@@ -395,6 +395,7 @@ static int bch2_write_index_default(struct bch_write_op *op)
 }
 
 /* Writes */
+// 开始写了吗
 
 void bch2_submit_wbio_replicas(struct bch_write_bio *wbio, struct bch_fs *c,
 			       enum bch_data_type type,
@@ -507,6 +508,7 @@ static noinline int bch2_write_drop_io_error_ptrs(struct bch_write_op *op)
  * __bch2_write_index - after a write, update index to point to new data
  * @op:		bch_write_op to process
  */
+// 写入后，更新索引指向新数据
 static void __bch2_write_index(struct bch_write_op *op)
 {
 	struct bch_fs *c = op->c;
@@ -521,6 +523,7 @@ static void __bch2_write_index(struct bch_write_op *op)
 	}
 
 	if (!bch2_keylist_empty(keys)) {
+        // 获取 keys 总扇区大小
 		u64 sectors_start = keylist_sectors(keys);
 
 		ret = !(op->flags & BCH_WRITE_MOVE)
@@ -530,6 +533,7 @@ static void __bch2_write_index(struct bch_write_op *op)
 		BUG_ON(bch2_err_matches(ret, BCH_ERR_transaction_restart));
 		BUG_ON(keylist_sectors(keys) && !ret);
 
+        // 计算写入大小
 		op->written += sectors_start - keylist_sectors(keys);
 
 		if (ret && !bch2_err_matches(ret, EROFS)) {
@@ -642,6 +646,7 @@ void bch2_write_point_do_index_updates(struct work_struct *work)
 	}
 }
 
+// io 结束回调
 static void bch2_write_endio(struct bio *bio)
 {
 	struct closure *cl		= bio->bi_private;
@@ -1467,6 +1472,7 @@ err:
 			}
 		}
 
+        // 设置 io 回调
 		bio->bi_end_io	= bch2_write_endio;
 		bio->bi_private	= &op->cl;
 		bio->bi_opf |= REQ_OP_WRITE;
@@ -1508,6 +1514,7 @@ out_nofs_restore:
 	memalloc_nofs_restore(nofs_flags);
 }
 
+// 内联写入
 static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 {
 	struct bio *bio = &op->wbio.bio;
@@ -1521,6 +1528,7 @@ static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 	op->flags |= BCH_WRITE_WROTE_DATA_INLINE;
 	op->flags |= BCH_WRITE_DONE;
 
+    // 设置特征为内联数据
 	bch2_check_set_feature(op->c, BCH_FEATURE_inline_data);
 
 	ret = bch2_keylist_realloc(&op->insert_keys, op->inline_keys,
@@ -1531,9 +1539,12 @@ static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 		goto err;
 	}
 
+    // 获取 bio 扇区大小
 	sectors = bio_sectors(bio);
+    // 加上内联数据大小
 	op->pos.offset += sectors;
 
+    // 内联数据初始化
 	id = bkey_inline_data_init(op->insert_keys.top);
 	id->k.p		= op->pos;
 	id->k.version	= op->version;
@@ -1541,13 +1552,16 @@ static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 
 	iter = bio->bi_iter;
 	iter.bi_size = data_len;
+    // 移动 bio 数据到 data
 	memcpy_from_bio(id->v.data, bio, iter);
 
 	while (data_len & 7)
 		id->v.data[data_len++] = '\0';
+    // 设置数据大小
 	set_bkey_val_bytes(&id->k, data_len);
 	bch2_keylist_push(&op->insert_keys);
 
+    // 更新索引
 	__bch2_write_index(op);
 err:
 	bch2_write_done(&op->cl);
@@ -1584,8 +1598,10 @@ CLOSURE_CALLBACK(bch2_write)
 	BUG_ON(bkey_eq(op->pos, POS_MAX));
 
 	op->nr_replicas_required = min_t(unsigned, op->nr_replicas_required, op->nr_replicas);
+	// 写开始时间
 	op->start_time = local_clock();
 	bch2_keylist_init(&op->insert_keys, op->inline_keys);
+	// 初始化 bch_write_bio.wbio
 	wbio_init(bio)->put_bio = false;
 
 	if (bio->bi_iter.bi_size & (c->opts.block_size - 1)) {
@@ -1599,11 +1615,13 @@ CLOSURE_CALLBACK(bch2_write)
 	}
 
 	if (c->opts.nochanges) {
+        // 只读
 		op->error = -BCH_ERR_erofs_no_writes;
 		goto err;
 	}
 
 	if (!(op->flags & BCH_WRITE_MOVE) &&
+        // 没有写
 	    !bch2_write_ref_tryget(c, BCH_WRITE_REF_write)) {
 		op->error = -BCH_ERR_erofs_no_writes;
 		goto err;
@@ -1617,6 +1635,7 @@ CLOSURE_CALLBACK(bch2_write)
 
 	if (c->opts.inline_data &&
 	    data_len <= min(block_bytes(c) / 2, 1024U)) {
+        // 直接内联写
 		bch2_write_data_inline(op, data_len);
 		return;
 	}

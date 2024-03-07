@@ -181,6 +181,7 @@ static inline int bch2_trans_commit(struct btree_trans *trans,
 	nested_lockrestart_do(_trans, _do ?: bch2_trans_commit(_trans, (_disk_res),\
 					(_journal_seq), (_flags)))
 
+// 事务包
 #define bch2_trans_run(_c, _do)						\
 ({									\
 	struct btree_trans *trans = bch2_trans_get(_c);			\
