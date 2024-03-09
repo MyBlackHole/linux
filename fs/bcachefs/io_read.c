@@ -1097,6 +1097,7 @@ out_read_done:
 	return 0;
 }
 
+// 读取的内部实现
 void __bch2_read(struct bch_fs *c, struct bch_read_bio *rbio,
 		 struct bvec_iter bvec_iter, subvol_inum inum,
 		 struct bch_io_failures *failed, unsigned flags)

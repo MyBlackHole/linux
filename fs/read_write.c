@@ -389,10 +389,13 @@ static ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, lo
 	struct iov_iter iter;
 	ssize_t ret;
 
+	// 初始化 kiocb
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = (ppos ? *ppos : 0);
+	// 初始化 iov_iter
 	iov_iter_ubuf(&iter, ITER_DEST, buf, len);
 
+	// 执行文件系统读操作
 	ret = filp->f_op->read_iter(&kiocb, &iter);
 	BUG_ON(ret == -EIOCBQUEUED);
 	if (ppos)
@@ -458,9 +461,9 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
 
-    // 验证
+	// 验证
 	if (!(file->f_mode & FMODE_READ))
-        // 读未打开
+		// 读未打开
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_READ))
 		return -EINVAL;
@@ -474,9 +477,10 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 		count =  MAX_RW_COUNT;
 
 	if (file->f_op->read)
-        // 自定义读操作
+		// 自定义读操作
 		ret = file->f_op->read(file, buf, count, pos);
 	else if (file->f_op->read_iter)
+		// 读取
 		ret = new_sync_read(file, buf, count, pos);
 	else
 		ret = -EINVAL;

@@ -142,6 +142,7 @@ struct bpos {
 	 * wasn't written in native endian order:
 	 */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    /* 我们要查找的快照 ID: */
 	__u32		snapshot;
      // 扇区数?
 	__u64		offset;
@@ -1419,6 +1420,7 @@ static inline bool btree_id_is_alloc(enum btree_id id)
 	}
 }
 
+// B 树最大深度
 #define BTREE_MAX_DEPTH		4U
 
 /* Btree nodes */

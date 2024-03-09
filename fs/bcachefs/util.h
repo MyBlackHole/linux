@@ -633,6 +633,7 @@ static inline void memset_u64s_tail(void *s, int c, unsigned bytes)
 		&(_array)[(_pos)],					\
 		sizeof((_array)[0]) * ((_nr) - (_pos)))
 
+/* 在 darray 的中间插入项目: */
 #define array_insert_item(_array, _nr, _pos, _new_item)			\
 do {									\
 	__array_insert_item(_array, _nr, _pos);				\
@@ -640,6 +641,7 @@ do {									\
 	(_array)[(_pos)] = (_new_item);					\
 } while (0)
 
+/* 在 darray 的中间删除项目: */
 #define array_remove_items(_array, _nr, _pos, _nr_to_remove)		\
 do {									\
 	(_nr) -= (_nr_to_remove);					\

@@ -794,6 +794,7 @@ struct bch_fs {
 
 	/* BTREE CACHE */
 	struct bio_set		btree_bio;
+    // worke 队列结构
 	struct workqueue_struct	*io_complete_wq;
 
 	struct btree_root	btree_roots_known[BTREE_ID_NR];

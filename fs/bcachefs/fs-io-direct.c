@@ -43,6 +43,7 @@ static CLOSURE_CALLBACK(bch2_dio_read_complete)
 	bio_check_or_release(&dio->rbio.bio, dio->should_dirty);
 }
 
+// io 读结束回调
 static void bch2_direct_IO_read_endio(struct bio *bio)
 {
 	struct dio_read *dio = bio->bi_private;
@@ -62,6 +63,7 @@ static void bch2_direct_IO_read_split_endio(struct bio *bio)
 	bio_check_or_release(bio, should_dirty);
 }
 
+// 直接 io 读取
 static int bch2_direct_IO_read(struct kiocb *req, struct iov_iter *iter)
 {
 	struct file *file = req->ki_filp;
@@ -78,9 +80,11 @@ static int bch2_direct_IO_read(struct kiocb *req, struct iov_iter *iter)
 	bch2_inode_opts_get(&opts, c, &inode->ei_inode);
 
 	/* bios must be 512 byte aligned: */
+	/* BIOS 必须是 512 字节对齐: */
 	if ((offset|iter->count) & (SECTOR_SIZE - 1))
 		return -EINVAL;
 
+	// 获取最小需要读
 	ret = min_t(loff_t, iter->count,
 		    max_t(loff_t, 0, i_size_read(&inode->v) - offset));
 
@@ -92,6 +96,7 @@ static int bch2_direct_IO_read(struct kiocb *req, struct iov_iter *iter)
 		shorten = 0;
 	iter->count -= shorten;
 
+	// 分配 bio
 	bio = bio_alloc_bioset(NULL,
 			       bio_iov_vecs_to_alloc(iter, BIO_MAX_VECS),
 			       REQ_OP_READ,
@@ -178,6 +183,7 @@ ssize_t bch2_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	struct file *file = iocb->ki_filp;
 	struct bch_inode_info *inode = file_bch_inode(file);
 	struct address_space *mapping = file->f_mapping;
+	// 希望读取的大小
 	size_t count = iov_iter_count(iter);
 	ssize_t ret;
 
@@ -185,9 +191,13 @@ ssize_t bch2_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 		return 0; /* skip atime */
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
+		// 直接 io
+
+		// 用于短时内 io 排序
 		struct blk_plug plug;
 
 		if (unlikely(mapping->nrpages)) {
+			// 同步指定范围脏数据
 			ret = filemap_write_and_wait_range(mapping,
 						iocb->ki_pos,
 						iocb->ki_pos + count - 1);
@@ -195,9 +205,11 @@ ssize_t bch2_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 				goto out;
 		}
 
+		// 修改访问时间
 		file_accessed(file);
 
 		blk_start_plug(&plug);
+		// 直接 io 读
 		ret = bch2_direct_IO_read(iocb, iter);
 		blk_finish_plug(&plug);
 
@@ -216,7 +228,7 @@ out:
 // 直接写
 
 struct dio_write {
-    // 文件侧表示
+	// 文件侧表示
 	struct kiocb			*req;
 	struct address_space		*mapping;
 	struct bch_inode_info		*inode;
@@ -229,12 +241,12 @@ struct dio_write {
 	struct quota_res		quota_res;
 	u64				written;
 
-    // 数据内存侧表示
+	// 数据内存侧表示
 	struct iov_iter			iter;
 	struct iovec			inline_vecs[2];
 
 	/* must be last: */
-    /* 必须是最后一个 */
+	/* 必须是最后一个 */
 	struct bch_write_op		op;
 };
 

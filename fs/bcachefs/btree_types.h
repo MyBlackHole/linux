@@ -41,14 +41,26 @@ struct bset_tree {
 	 * better: see comments in bset.c at cacheline_to_bkey() for
 	 * details
 	 */
+    /*
+     * 我们在数组中构造一个二叉树，
+     * 就像数组从 1 开始一样，
+     * 以便更好地在相同的缓存行上排列：
+     * 有关详细信息，
+     * 请参阅 bset.c 中的 cacheline_to_bkey() 注释
+     */
 
 	/* size of the binary tree and prev array */
+    /* 二叉树和前一个数组的大小? */
 	u16			size;
 
 	/* function of size - precalculated for to_inorder() */
+    /* 大小函数 - 为 to_inorder() 预先计算 */
 	u16			extra;
 
+    // data_offset/end_offset 指出
+    // 本 bset_tree(bset) 在 btree::data 中的开始结束偏移
 	u16			data_offset;
+    // 辅助数据(二叉树)在 btree::data 的偏移量
 	u16			aux_data_offset;
 	u16			end_offset;
 };
@@ -69,6 +81,7 @@ struct btree_bkey_cached_common {
 	bool			cached;
 };
 
+// 代表 btree 节点
 struct btree {
 	struct btree_bkey_cached_common c;
 
@@ -76,14 +89,18 @@ struct btree {
 	u64			hash_val;
 
 	unsigned long		flags;
+    // 已写入磁盘计数(单位是扇区)
 	u16			written;
+    // 当前有多少 set
 	u8			nsets;
 	u8			nr_key_bits;
 	u16			version_ondisk;
 
 	struct bkey_format	format;
 
+    // 256k
 	struct btree_node	*data;
+    // 二叉树, 每个 bset 一个
 	void			*aux_data;
 
 	/*
@@ -97,6 +114,9 @@ struct btree {
 
 	struct btree_nr_keys	nr;
 	u16			sib_u64s[2];
+    // 未写入的 whiteouts 计数(单位 u64)
+    // 这些 whiteout 掉的 bkeys 写入从
+    // btree::data 尾部起反向生长的空间
 	u16			whiteout_u64s;
 	u8			byte_order;
 	u8			unpack_fn_len;
@@ -104,6 +124,8 @@ struct btree {
 	struct btree_write	writes[2];
 
 	/* Key/pointer for this btree node */
+    /* 该 btree 节点的键/指针 */
+    // 父节点的 key value 的拷贝
 	__BKEY_PADDED(key, BKEY_BTREE_PTR_VAL_U64s_MAX);
 
 	/*
@@ -301,6 +323,7 @@ struct btree_path {
 	u8			intent_ref;
 
 	/* btree_iter_copy starts here: */
+    /* btree_iter_copy 从这里开始： */
 	struct bpos		pos;
 
 	enum btree_id		btree_id:5;
@@ -363,8 +386,10 @@ struct btree_iter {
 	u16			flags;
 
 	/* When we're filtering by snapshot, the snapshot ID we're looking for: */
+    /* 当我们按快照过滤时，我们要查找的快照 ID: */
 	unsigned		snapshot;
 
+    // 当前迭代器位置
 	struct bpos		pos;
 	/*
 	 * Current unpacked key - so that bch2_btree_iter_next()/
@@ -424,6 +449,7 @@ struct btree_insert_entry {
 	btree_path_idx_t	path;
 	struct bkey_i		*k;
 	/* key being overwritten: */
+    /* key 被覆盖: */
 	struct bkey		old_k;
 	const struct bch_val	*old_v;
 	unsigned long		ip_allocated;
@@ -470,6 +496,7 @@ struct btree_trans {
 	unsigned long		*paths_allocated;
 	struct btree_path	*paths;
 	btree_path_idx_t	*sorted;
+	// 待更新的元数据
 	struct btree_insert_entry *updates;
 
 	void			*mem;
@@ -480,6 +507,7 @@ struct btree_trans {
 	btree_path_idx_t	nr_paths;
 	btree_path_idx_t	nr_paths_max;
 	u8			fn_idx;
+	// 待更新的元数据数目跟踪
 	u8			nr_updates;
 	u8			lock_must_abort;
 	bool			lock_may_not_fail:1;

@@ -333,6 +333,7 @@ int bch2_snapshot_get_subvol(struct btree_trans *trans, u32 snapshot,
 		bch2_subvolume_get(trans, le32_to_cpu(snap.subvol), true, 0, subvol);
 }
 
+// 获取子卷快照 id
 int bch2_subvolume_get_snapshot(struct btree_trans *trans, u32 subvolid,
 				u32 *snapid)
 {

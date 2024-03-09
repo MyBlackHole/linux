@@ -655,12 +655,14 @@ void bch2_inode_generation_to_text(struct printbuf *out, struct bch_fs *c,
 	prt_printf(out, "generation: %u", le32_to_cpu(gen.v->bi_generation));
 }
 
+// bch_inode 初始化
 void bch2_inode_init_early(struct bch_fs *c,
 			   struct bch_inode_unpacked *inode_u)
 {
 	enum bch_str_hash_type str_hash =
 		bch2_str_hash_opt_to_type(c, c->opts.str_hash);
 
+    // 内存初始化
 	memset(inode_u, 0, sizeof(*inode_u));
 
 	/* ick */
@@ -669,6 +671,7 @@ void bch2_inode_init_early(struct bch_fs *c,
 			 sizeof(inode_u->bi_hash_seed));
 }
 
+// 初始化 inode
 void bch2_inode_init_late(struct bch_inode_unpacked *inode_u, u64 now,
 			  uid_t uid, gid_t gid, umode_t mode, dev_t rdev,
 			  struct bch_inode_unpacked *parent)
@@ -720,6 +723,7 @@ static inline u32 bkey_generation(struct bkey_s_c k)
 /*
  * This just finds an empty slot:
  */
+// 这只是找到一个空槽：
 int bch2_inode_create(struct btree_trans *trans,
 		      struct btree_iter *iter,
 		      struct bch_inode_unpacked *inode_u,
@@ -765,6 +769,7 @@ again:
 		 * We don't need to iterate over keys in every snapshot once
 		 * we've found just one:
 		 */
+        // 一旦我们只找到一个快照，我们就不需要迭代每个快照中的键：
 		pos = iter->pos.offset + 1;
 		bch2_btree_iter_set_pos(iter, POS(0, pos));
 	}

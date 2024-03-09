@@ -1001,6 +1001,13 @@ void blk_mark_disk_dead(struct gendisk *disk);
  * or when attempting a merge. For details, please see schedule() where
  * blk_flush_plug() is called.
  */
+// blk_plug 允许通过短时间保存 I/O 片段来构建相关请求的队列。
+// 这允许将顺序请求合并为单个更大的请求。
+// 由于请求批量从每个任务列表移至设备的 request_queue，因此可提高可扩展性
+// 因为 request_queue 锁的锁争用减少了。
+//
+// 将请求添加到插件列表或尝试合并时，可以不禁用抢占。 
+// 详细信息请参见schedule()，其中调用了blk_flush_plug()。
 struct blk_plug {
 	struct request *mq_list; /* blk-mq requests */
 
@@ -1014,6 +1021,7 @@ struct blk_plug {
 	bool multiple_queues;
 	bool has_elevator;
 
+    // 回调函数的链表，下发请求时会调用到
 	struct list_head cb_list; /* md requires an unplug callback */
 };
 

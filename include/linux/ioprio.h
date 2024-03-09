@@ -78,6 +78,7 @@ static inline int __get_task_ioprio(struct task_struct *p)
 }
 #endif /* CONFIG_BLOCK */
 
+// 获取当前进程 io 优先级
 static inline int get_current_ioprio(void)
 {
 	return __get_task_ioprio(current);

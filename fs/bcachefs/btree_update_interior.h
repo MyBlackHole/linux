@@ -292,6 +292,7 @@ static inline struct btree_node_entry *want_new_bset(struct bch_fs *c, struct bt
 	return NULL;
 }
 
+// 覆盖 key(pos)
 static inline void push_whiteout(struct btree *b, struct bpos pos)
 {
 	struct bkey_packed k;
@@ -299,6 +300,7 @@ static inline void push_whiteout(struct btree *b, struct bpos pos)
 	BUG_ON(bch2_btree_keys_u64s_remaining(b) < BKEY_U64s);
 	EBUG_ON(btree_node_just_written(b));
 
+	// 通过 pos 创建 bkey_packed(k)
 	if (!bkey_pack_pos(&k, pos, b)) {
 		struct bkey *u = (void *) &k;
 
@@ -308,7 +310,9 @@ static inline void push_whiteout(struct btree *b, struct bpos pos)
 
 	k.needs_whiteout = true;
 
+	// 计数 whiteout 大小(需要先加在 copy)
 	b->whiteout_u64s += k.u64s;
+	// 移动数据
 	bkey_p_copy(unwritten_whiteouts_start(b), &k);
 }
 

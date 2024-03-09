@@ -61,6 +61,7 @@ static inline int btree_path_cmp(const struct btree_path *l,
 static inline struct bpos bkey_successor(struct btree_iter *iter, struct bpos p)
 {
 	/* Are we iterating over keys in all snapshots? */
+	/* 我们是否迭代所有快照中的键？ */
 	if (iter->flags & BTREE_ITER_all_snapshots) {
 		p = bpos_successor(p);
 	} else {
@@ -84,6 +85,7 @@ static inline struct bpos bkey_predecessor(struct btree_iter *iter, struct bpos 
 	return p;
 }
 
+// 获取迭代搜索 key
 static inline struct bpos btree_iter_search_key(struct btree_iter *iter)
 {
 	struct bpos pos = iter->pos;
@@ -1291,6 +1293,9 @@ __bch2_btree_path_set_pos(struct btree_trans *trans,
 		 * many keys just reinit it (or if we're rewinding, since that
 		 * is expensive).
 		 */
+        // 我们可能必须跳过许多键，或者只是几个键：
+        // 尝试推进节点迭代器，如果我们必须跳过太多键，
+        // 只需重新初始化它（或者如果我们要倒带，因为这很昂贵）。
 		if (cmp < 0 ||
 		    !btree_path_advance_to_pos(path, l, 8))
 			bch2_btree_node_iter_init(&l->iter, l->b, &path->pos);
@@ -1299,6 +1304,7 @@ __bch2_btree_path_set_pos(struct btree_trans *trans,
 		 * Iterators to interior nodes should always be pointed at the first non
 		 * whiteout:
 		 */
+        // 内部节点的迭代器应始终指向第一个非空白：
 		if (unlikely(level))
 			bch2_btree_node_iter_peek(&l->iter, l->b);
 	}
@@ -2587,6 +2593,7 @@ struct bkey_s_c bch2_btree_iter_peek_slot(struct btree_iter *iter)
 	EBUG_ON(btree_iter_path(trans, iter)->level && (iter->flags & BTREE_ITER_with_key_cache));
 
 	/* extents can't span inode numbers: */
+	/* 范围不能跨越 inode 编号: */
 	if ((iter->flags & BTREE_ITER_is_extents) &&
 	    unlikely(iter->pos.offset == KEY_OFFSET_MAX)) {
 		if (iter->pos.inode == KEY_INODE_MAX)

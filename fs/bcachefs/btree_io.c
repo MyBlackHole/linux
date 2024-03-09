@@ -1973,6 +1973,7 @@ static int validate_bset_for_write(struct bch_fs *c, struct btree *b,
 	return ret;
 }
 
+// btree 写提交
 static void btree_write_submit(struct work_struct *work)
 {
 	struct btree_write_bio *wbio = container_of(work, struct btree_write_bio, work);
@@ -1987,6 +1988,8 @@ static void btree_write_submit(struct work_struct *work)
 				  &tmp.k, false);
 }
 
+// 更新 btree 节点
+// 存入磁盘
 void __bch2_btree_node_write(struct bch_fs *c, struct btree *b, unsigned flags)
 {
 	struct btree_write_bio *wbio;
@@ -2014,6 +2017,9 @@ void __bch2_btree_node_write(struct bch_fs *c, struct btree *b, unsigned flags)
 	 * dirty bit requires a write lock, we can't race with other threads
 	 * redirtying it:
 	 */
+	// 我们可能只在 btree 节点上有一个读锁 - 脏位是我们的“锁”，
+	// 防止与可能尝试开始写入的其他线程竞争，如果我们清除了脏位，我们就会执行写入操作。
+	// 由于设置脏位需要写锁，因此我们不能与其他线程竞争重新脏位：
 	do {
 		old = new = READ_ONCE(b->flags);
 
@@ -2064,26 +2070,33 @@ do_write:
 	BUG_ON(le64_to_cpu(b->data->magic) != bset_magic(c));
 	BUG_ON(memcmp(&b->data->format, &b->format, sizeof(b->format)));
 
+	// 先排序 whiteout 掉的 bkeys 进行排序
 	bch2_sort_whiteouts(c, b);
 
 	sort_iter_stack_init(&sort_iter, b);
 
+	// 计算需要写的大小
 	bytes = !b->written
 		? sizeof(struct btree_node)
 		: sizeof(struct btree_node_entry);
 
 	bytes += b->whiteout_u64s * sizeof(u64);
 
+	// 遍历 bset_tree
 	for_each_bset(b, t) {
+        // 获取 bset_tree 的 bset 数据
 		i = bset(b, t);
 
 		if (bset_written(b, i))
+            // 写了跳过 i
 			continue;
 
 		bytes += le16_to_cpu(i->u64s) * sizeof(u64);
+        // 添加需要排序的 bkey_packed 范围
 		sort_iter_add(&sort_iter.iter,
 			      btree_bkey_first(b, t),
 			      btree_bkey_last(b, t));
+        // 获取日志最大序号
 		seq = max(seq, le64_to_cpu(i->journal_seq));
 	}
 
@@ -2095,6 +2108,7 @@ do_write:
 	/* buffer must be a multiple of the block size */
 	bytes = round_up(bytes, block_bytes(c));
 
+	// 分配空间
 	data = btree_bounce_alloc(c, bytes, &used_mempool);
 
 	if (!b->written) {
@@ -2110,12 +2124,14 @@ do_write:
 	i->journal_seq	= cpu_to_le64(seq);
 	i->u64s		= 0;
 
+	// whiteout 也添加到排序迭代
 	sort_iter_add(&sort_iter.iter,
 		      unwritten_whiteouts_start(b),
 		      unwritten_whiteouts_end(b));
 	SET_BSET_SEPARATE_WHITEOUTS(i, false);
 
 	u64s = bch2_sort_keys_keep_unwritten_whiteouts(i->start, &sort_iter.iter);
+	// 设置排序后大小
 	le16_add_cpu(&i->u64s, u64s);
 
 	b->whiteout_u64s = 0;
@@ -2125,16 +2141,20 @@ do_write:
 	set_needs_whiteout(i, false);
 
 	/* do we have data to write? */
+	/* 我们有数据要写吗？ */
 	if (b->written && !i->u64s)
 		goto nowrite;
 
+	// 需要写入的大小
 	bytes_to_write = vstruct_end(i) - data;
+	// 块对齐 to 扇区
 	sectors_to_write = round_up(bytes_to_write, block_bytes(c)) >> 9;
 
 	if (!b->written &&
 	    b->key.k.type == KEY_TYPE_btree_ptr_v2)
 		BUG_ON(btree_ptr_sectors_written(&b->key) != sectors_to_write);
 
+	// 多余部分填充 0
 	memset(data + bytes_to_write, 0,
 	       (sectors_to_write << 9) - bytes_to_write);
 
@@ -2171,6 +2191,7 @@ do_write:
 		bne->csum = csum_vstruct(c, BSET_CSUM_TYPE(i), nonce, bne);
 
 	/* if we're not encrypting, check metadata after checksumming: */
+	/* 如果我们不加密，则在校验和后检查元数据：*/
 	if (!validate_before_checksum &&
 	    validate_bset_for_write(c, b, i, sectors_to_write))
 		goto err;
@@ -2215,6 +2236,7 @@ do_write:
 	wbio->wbio.bio.bi_end_io	= btree_node_write_endio;
 	wbio->wbio.bio.bi_private	= b;
 
+	// 构建 bio
 	bch2_bio_map(&wbio->wbio.bio, data, sectors_to_write << 9);
 
 	bkey_copy(&wbio->key, &b->key);
@@ -2228,7 +2250,9 @@ do_write:
 	atomic64_inc(&c->btree_write_stats[type].nr);
 	atomic64_add(bytes_to_write, &c->btree_write_stats[type].bytes);
 
+	// 初始化 wbio work
 	INIT_WORK(&wbio->work, btree_write_submit);
+	// 添加写到 work
 	queue_work(c->io_complete_wq, &wbio->work);
 	return;
 err:

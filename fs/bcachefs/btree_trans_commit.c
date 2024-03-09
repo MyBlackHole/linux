@@ -1094,9 +1094,11 @@ int __bch2_trans_commit(struct btree_trans *trans, unsigned flags)
 			continue;
 
 		/* we're going to journal the key being updated: */
+        /* 我们将记录正在更新的 key：*/
 		trans->journal_u64s += jset_u64s(i->k->k.u64s);
 
 		/* and we're also going to log the overwrite: */
+        /* 我们还将记录覆盖：*/
 		if (trans->journal_transaction_names)
 			trans->journal_u64s += jset_u64s(i->old_k.u64s);
 	}

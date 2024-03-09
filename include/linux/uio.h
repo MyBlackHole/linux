@@ -46,6 +46,7 @@ struct iov_iter {
     // IO 迭代类型
 	u8 iter_type;
 	bool nofault;
+    // 数据方向
 	bool data_source;
     // 第一个 iovec 数据起始偏移
 	size_t iov_offset;
@@ -76,6 +77,7 @@ struct iov_iter {
                 // 描述一个内存页的一段空间
 				const struct bio_vec *bvec;
 				struct xarray *xarray;
+                // 用户层 buf
 				void __user *ubuf;
 			};
             // 数据大小
@@ -355,6 +357,7 @@ ssize_t __import_iovec(int type, const struct iovec __user *uvec,
 		 struct iov_iter *i, bool compat);
 int import_ubuf(int type, void __user *buf, size_t len, struct iov_iter *i);
 
+// 初始化 iov_iter
 static inline void iov_iter_ubuf(struct iov_iter *i, unsigned int direction,
 			void __user *buf, size_t count)
 {

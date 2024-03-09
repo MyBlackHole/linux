@@ -114,6 +114,7 @@ do {									\
 		}							\
 } while (0)
 
+// 获取索引的文件系统表示
 static inline struct bch_inode_info *file_bch_inode(struct file *file)
 {
 	return to_bch_ei(file_inode(file));

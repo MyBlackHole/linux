@@ -377,6 +377,7 @@ struct kiocb {
 	void			*private;
 	// IO 属性
 	int			ki_flags;
+    // io 优先级
 	u16			ki_ioprio; /* See linux/ioprio.h */
 	union {
 		/*
@@ -1091,6 +1092,7 @@ struct file {
 	struct file_ra_state	f_ra;
 	// 文件路径
 	struct path		f_path;
+    // 索引节点
 	struct inode		*f_inode;	/* cached value */
 	// 关联的操作
 	const struct file_operations	*f_op;
@@ -1100,6 +1102,7 @@ struct file {
 	void			*f_security;
 #endif
 	/* needed for tty driver, and maybe others */
+    /* tty 驱动程序需要，也许其他驱动程序需要 */
 	void			*private_data;
 
 #ifdef CONFIG_EPOLL
@@ -1155,6 +1158,7 @@ struct file_lease;
 
 extern void send_sigio(struct fown_struct *fown, int fd, int band);
 
+// 获取文件的索引 inode
 static inline struct inode *file_inode(const struct file *f)
 {
 	return f->f_inode;
@@ -2464,6 +2468,7 @@ static inline bool HAS_UNMAPPED_ID(struct mnt_idmap *idmap,
 	       !vfsgid_valid(i_gid_into_vfsgid(idmap, inode));
 }
 
+// 通过文件初始化出 kiocb
 static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
 {
 	*kiocb = (struct kiocb) {
@@ -2644,6 +2649,8 @@ extern bool atime_needs_update(const struct path *, struct inode *);
 extern void touch_atime(const struct path *);
 int inode_update_time(struct inode *inode, int flags);
 
+// 文件被访问
+// 修改访问时间
 static inline void file_accessed(struct file *file)
 {
 	if (!(file->f_flags & O_NOATIME))

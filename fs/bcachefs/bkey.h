@@ -131,6 +131,7 @@ static __always_inline bool bpos_ge(struct bpos l, struct bpos r)
 	return bpos_le(r, l);
 }
 
+// 比较 bpos
 static __always_inline int bpos_cmp(struct bpos l, struct bpos r)
 {
 	return  cmp_int(l.inode,    r.inode) ?:
@@ -374,6 +375,7 @@ enum bkey_pack_pos_ret {
 enum bkey_pack_pos_ret bch2_bkey_pack_pos_lossy(struct bkey_packed *, struct bpos,
 					   const struct btree *);
 
+// 打包 bpos 获取 bkey_packed
 static inline bool bkey_pack_pos(struct bkey_packed *out, struct bpos in,
 				 const struct btree *b)
 {

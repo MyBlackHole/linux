@@ -394,6 +394,7 @@ static inline void __bch2_btree_iter_set_pos(struct btree_iter *iter, struct bpo
 	iter->k.size = 0;
 }
 
+// 设置迭代的 pos
 static inline void bch2_btree_iter_set_pos(struct btree_iter *iter, struct bpos new_pos)
 {
 	struct btree_trans *trans = iter->trans;
@@ -489,6 +490,7 @@ static inline void bch2_trans_iter_init_common(struct btree_trans *trans,
 void bch2_trans_iter_init_outlined(struct btree_trans *, struct btree_iter *,
 			  enum btree_id, struct bpos, unsigned);
 
+// 初始化迭代器
 static inline void bch2_trans_iter_init(struct btree_trans *trans,
 			  struct btree_iter *iter,
 			  unsigned btree_id, struct bpos pos,
