@@ -267,6 +267,7 @@ static inline bool in_range32(u32 val, u32 start, u32 len)
  * @a: first value
  * @b: second value
  */
+// 交换 a/b
 #define swap(a, b) \
 	do { typeof(a) __tmp = (a); (a) = (b); (b) = __tmp; } while (0)
 

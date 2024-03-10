@@ -775,6 +775,8 @@ err:
  *
  * Range is a half open interval - [start, end)
  */
+// bch_btree_delete_range - 删除给定范围内的所有内容
+// 范围是半开区间 - [开始，结束)
 int bch2_btree_delete_range(struct bch_fs *c, enum btree_id id,
 			    struct bpos start, struct bpos end,
 			    unsigned update_flags,

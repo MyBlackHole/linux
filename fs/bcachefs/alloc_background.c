@@ -918,6 +918,8 @@ err:
  * This synthesizes deleted extents for holes, similar to BTREE_ITER_slots for
  * extents style btrees, but works on non-extents btrees:
  */
+// 这会合成空洞的已删除范围，
+// 类似于范围样式 btree 的 BTREE_ITER_SLOTS，但适用于非范围 btree：
 static struct bkey_s_c bch2_get_key_or_hole(struct btree_iter *iter, struct bpos end, struct bkey *hole)
 {
 	struct bkey_s_c k = bch2_btree_iter_peek_slot(iter);

@@ -740,6 +740,7 @@ transaction_restart:							\
 	for_each_btree_key_upto_continue(_trans, _iter, _end, _flags, _k, _do);\
 })
 
+/* 遍历 btree 的每一个键 */
 #define for_each_btree_key(_trans, _iter, _btree_id,			\
 			   _start, _flags, _k, _do)			\
 	for_each_btree_key_upto(_trans, _iter, _btree_id, _start,	\

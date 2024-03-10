@@ -1603,6 +1603,7 @@ int bch2_dev_set_state(struct bch_fs *c, struct bch_dev *ca,
 }
 
 /* Device add/removal: */
+// 设备 添加/删除
 
 static int bch2_dev_remove_alloc(struct bch_fs *c, struct bch_dev *ca)
 {
@@ -1614,6 +1615,8 @@ static int bch2_dev_remove_alloc(struct bch_fs *c, struct bch_dev *ca)
 	 * We clear the LRU and need_discard btrees first so that we don't race
 	 * with bch2_do_invalidates() and bch2_do_discards()
 	 */
+    // 我们首先清除 LRU 和 need_discard btree，
+    // 这样我们就不会与 bch2_do_invalidates() 和 bch2_do_discards() 竞争
 	ret =   bch2_btree_delete_range(c, BTREE_ID_lru, start, end,
 					BTREE_TRIGGER_norun, NULL) ?:
 		bch2_btree_delete_range(c, BTREE_ID_need_discard, start, end,
@@ -1630,6 +1633,7 @@ static int bch2_dev_remove_alloc(struct bch_fs *c, struct bch_dev *ca)
 	return ret;
 }
 
+// 设备删除
 int bch2_dev_remove(struct bch_fs *c, struct bch_dev *ca, int flags)
 {
 	struct bch_member *m;
@@ -1657,6 +1661,7 @@ int bch2_dev_remove(struct bch_fs *c, struct bch_dev *ca, int flags)
 	if (ret)
 		goto err;
 
+    // 移除分配内容
 	ret = bch2_dev_remove_alloc(c, ca);
 	bch_err_msg(ca, ret, "bch2_dev_remove_alloc()");
 	if (ret)
@@ -1713,6 +1718,10 @@ int bch2_dev_remove(struct bch_fs *c, struct bch_dev *ca, int flags)
 	 * superblock, but after the device object has been removed so any
 	 * further journal writes elide usage info for the device.
 	 */
+    // 此时，设备对象已在核心中删除，但磁盘日志可能仍通过 sb 设备使用条目引用设备索引。
+    // 如果恢复发现无效设备的使用信息，则恢复会失败。 
+    // 在我们更新超级块之前，但在设备对象被删除之后，刷新日志引脚以将日志的背面推过现在无效的设备索引引用，
+    // 以便任何进一步的日志都会写入设备的删除使用信息。
 	bch2_journal_flush_all_pins(&c->journal);
 
 	/*

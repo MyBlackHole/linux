@@ -483,6 +483,7 @@ enum bch_time_stats {
 #define BTREE_RESERVE_MAX	(BTREE_MAX_DEPTH + (BTREE_MAX_DEPTH - 1))
 
 /* Size of the freelist we allocate btree nodes from: */
+/* 我们从中分配 btree 节点的空闲列表的大小： */
 #define BTREE_NODE_RESERVE	(BTREE_RESERVE_MAX * 4)
 
 #define BTREE_NODE_OPEN_BUCKET_RESERVE	(BTREE_RESERVE_MAX * BCH_REPLICAS_MAX)
@@ -509,6 +510,7 @@ struct bch_dev {
 
 	struct bch_fs		*fs;
 
+    // 设备 id
 	u8			dev_idx;
 	/*
 	 * Cached version of this device's member info from superblock
@@ -534,10 +536,15 @@ struct bch_dev {
 	 * gc_lock, for device resize - holding any is sufficient for access:
 	 * Or rcu_read_lock(), but only for dev_ptr_stale():
 	 */
+    // 桶：
+    // 每个存储桶数组均受 c->mark_lock、bucket_lock 和 gc_lock 保护，
+    // 用于设备调整大小 - 持有任何内容就足以进行访问：
+    // 或 rcu_read_lock()，但仅适用于 ptr_stale()：
 	struct bucket_array __rcu *buckets_gc;
 	struct bucket_gens __rcu *bucket_gens;
 	u8			*oldest_gen;
 	unsigned long		*buckets_nouse;
+    // 读写信号量
 	struct rw_semaphore	bucket_lock;
 
 	struct bch_dev_usage		*usage_base;
@@ -561,9 +568,11 @@ struct bch_dev {
 	struct journal_device	journal;
 	u64			prev_journal_sector;
 
+    // io 异常 work
 	struct work_struct	io_error_work;
 
 	/* The rest of this all shows up in sysfs */
+    /* 其余部分都显示在 sysfs 中 */
 	atomic64_t		cur_latency[2];
 	struct bch2_time_stats_quantiles io_latency[2];
 

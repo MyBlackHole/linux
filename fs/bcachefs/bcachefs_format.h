@@ -223,6 +223,7 @@ struct bkey {
 	__u8		pad[1];
 
 	struct bversion	version;
+    /* 范围大小，以扇区为单位 */
 	__u32		size;		/* extent size, in sectors */
 	struct bpos	p;
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -426,9 +427,12 @@ static inline void bkey_init(struct bkey *k)
 	x(logged_op_truncate,	32)			\
 	x(logged_op_finsert,	33)
 
+// 键类型
 enum bch_bkey_type {
 #define x(name, nr) KEY_TYPE_##name	= nr,
 	BCH_BKEY_TYPES()
+    // KEY_TYPE_inline_data: 内联数据
+    // KEY_TYPE_indirect_inline_data: 间接内联数据
 #undef x
 	KEY_TYPE_MAX,
 };
@@ -1393,9 +1397,11 @@ enum btree_id_flags {
 	x(subvolume_children,	19,	0,					\
 	  BIT_ULL(KEY_TYPE_set))
 
+// 树节点 id 类型
 enum btree_id {
 #define x(name, nr, ...) BTREE_ID_##name = nr,
 	BCH_BTREE_IDS()
+    // BTREE_ID_freespace: 空闲桶
 #undef x
 	BTREE_ID_NR
 };

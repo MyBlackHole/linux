@@ -27,8 +27,11 @@ struct bucket_array {
 
 struct bucket_gens {
 	struct rcu_head		rcu;
+    // 低一个桶
 	u16			first_bucket;
+    // 桶数量
 	size_t			nbuckets;
+    // bit 标志位(标记桶)
 	u8			b[];
 };
 

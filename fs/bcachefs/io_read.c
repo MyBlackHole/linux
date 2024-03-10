@@ -399,6 +399,7 @@ retry:
 		goto out;
 	}
 
+    // 实际文件内容读取
 	ret = __bch2_read_extent(trans, rbio, bvec_iter,
 				 rbio->read_pos,
 				 rbio->data_btree,
@@ -796,6 +797,7 @@ static noinline void read_from_stale_dirty_pointer(struct btree_trans *trans,
 	printbuf_exit(&buf);
 }
 
+// 实际文件内容读取
 int __bch2_read_extent(struct btree_trans *trans, struct bch_read_bio *orig,
 		       struct bvec_iter iter, struct bpos read_pos,
 		       enum btree_id data_btree, struct bkey_s_c k,
@@ -811,10 +813,14 @@ int __bch2_read_extent(struct btree_trans *trans, struct bch_read_bio *orig,
 	int pick_ret;
 
 	if (bkey_extent_is_inline_data(k.k)) {
+        // 内联数据
+
+        // 内联数据大小
 		unsigned bytes = min_t(unsigned, iter.bi_size,
 				       bkey_inline_data_bytes(k.k));
 
 		swap(iter.bi_size, bytes);
+        // 移动数据到 orig bio
 		memcpy_to_bio(&orig->bio, iter, bkey_inline_data_p(k));
 		swap(iter.bi_size, bytes);
 		bio_advance_iter(&orig->bio, &iter, bytes);
@@ -825,6 +831,7 @@ retry_pick:
 	pick_ret = bch2_bkey_pick_read_device(c, k, failed, &pick);
 
 	/* hole or reservation - just zero fill: */
+    /* 洞或预留 - 只需零填充： */
 	if (!pick_ret)
 		goto hole;
 

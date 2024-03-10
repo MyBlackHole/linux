@@ -80,6 +80,7 @@ static inline u64 dev_latency(struct bch_fs *c, unsigned dev)
 /*
  * returns true if p1 is better than p2:
  */
+// 如果 p1 优于 p2，则返回 true：
 static inline bool ptr_better(struct bch_fs *c,
 			      const struct extent_ptr_decoded p1,
 			      const struct extent_ptr_decoded p2)
@@ -89,6 +90,7 @@ static inline bool ptr_better(struct bch_fs *c,
 		u64 l2 = dev_latency(c, p2.ptr.dev);
 
 		/* Pick at random, biased in favor of the faster device: */
+        /* 随机选择，偏向于更快的设备：*/
 
 		return bch2_rand_range(l1 + l2) > l1;
 	}
@@ -104,6 +106,9 @@ static inline bool ptr_better(struct bch_fs *c,
  * Avoid can be NULL, meaning pick any. If there are no non-stale pointers to
  * other devices, it will still pick a pointer from avoid.
  */
+// 这会选择一个非陈旧的指针，最好来自 @avoid 以外的设备。
+// avoid 可以为 NULL，意味着选择任何一个。
+// 如果没有指向其他设备的非陈旧指针，它仍然会从 avoid 选择一个指针。
 int bch2_bkey_pick_read_device(struct bch_fs *c, struct bkey_s_c k,
 			       struct bch_io_failures *failed,
 			       struct extent_ptr_decoded *pick)
@@ -132,6 +137,7 @@ int bch2_bkey_pick_read_device(struct bch_fs *c, struct bkey_s_c k,
 		 * If there are any dirty pointers it's an error if we can't
 		 * read:
 		 */
+        // 如果有任何脏指针，如果我们无法读取，则会出现错误：
 		if (!ret && !p.ptr.cached)
 			ret = -EIO;
 

@@ -1579,6 +1579,7 @@ static void bucket_gens_free_rcu(struct rcu_head *rcu)
 	kvfree(buckets);
 }
 
+// 重置桶大小
 int bch2_dev_buckets_resize(struct bch_fs *c, struct bch_dev *ca, u64 nbuckets)
 {
 	struct bucket_gens *bucket_gens = NULL, *old_bucket_gens = NULL;
@@ -1612,6 +1613,7 @@ int bch2_dev_buckets_resize(struct bch_fs *c, struct bch_dev *ca, u64 nbuckets)
 		       n);
 	}
 
+    // 修改指向
 	rcu_assign_pointer(ca->bucket_gens, bucket_gens);
 	bucket_gens	= old_bucket_gens;
 
@@ -1641,6 +1643,7 @@ void bch2_dev_buckets_free(struct bch_dev *ca)
 	kfree(ca->usage_base);
 }
 
+// 设备桶分配
 int bch2_dev_buckets_alloc(struct bch_fs *c, struct bch_dev *ca)
 {
 	ca->usage_base = kzalloc(sizeof(struct bch_dev_usage), GFP_KERNEL);

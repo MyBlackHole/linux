@@ -2268,9 +2268,15 @@ out:
  *
  * Returns:	key if found, or an error extractable with bkey_err().
  */
+// bch2_btree_iter_peek_upto() - 返回大于或等于迭代器当前位置的第一个键
+// @iter：从中查看的迭代器
+// @end：搜索限制：返回小于或等于@end的键
+//                                                                          
+// 返回：如果找到键，或者使用 bkey_err() 提取错误。
 struct bkey_s_c bch2_btree_iter_peek_upto(struct btree_iter *iter, struct bpos end)
 {
 	struct btree_trans *trans = iter->trans;
+    // 搜索键
 	struct bpos search_key = btree_iter_search_key(iter);
 	struct bkey_s_c k;
 	struct bpos iter_pos;

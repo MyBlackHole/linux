@@ -281,6 +281,8 @@ do {								\
  * Unmapping should be done in the reverse order of the mapping.  See
  * kmap_local_page() for details.
  */
+// 取消通过 kmap_local_page 映射的页面
+// addr: 映射的页面内的地址
 #define kunmap_local(__addr)					\
 do {								\
 	BUILD_BUG_ON(__same_type((__addr), struct page *));	\

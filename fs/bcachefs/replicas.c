@@ -553,6 +553,9 @@ int bch2_replicas_gc_start(struct bch_fs *c, unsigned typemask)
  * any BCH_DATA_journal entries; the old bch2_replicas_gc_(start|end) mechanism
  * is retained for that.
  */
+// 用于清除不需要的副本条目的新的更简单的机制 - 删除使用了 0 个扇区的副本条目。
+// 但是，我们不跟踪日志使用的扇区计数，因此这不会删除任何 BCH_DATA_journal 条目；
+// 为此保留了旧的 bch2_replicas_gc_(start|end) 机制。
 int bch2_replicas_gc2(struct bch_fs *c)
 {
 	struct bch_replicas_cpu new = { 0 };
