@@ -510,7 +510,7 @@ struct bch_dev {
 
 	struct bch_fs		*fs;
 
-    // 设备 id
+	// 设备 id
 	u8			dev_idx;
 	/*
 	 * Cached version of this device's member info from superblock
@@ -536,15 +536,15 @@ struct bch_dev {
 	 * gc_lock, for device resize - holding any is sufficient for access:
 	 * Or rcu_read_lock(), but only for dev_ptr_stale():
 	 */
-    // 桶：
-    // 每个存储桶数组均受 c->mark_lock、bucket_lock 和 gc_lock 保护，
-    // 用于设备调整大小 - 持有任何内容就足以进行访问：
-    // 或 rcu_read_lock()，但仅适用于 ptr_stale()：
+	// 桶：
+	// 每个存储桶数组均受 c->mark_lock、bucket_lock 和 gc_lock 保护，
+	// 用于设备调整大小 - 持有任何内容就足以进行访问：
+	// 或 rcu_read_lock()，但仅适用于 ptr_stale()：
 	struct bucket_array __rcu *buckets_gc;
 	struct bucket_gens __rcu *bucket_gens;
 	u8			*oldest_gen;
 	unsigned long		*buckets_nouse;
-    // 读写信号量
+	// 读写信号量
 	struct rw_semaphore	bucket_lock;
 
 	struct bch_dev_usage		*usage_base;
@@ -564,15 +564,15 @@ struct bch_dev {
 
 	atomic64_t		rebalance_work;
 
-    // 日志设备
+	// 日志设备
 	struct journal_device	journal;
 	u64			prev_journal_sector;
 
-    // io 异常 work
+	// io 异常 work
 	struct work_struct	io_error_work;
 
 	/* The rest of this all shows up in sysfs */
-    /* 其余部分都显示在 sysfs 中 */
+	/* 其余部分都显示在 sysfs 中 */
 	atomic64_t		cur_latency[2];
 	struct bch2_time_stats_quantiles io_latency[2];
 
@@ -984,7 +984,7 @@ struct bch_fs {
 
 	atomic64_t		key_version;
 
-    // 大型 bkey 池
+        // 大型 bkey 池
 	mempool_t		large_bkey_pool;
 
 	/* MOVE.C */
@@ -1032,7 +1032,7 @@ struct bch_fs {
 	size_t			reflink_gc_nr;
 
 	/* fs.c */
-    // 挂载 inode 的列表
+        // 挂载 inode 的列表
 	struct list_head	vfs_inodes_list;
 	struct mutex		vfs_inodes_lock;
 
