@@ -4,7 +4,7 @@
 
 struct sort_iter {
 	struct btree		*b;
-    // data 数组大小
+	// data 数组大小
 	unsigned		used;
 	unsigned		size;
 
@@ -30,7 +30,7 @@ static inline void sort_iter_stack_init(struct sort_iter_stack *iter, struct btr
 	sort_iter_init(&iter->iter, b, ARRAY_SIZE(iter->sets));
 }
 
-// 添加需要排序 k/end 到 sort_iter 
+// 添加需要排序 k/end 到 sort_iter
 static inline void sort_iter_add(struct sort_iter *iter,
 				 struct bkey_packed *k,
 				 struct bkey_packed *end)

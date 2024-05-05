@@ -45,6 +45,8 @@ static inline int __btree_path_cmp(const struct btree_path *l,
 {
 	/*
 	 * Must match lock ordering as defined by __bch2_btree_node_lock:
+	 *
+	 * 必须匹配 __bch2_btree_node_lock 定义的锁顺序:
 	 */
 	return   cmp_int(l->btree_id,	r_btree_id) ?:
 		 cmp_int((int) l->cached,	(int) r_cached) ?:
@@ -2271,7 +2273,7 @@ out:
 // bch2_btree_iter_peek_upto() - 返回大于或等于迭代器当前位置的第一个键
 // @iter：从中查看的迭代器
 // @end：搜索限制：返回小于或等于@end的键
-//                                                                          
+//
 // 返回：如果找到键，或者使用 bkey_err() 提取错误。
 struct bkey_s_c bch2_btree_iter_peek_upto(struct btree_iter *iter, struct bpos end)
 {

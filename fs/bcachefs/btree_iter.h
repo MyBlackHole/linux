@@ -239,6 +239,8 @@ struct bkey_s_c bch2_btree_path_peek_slot(struct btree_path *, struct bkey *);
 /*
  * bch2_btree_path_peek_slot() for a cached iterator might return a key in a
  * different snapshot:
+ *
+ * 缓存迭代器的 bch2_btree_path_peek_slot() 可能会返回不同快照中的键:
  */
 static inline struct bkey_s_c bch2_btree_path_peek_slot_exact(struct btree_path *path, struct bkey *u)
 {

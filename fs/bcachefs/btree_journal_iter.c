@@ -76,6 +76,7 @@ static size_t bch2_journal_key_search(struct journal_keys *keys,
 }
 
 /* Returns first non-overwritten key >= search key: */
+/* 返回第一个未被覆盖的键 >= 搜索键: */
 struct bkey_i *bch2_journal_keys_peek_upto(struct bch_fs *c, enum btree_id btree_id,
 					   unsigned level, struct bpos pos,
 					   struct bpos end_pos, size_t *idx)

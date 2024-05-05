@@ -144,8 +144,10 @@ static inline void bch2_trans_unlock_write(struct btree_trans *trans)
 }
 
 /* Inserting into a given leaf node (last stage of insert): */
+/* 插入到给定的叶节点（插入的最后阶段）： */
 
 /* Handle overwrites and do insert, for non extents: */
+/* 处理覆盖并执行插入，对于非范围： */
 bool bch2_btree_bset_insert_key(struct btree_trans *trans,
 				struct btree_path *path,
 				struct btree *b,
@@ -281,6 +283,8 @@ inline void bch2_btree_add_journal_pin(struct bch_fs *c,
  * @path:		path pointing to @insert's pos
  * @insert:		key to insert
  * @journal_seq:	sequence number of journal reservation
+ *
+ * 将一个键插入一个叶节点
  */
 inline void bch2_btree_insert_key_leaf(struct btree_trans *trans,
 				       struct btree_path *path,
@@ -642,12 +646,17 @@ bch2_trans_commit_write_locked(struct btree_trans *trans, unsigned flags,
 	 * Check if the insert will fit in the leaf node with the write lock
 	 * held, otherwise another thread could write the node changing the
 	 * amount of space available:
+	 *
+	 * 检查插入是否适合持有写锁的叶节点，
+	 * 否则另一个线程可能会写入该节点，
+	 * 从而改变可用空间量:
 	 */
 
 	prefetch(&trans->c->journal.flags);
 
 	trans_for_each_update(trans, i) {
 		/* Multiple inserts might go to same leaf: */
+		/* 多个插入可能会进入同一个叶子: */
 		if (!same_leaf_as_prev(trans, i))
 			u64s = 0;
 
@@ -666,6 +675,9 @@ bch2_trans_commit_write_locked(struct btree_trans *trans, unsigned flags,
 	/*
 	 * Don't get journal reservation until after we know insert will
 	 * succeed:
+	 *
+	 * 在我们知道插入会成功之前，
+	 * 不要获取日记保留:
 	 */
 	if (likely(!(flags & BCH_TRANS_COMMIT_no_journal_res))) {
 		ret = bch2_trans_journal_res_get(trans,
@@ -681,6 +693,8 @@ bch2_trans_commit_write_locked(struct btree_trans *trans, unsigned flags,
 	/*
 	 * Not allowed to fail after we've gotten our journal reservation - we
 	 * have to use it:
+	 *
+	 * 在我们获得期刊预订后不允许失败 - 我们必须使用它：
 	 */
 
 	if (IS_ENABLED(CONFIG_BCACHEFS_DEBUG) &&
@@ -841,6 +855,8 @@ static int bch2_trans_commit_journal_pin_flush(struct journal *j,
 
 /*
  * Get journal reservation, take write locks, and attempt to do btree update(s):
+ *
+ * 获取日志保留、获取写锁并尝试执行 btree 更新:
  */
 static inline int do_bch2_trans_commit(struct btree_trans *trans, unsigned flags,
 				       struct btree_insert_entry **stopped_at,
@@ -888,6 +904,9 @@ static inline int do_bch2_trans_commit(struct btree_trans *trans, unsigned flags
 	/*
 	 * Drop journal reservation after dropping write locks, since dropping
 	 * the journal reservation may kick off a journal write:
+	 *
+	 * 删除写锁后删除日志保留，
+	 * 因为删除日志保留可能会启动日志写入:
 	 */
 	if (likely(!(flags & BCH_TRANS_COMMIT_no_journal_res)))
 		bch2_journal_res_put(&c->journal, &trans->journal_res);

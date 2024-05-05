@@ -291,6 +291,9 @@ static inline void bch2_journal_buf_put(struct journal *j, unsigned idx, u64 seq
 /*
  * This function releases the journal write structure so other threads can
  * then proceed to add their keys as well.
+ *
+ * 此函数释放日志写入结构，
+ * 以便其他线程也可以继续添加它们的键。
  */
 static inline void bch2_journal_res_put(struct journal *j,
 				       struct journal_res *res)

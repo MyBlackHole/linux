@@ -56,6 +56,7 @@ struct bkey_s_c {
 };
 
 /* bkey with split value */
+/* 带分割值的 bkey */
 struct bkey_s {
 	union {
 	struct {

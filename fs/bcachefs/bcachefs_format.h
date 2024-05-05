@@ -142,9 +142,9 @@ struct bpos {
 	 * wasn't written in native endian order:
 	 */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    /* 我们要查找的快照 ID: */
+	/* 我们要查找的快照 ID: */
 	__u32		snapshot;
-     // 扇区数?
+	// 扇区数?
 	__u64		offset;
 	__u64		inode;
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -198,13 +198,14 @@ __aligned(4)
 #endif
 ;
 
+// value (bch_val) 是紧跟在 key 后面的
 struct bkey {
 	/* Size of combined key and value, in u64s */
-    /* 组合键和值的大小, 单位 64 位 */
+	/* 组合键和值的大小, 单位 64 位 */
 	__u8		u64s;
 
 	/* Format of key (0 for format local to btree node) */
-    /* 键的格式（0 for Bormat local to btree 节点） */
+	/* 键的格式（0 for Bormat local to btree 节点） */
 #if defined(__LITTLE_ENDIAN_BITFIELD)
 	__u8		format:7,
 			needs_whiteout:1;
@@ -216,14 +217,15 @@ struct bkey {
 #endif
 
 	/* Type of the value */
-    /* 值的类型 */
+	/* 值的类型 */
 	__u8		type;
+	// 以上部分与 bkey_packed 重合
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	__u8		pad[1];
 
 	struct bversion	version;
-    /* 范围大小，以扇区为单位 */
+	/* 范围大小，以扇区为单位(512 Bytes) */
 	__u32		size;		/* extent size, in sectors */
 	struct bpos	p;
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -264,10 +266,12 @@ __aligned(8)
 #endif
 ;
 
+// 一组 bkey 会被打包成一个 bkey_packed 结构，随后添加一个 bset 的头. 就成了 bset
 struct bkey_packed {
 	__u64		_data[0];
 
 	/* Size of combined key and value, in u64s */
+	/* 组合键和值的大小，以 u64 为单位 */
 	__u8		u64s;
 
 	/* Format of key (0 for format local to btree node) */
@@ -278,6 +282,7 @@ struct bkey_packed {
 	 * bits of the bitfield
 	 */
 #if defined(__LITTLE_ENDIAN_BITFIELD)
+	// BKEY_FORMAT_CURRENT: 按位打包
 	__u8		format:7,
 			needs_whiteout:1;
 #elif defined (__BIG_ENDIAN_BITFIELD)
@@ -286,7 +291,11 @@ struct bkey_packed {
 #endif
 
 	/* Type of the value */
+	/* 值的类型 */
 	__u8		type;
+	// 以上部份与 bkey 重合
+
+	// bkey 剩余部分按 format 格式打包
 	__u8		key_start[0];
 
 	/*
@@ -341,7 +350,7 @@ enum bch_bkey_fields {
 })
 
 /* bkey with inline value */
-/* 带有内联价值的bkey */
+/* 带有内联 value 的 bkey */
 struct bkey_i {
 	__u64			_data[0];
 
@@ -655,6 +664,9 @@ static inline bool data_type_is_hidden(enum bch_data_type type)
 /*
  * On clean shutdown, store btree roots and current journal sequence number in
  * the superblock:
+ *
+ * 在干净关闭时，
+ * 将 btree 根和当前日志序列号存储在超级块中：
  */
 struct jset_entry {
 	__le16			u64s;
@@ -1436,6 +1448,9 @@ static inline bool btree_id_is_alloc(enum btree_id id)
  *
  * On disk a btree node is a list/log of these; within each set the keys are
  * sorted
+ *
+ * 在磁盘上，btree 节点是这些的列表/日志;
+ * 在每个集合中，键都是排序的
  */
 struct bset {
 	__le64			seq;
@@ -1451,6 +1466,7 @@ struct bset {
 
 	__le32			flags;
 	__le16			version;
+	// 描述了本 bset 中，全部 payload 长度，以 u64 为单位计
 	__le16			u64s; /* count of d[] in u64s */
 
 	struct bkey_packed	start[0];
@@ -1464,25 +1480,44 @@ LE32_BITMASK(BSET_SEPARATE_WHITEOUTS,
 				struct bset, flags, 5, 6);
 
 /* Sector offset within the btree node: */
+/* btree 节点内的扇区偏移量: */
 LE32_BITMASK(BSET_OFFSET,	struct bset, flags, 16, 32);
 
+// 对于每个节点，会固定分配 256 字节的连续空间 (bch_opts::bch_sb_btree_node_size). 分两部分:
+// 已写入部分 (written)
+//	对于写入磁盘的部分，它是由一个 btree_node 打头，尾随若干个 btree_node_entry
+// 剩余未使用的部分
 struct btree_node {
 	struct bch_csum		csum;
 	__le64			magic;
 
 	/* this flags field is encrypted, unlike bset->flags: */
+	/* 这个 flags 字段是加密的，与 bset->flags 不同： */
 	__le64			flags;
 
 	/* Closed interval: */
+	/* 闭区间: */
+	/* [min_key, max_key], 代表本节点所覆盖的范围 */
 	struct bpos		min_key;
 	struct bpos		max_key;
 	struct bch_extent_ptr	_ptr; /* not used anymore */
 	struct bkey_format	format;
 
 	union {
+	// bset 是一组 bkey 的集合
+	// 本 btree 节点上同一趟写入到磁盘的 bkey 集合
+	// 后续写入磁盘的 bkey 在新 bset 集合
+	// 同一 bkey 被覆写，意味着在后续的 bset 有同名 bkey， value 不同
+	//	同名: 即指 bpos 相同
+	//	这就是所谓的 log 结构，不断写后合并 (有 lsm 那味道)
+	//
+	// 同一个 bkey 被删除，
+	// 意味着在后续的 bset 有“同名” bkey，它是一个 whiteout
 	struct bset		keys;
 	struct {
 		__u8		pad[22];
+		// 是指包含 key 和 value 在内的尺寸，
+		// 以 u64 (8 Bytes) 为单位计
 		__le16		u64s;
 		__u64		_data[0];
 

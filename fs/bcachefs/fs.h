@@ -34,6 +34,8 @@ struct bch_inode_info {
 	 * would be better to keep for each device a sequence number that's
 	 * incremented when we isusue a cache flush, and track here the sequence
 	 * number that needs flushing.
+	 *
+	 * 当我们进行 nocow 写入时，我们需要向底层块设备发出刷新
 	 */
 	struct bch_devs_mask	ei_devs_need_flush;
 
