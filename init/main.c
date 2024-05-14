@@ -999,8 +999,8 @@ void start_kernel(void)
 	 * Allow workqueue creation and work item queueing/cancelling
 	 * early.  Work item execution depends on kthreads and starts after
 	 * workqueue_init().
-     *
-     * 工作队列初始化
+	 *
+	 * 工作队列初始化
 	 */
 	workqueue_init_early();
 
@@ -1089,20 +1089,20 @@ void start_kernel(void)
 	thread_stack_cache_init();
 	cred_init();
 	fork_init();
-    // task_struct 相关缓存分配
+	// task_struct 相关缓存分配
 	proc_caches_init();
 	uts_ns_init();
 	key_init();
 	security_init();
 	dbg_late_init();
 	net_ns_init();
-    // bdev 等初始化
-    // 与各类缓存初始化
+	// bdev 等初始化
+	// 与各类缓存初始化
 	vfs_caches_init();
 	pagecache_init();
 	signals_init();
 	seq_file_init();
-    // proc 文件系统 初始化开始
+	// proc 文件系统 初始化开始
 	proc_root_init();
 	nsfs_init();
 	pidfs_init();

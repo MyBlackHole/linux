@@ -220,6 +220,7 @@ struct vfs_ns_cap_data {
 #define CAP_IPC_OWNER        15
 
 /* Insert and remove kernel modules - modify kernel without limit */
+/* 插入和删除内核模块 - 无限制修改内核 */
 #define CAP_SYS_MODULE       16
 
 /* Allow ioperm/iopl access */

@@ -270,7 +270,7 @@ struct bio {
 
 	atomic_t		__bi_cnt;	/* pin count */
 
-    // 实际的向量列表
+	// 实际的向量列表
 	struct bio_vec		*bi_io_vec;	/* the actual vec list */
 
 	struct bio_set		*bi_pool;

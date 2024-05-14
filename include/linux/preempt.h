@@ -265,6 +265,9 @@ do { \
 #define preempt_check_resched() do { } while (0)
 #endif /* CONFIG_PREEMPTION */
 
+/*
+ * 禁止用户强占和内核抢占
+ */
 #define preempt_disable_notrace() \
 do { \
 	__preempt_count_inc(); \

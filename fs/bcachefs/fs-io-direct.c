@@ -616,7 +616,7 @@ ssize_t bch2_direct_write(struct kiocb *req, struct iov_iter *iter)
 
 	inode_lock(&inode->v);
 
-    // 校验
+	// 校验
 	ret = generic_write_checks(req, iter);
 	if (unlikely(ret <= 0))
 		goto err_put_write_ref;
@@ -634,18 +634,18 @@ ssize_t bch2_direct_write(struct kiocb *req, struct iov_iter *iter)
 		goto err_put_write_ref;
 	}
 
-    // 开始直接 io
+	// 开始直接 io
 	inode_dio_begin(&inode->v);
 	bch2_pagecache_block_get(inode);
 
 	extending = req->ki_pos + iter->count > inode->v.i_size;
 	if (!extending) {
-        // 不是延展不用加锁
+		// 不是延展不用加锁
 		inode_unlock(&inode->v);
 		locked = false;
 	}
 
-    // 申请 bio
+	// 申请 bio
 	bio = bio_alloc_bioset(NULL,
 			       bio_iov_vecs_to_alloc(iter, BIO_MAX_VECS),
 			       REQ_OP_WRITE | REQ_SYNC | REQ_IDLE,
@@ -674,7 +674,7 @@ ssize_t bch2_direct_write(struct kiocb *req, struct iov_iter *iter)
 			goto err_put_bio;
 	}
 
-    // bio 写循环
+	// bio 写循环
 	ret = bch2_dio_write_loop(dio);
 out:
 	if (locked)
@@ -682,9 +682,9 @@ out:
 	return ret;
 err_put_bio:
 	bch2_pagecache_block_put(inode);
-    // 释放 bio
+	// 释放 bio
 	bio_put(bio);
-    // 写完了
+	// 写完了
 	inode_dio_end(&inode->v);
 err_put_write_ref:
 	bch2_write_ref_put(c, BCH_WRITE_REF_dio_write);

@@ -19,6 +19,7 @@ enum ctx_state {
 };
 
 /* Even value for idle, else odd. */
+/* 空闲时为偶数，否则为奇数。 */
 #define RCU_DYNTICKS_IDX CONTEXT_MAX
 
 #define CT_STATE_MASK (CONTEXT_MAX - 1)

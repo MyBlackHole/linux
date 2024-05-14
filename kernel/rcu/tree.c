@@ -716,6 +716,9 @@ static void rcu_disable_urgency_upon_qs(struct rcu_data *rdp)
  * Make notrace because it can be called by the internal functions of
  * ftrace, and making this notrace removes unnecessary recursion calls.
  */
+/*
+ * 当前 CPU 允许 RCU 读端临界区吗？
+ */
 notrace bool rcu_is_watching(void)
 {
 	bool ret;
@@ -3971,6 +3974,9 @@ trace_complete_out:
  *
  * Implementation of these memory-ordering guarantees is described here:
  * Documentation/RCU/Design/Memory-Ordering/Tree-RCU-Memory-Ordering.rst.
+ */
+/*
+ * 等到宽限期过去
  */
 void synchronize_rcu(void)
 {

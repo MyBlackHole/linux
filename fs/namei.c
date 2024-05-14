@@ -4351,13 +4351,13 @@ int vfs_unlink(struct mnt_idmap *idmap, struct inode *dir,
 
 	inode_lock(target);
 	if (IS_SWAPFILE(target))
-        // 交换文件
+		// 交换文件
 		error = -EPERM;
 	else if (is_local_mountpoint(dentry))
-        // 不能删除本地挂载点
+		// 不能删除本地挂载点
 		error = -EBUSY;
 	else {
-        // 安全的取消连接
+		// 安全的取消连接
 		error = security_inode_unlink(dir, dentry);
 		if (!error) {
 			error = try_break_deleg(target, delegated_inode);

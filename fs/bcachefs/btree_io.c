@@ -2084,19 +2084,19 @@ do_write:
 
 	// 遍历 bset_tree
 	for_each_bset(b, t) {
-        // 获取 bset_tree 的 bset 数据
+		// 获取 bset_tree 的 bset 数据
 		i = bset(b, t);
 
 		if (bset_written(b, i))
-            // 写了跳过 i
+			// 写了跳过 i
 			continue;
 
 		bytes += le16_to_cpu(i->u64s) * sizeof(u64);
-        // 添加需要排序的 bkey_packed 范围
+		// 添加需要排序的 bkey_packed 范围
 		sort_iter_add(&sort_iter.iter,
 			      btree_bkey_first(b, t),
 			      btree_bkey_last(b, t));
-        // 获取日志最大序号
+		// 获取日志最大序号
 		seq = max(seq, le64_to_cpu(i->journal_seq));
 	}
 

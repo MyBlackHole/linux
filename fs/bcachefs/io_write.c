@@ -523,7 +523,7 @@ static void __bch2_write_index(struct bch_write_op *op)
 	}
 
 	if (!bch2_keylist_empty(keys)) {
-        // 获取 keys 总扇区大小
+		// 获取 keys 总扇区大小
 		u64 sectors_start = keylist_sectors(keys);
 
 		ret = !(op->flags & BCH_WRITE_MOVE)
@@ -533,7 +533,7 @@ static void __bch2_write_index(struct bch_write_op *op)
 		BUG_ON(bch2_err_matches(ret, BCH_ERR_transaction_restart));
 		BUG_ON(keylist_sectors(keys) && !ret);
 
-        // 计算写入大小
+		// 计算写入大小
 		op->written += sectors_start - keylist_sectors(keys);
 
 		if (ret && !bch2_err_matches(ret, EROFS)) {
@@ -1472,7 +1472,7 @@ err:
 			}
 		}
 
-        // 设置 io 回调
+		// 设置 io 回调
 		bio->bi_end_io	= bch2_write_endio;
 		bio->bi_private	= &op->cl;
 		bio->bi_opf |= REQ_OP_WRITE;
@@ -1528,7 +1528,7 @@ static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 	op->flags |= BCH_WRITE_WROTE_DATA_INLINE;
 	op->flags |= BCH_WRITE_DONE;
 
-    // 设置特征为内联数据
+	// 设置特征为内联数据
 	bch2_check_set_feature(op->c, BCH_FEATURE_inline_data);
 
 	ret = bch2_keylist_realloc(&op->insert_keys, op->inline_keys,
@@ -1539,12 +1539,12 @@ static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 		goto err;
 	}
 
-    // 获取 bio 扇区大小
+	// 获取 bio 扇区大小
 	sectors = bio_sectors(bio);
-    // 加上内联数据大小
+	// 加上内联数据大小
 	op->pos.offset += sectors;
 
-    // 内联数据初始化
+	// 内联数据初始化
 	id = bkey_inline_data_init(op->insert_keys.top);
 	id->k.p		= op->pos;
 	id->k.version	= op->version;
@@ -1552,16 +1552,16 @@ static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 
 	iter = bio->bi_iter;
 	iter.bi_size = data_len;
-    // 移动 bio 数据到 data
+	// 移动 bio 数据到 data
 	memcpy_from_bio(id->v.data, bio, iter);
 
 	while (data_len & 7)
 		id->v.data[data_len++] = '\0';
-    // 设置数据大小
+	// 设置数据大小
 	set_bkey_val_bytes(&id->k, data_len);
 	bch2_keylist_push(&op->insert_keys);
 
-    // 更新索引
+	// 更新索引
 	__bch2_write_index(op);
 err:
 	bch2_write_done(&op->cl);
@@ -1615,14 +1615,14 @@ CLOSURE_CALLBACK(bch2_write)
 	}
 
 	if (c->opts.nochanges) {
-        // 只读
+		// 只读
 		op->error = -BCH_ERR_erofs_no_writes;
 		goto err;
 	}
 
 	if (!(op->flags & BCH_WRITE_MOVE) &&
-        // 没有写
 	    !bch2_write_ref_tryget(c, BCH_WRITE_REF_write)) {
+		// 没有写
 		op->error = -BCH_ERR_erofs_no_writes;
 		goto err;
 	}
@@ -1635,7 +1635,7 @@ CLOSURE_CALLBACK(bch2_write)
 
 	if (c->opts.inline_data &&
 	    data_len <= min(block_bytes(c) / 2, 1024U)) {
-        // 直接内联写
+		// 直接内联写
 		bch2_write_data_inline(op, data_len);
 		return;
 	}

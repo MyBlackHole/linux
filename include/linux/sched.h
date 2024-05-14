@@ -933,9 +933,9 @@ struct task_struct {
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	/* List of struct preempt_notifier: */
 
-    /*
-    9. preempt_notifiers 结构体链表
-    */
+	/*
+	9. preempt_notifiers 结构体链表
+	*/
 	struct hlist_head		preempt_notifiers;
 #endif
 
@@ -1135,11 +1135,11 @@ struct task_struct {
 
 	struct restart_block		restart_block;
 
-    // 进程 id
+	// 进程 id
 	pid_t				pid;
-    // 线程组 id (clone 指定 CLONE_THREAD)
-    // 处于相同线程组的所有进程 tgid 相同
-    // 没有线程 tgid 等于 pid
+	// 线程组 id (clone 指定 CLONE_THREAD)
+	// 处于相同线程组的所有进程 tgid 相同
+	// 没有线程 tgid 等于 pid
 	pid_t				tgid;
 
 #ifdef CONFIG_STACKPROTECTOR
@@ -1163,8 +1163,8 @@ struct task_struct {
 	 */
 	struct list_head		children;
 	struct list_head		sibling;
-    // 多线程下指向主线程
-    // 指向归属的组主进程
+	// 多线程下指向主线程
+	// 指向归属的组主进程
 	struct task_struct		*group_leader;
 
 	/*
@@ -1177,9 +1177,9 @@ struct task_struct {
 	struct list_head		ptrace_entry;
 
 	/* PID/PID hash table linkage. */
-    // 局部 PID 哈希表
+	// 局部 PID 哈希表
 	struct pid			*thread_pid;
-    // 各种 PID 类型链表挂载域
+	// 各种 PID 类型链表挂载域
 	struct hlist_node		pid_links[PIDTYPE_MAX];
 	struct list_head		thread_node;
 
@@ -1231,18 +1231,18 @@ struct task_struct {
 #endif
 
 	/* Process credentials: */
-    // 进程凭证
+	// 进程凭证
 
 	/* Tracer's credentials at attach: */
-    /* Tracer 在附加时的凭据：*/
+	/* Tracer 在附加时的凭据：*/
 	const struct cred __rcu		*ptracer_cred;
 
 	/* Objective and real subjective task credentials (COW): */
-    /* 客观和真实的主观任务凭证（COW）： */
+	/* 客观和真实的主观任务凭证（COW）： */
 	const struct cred __rcu		*real_cred;
 
 	/* Effective (overridable) subjective task credentials (COW): */
-    /* 有效的（可重写的）主观任务凭证（COW）：*/
+	/* 有效的（可重写的）主观任务凭证（COW）：*/
 	const struct cred __rcu		*cred;
 
 #ifdef CONFIG_KEYS
@@ -1273,7 +1273,7 @@ struct task_struct {
 	struct fs_struct		*fs;
 
 	/* Open file information: */
-    // 打开的文件信息
+	// 打开的文件信息
 	struct files_struct		*files;
 
 #ifdef CONFIG_IO_URING
@@ -1299,7 +1299,7 @@ struct task_struct {
 
 #ifdef CONFIG_AUDIT
 #ifdef CONFIG_AUDITSYSCALL
-    // 审计上下文
+	// 审计上下文
 	struct audit_context		*audit_context;
 #endif
 	kuid_t				loginuid;

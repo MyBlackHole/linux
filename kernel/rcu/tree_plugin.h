@@ -757,6 +757,7 @@ void exit_rcu(void)
 {
 	struct task_struct *t = current;
 
+	// rcu 保底操作
 	if (unlikely(!list_empty(&current->rcu_node_entry))) {
 		rcu_preempt_depth_set(1);
 		barrier();

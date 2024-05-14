@@ -886,7 +886,7 @@ static struct bch_fs *bch2_fs_alloc(struct bch_sb *sb, struct bch_opts opts)
 
 	c->inode_shard_bits = ilog2(roundup_pow_of_two(num_possible_cpus()));
 
-    // 分配各种队列
+	// 分配各种队列
 	if (!(c->btree_update_wq = alloc_workqueue("bcachefs",
 				WQ_HIGHPRI|WQ_FREEZABLE|WQ_MEM_RECLAIM|WQ_UNBOUND, 512)) ||
 	    !(c->btree_io_complete_wq = alloc_workqueue("bcachefs_btree_io",
@@ -958,7 +958,7 @@ static struct bch_fs *bch2_fs_alloc(struct bch_sb *sb, struct bch_opts opts)
 			(sizeof(struct jset_entry_clock) / sizeof(u64)) * 2);
 
 	mutex_lock(&bch_fs_list_lock);
-    // 上线文件系统
+	// 上线文件系统
 	ret = bch2_fs_online(c);
 	mutex_unlock(&bch_fs_list_lock);
 
@@ -1013,7 +1013,7 @@ int bch2_fs_start(struct bch_fs *c)
 	time64_t now = ktime_get_real_seconds();
 	int ret;
 
-    // 打印挂载信息
+	// 打印挂载信息
 	print_mount_opts(c);
 
 	down_write(&c->state_lock);
@@ -1615,8 +1615,8 @@ static int bch2_dev_remove_alloc(struct bch_fs *c, struct bch_dev *ca)
 	 * We clear the LRU and need_discard btrees first so that we don't race
 	 * with bch2_do_invalidates() and bch2_do_discards()
 	 */
-    // 我们首先清除 LRU 和 need_discard btree，
-    // 这样我们就不会与 bch2_do_invalidates() 和 bch2_do_discards() 竞争
+	// 我们首先清除 LRU 和 need_discard btree，
+	// 这样我们就不会与 bch2_do_invalidates() 和 bch2_do_discards() 竞争
 	ret =   bch2_btree_delete_range(c, BTREE_ID_lru, start, end,
 					BTREE_TRIGGER_norun, NULL) ?:
 		bch2_btree_delete_range(c, BTREE_ID_need_discard, start, end,
@@ -1661,7 +1661,7 @@ int bch2_dev_remove(struct bch_fs *c, struct bch_dev *ca, int flags)
 	if (ret)
 		goto err;
 
-    // 移除分配内容
+	// 移除分配内容
 	ret = bch2_dev_remove_alloc(c, ca);
 	bch_err_msg(ca, ret, "bch2_dev_remove_alloc()");
 	if (ret)
@@ -1718,10 +1718,10 @@ int bch2_dev_remove(struct bch_fs *c, struct bch_dev *ca, int flags)
 	 * superblock, but after the device object has been removed so any
 	 * further journal writes elide usage info for the device.
 	 */
-    // 此时，设备对象已在核心中删除，但磁盘日志可能仍通过 sb 设备使用条目引用设备索引。
-    // 如果恢复发现无效设备的使用信息，则恢复会失败。 
-    // 在我们更新超级块之前，但在设备对象被删除之后，刷新日志引脚以将日志的背面推过现在无效的设备索引引用，
-    // 以便任何进一步的日志都会写入设备的删除使用信息。
+	// 此时，设备对象已在核心中删除，但磁盘日志可能仍通过 sb 设备使用条目引用设备索引。
+	// 如果恢复发现无效设备的使用信息，则恢复会失败。
+	// 在我们更新超级块之前，但在设备对象被删除之后，刷新日志引脚以将日志的背面推过现在无效的设备索引引用，
+	// 以便任何进一步的日志都会写入设备的删除使用信息。
 	bch2_journal_flush_all_pins(&c->journal);
 
 	/*
@@ -1761,13 +1761,13 @@ int bch2_dev_add(struct bch_fs *c, const char *path)
 	struct printbuf label = PRINTBUF;
 	int ret;
 
-    // 读取设备块描述信息
+	// 读取设备块描述信息
 	ret = bch2_read_super(path, &opts, &sb);
 	bch_err_msg(c, ret, "reading super");
 	if (ret)
 		goto err;
 
-    // 获取成员信息
+	// 获取成员信息
 	dev_mi = bch2_sb_member_get(sb.sb, sb.sb->dev_idx);
 
 	if (BCH_MEMBER_GROUP(&dev_mi)) {
@@ -1778,22 +1778,22 @@ int bch2_dev_add(struct bch_fs *c, const char *path)
 		}
 	}
 
-    // 检查桶与块大小
+	// 检查桶与块大小
 	ret = bch2_dev_may_add(sb.sb, c);
 	if (ret)
 		goto err;
 
-    // 分配 bch_dev
+	// 分配 bch_dev
 	ca = __bch2_dev_alloc(c, &dev_mi);
 	if (!ca) {
 		ret = -ENOMEM;
 		goto err;
 	}
 
-    // bch2_dev 使用初始化
+	// bch2_dev 使用初始化
 	bch2_dev_usage_init(ca);
 
-    // sb 附加到 ca
+	// sb 附加到 ca
 	ret = __bch2_dev_attach_bdev(ca, &sb);
 	if (ret)
 		goto err;
@@ -1882,7 +1882,7 @@ have_slot:
 	if (ret)
 		goto err_late;
 
-    // 文件系统空间初始化
+	// 文件系统空间初始化
 	ret = bch2_fs_freespace_init(c);
 	bch_err_msg(ca, ret, "initializing free space");
 	if (ret)
@@ -2086,7 +2086,7 @@ static inline int sb_cmp(struct bch_sb *l, struct bch_sb *r)
 struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 			    struct bch_opts opts)
 {
-    // 声明 bch_sb_handle 数组
+	// 声明 bch_sb_handle 数组
 	DARRAY(struct bch_sb_handle) sbs = { 0 };
 	struct bch_fs *c = NULL;
 	struct bch_sb_handle *best = NULL;
@@ -2101,7 +2101,7 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 		goto err;
 	}
 
-    // 创建指定大小
+	// 创建指定大小
 	ret = darray_make_room(&sbs, nr_devices);
 	if (ret)
 		goto err;
@@ -2109,12 +2109,12 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 	for (unsigned i = 0; i < nr_devices; i++) {
 		struct bch_sb_handle sb = { NULL };
 
-        // path to bch_sb_handle
+		// path to bch_sb_handle
 		ret = bch2_read_super(devices[i], &opts, &sb);
 		if (ret)
 			goto err;
 
-        // sb 添加到 sbs 数组
+		// sb 添加到 sbs 数组
 		BUG_ON(darray_push(&sbs, sb));
 	}
 
@@ -2143,8 +2143,8 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 			goto err_print;
 	}
 
-    // 每个 bch_fs 会记录所有设备信息
-    // 分配初始化文件系统
+	// 每个 bch_fs 会记录所有设备信息
+	// 分配初始化文件系统
 	c = bch2_fs_alloc(best->sb, opts);
 	ret = PTR_ERR_OR_ZERO(c);
 	if (ret)
@@ -2204,8 +2204,8 @@ static int __init bcachefs_init(void)
 {
 	bch2_bkey_pack_test();
 
-    // vfs_init: 注册文件系统类型
-    // chardev_init: 注册字符设备
+	// vfs_init: 注册文件系统类型
+	// chardev_init: 注册字符设备
 	if (!(bcachefs_kset = kset_create_and_add("bcachefs", NULL, fs_kobj)) ||
 	    bch2_btree_key_cache_init() ||
 	    bch2_chardev_init() ||

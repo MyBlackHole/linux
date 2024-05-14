@@ -600,7 +600,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 	else
 		ret = -EINVAL;
 	if (ret > 0) {
-        // 发送修改通知
+		// 发送修改通知
 		fsnotify_modify(file);
 		add_wchar(current, ret);
 	}

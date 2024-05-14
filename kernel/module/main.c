@@ -2442,6 +2442,7 @@ int __weak module_finalize(const Elf_Ehdr *hdr,
 static int post_relocation(struct module *mod, const struct load_info *info)
 {
 	/* Sort exception table now relocations are done. */
+	/* 排序异常表现在重定位已完成。 */
 	sort_extable(mod->extable, mod->extable + mod->num_exentries);
 
 	/* Copy relocated percpu area over. */
@@ -3241,6 +3242,7 @@ out:
 }
 
 /* Given an address, look for it in the module exception tables. */
+/* 给定一个地址，在模块异常表中查找它。 */
 const struct exception_table_entry *search_module_extables(unsigned long addr)
 {
 	const struct exception_table_entry *e = NULL;
