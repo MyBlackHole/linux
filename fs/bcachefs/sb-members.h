@@ -115,6 +115,7 @@ static inline void __bch2_dev_put(struct bch_dev *ca)
 #endif
 }
 
+/* 获取下一个设备，如果没有设备了，返回NULL */
 static inline void bch2_dev_put(struct bch_dev *ca)
 {
 	if (ca)

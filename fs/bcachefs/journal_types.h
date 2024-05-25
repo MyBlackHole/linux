@@ -307,7 +307,7 @@ struct journal {
  * Embedded in struct bch_dev. First three fields refer to the array of journal
  * buckets, in bch_sb.
  */
-// 嵌入在 struct bch_dev 中。 
+// 嵌入在 struct bch_dev 中。
 // 前三个字段引用 bch_sb 中的日志桶数组。
 struct journal_device {
 	/*
@@ -321,10 +321,13 @@ struct journal_device {
 	/*
 	 * discard_idx <= dirty_idx_ondisk <= dirty_idx <= cur_idx:
 	 */
+	// 下一个要丢弃的桶(已确保落盘?)
 	unsigned		discard_idx;		/* Next bucket to discard */
 	unsigned		dirty_idx_ondisk;
 	unsigned		dirty_idx;
+	// 我们当前正在写入的日记存储桶
 	unsigned		cur_idx;		/* Journal bucket we're currently writing to */
+	// 分配的日志桶数量。
 	unsigned		nr;
 
 	u64			*buckets;

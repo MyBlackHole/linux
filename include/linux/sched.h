@@ -1366,6 +1366,7 @@ struct task_struct {
 	void				*journal_info;
 
 	/* Stacked block device info: */
+	/* 正在请求的 bio 列表 */
 	struct bio_list			*bio_list;
 
 	/* Stack plugging: */
@@ -1375,6 +1376,8 @@ struct task_struct {
 	/* VM state: */
 	struct reclaim_state		*reclaim_state;
 
+	// io 配置
+	// 例如 io 优先级
 	struct io_context		*io_context;
 
 #ifdef CONFIG_COMPACTION
@@ -1384,6 +1387,7 @@ struct task_struct {
 	unsigned long			ptrace_message;
 	kernel_siginfo_t		*last_siginfo;
 
+	// io 记录
 	struct task_io_accounting	ioac;
 #ifdef CONFIG_PSI
 	/* Pressure stall state */
@@ -1811,6 +1815,7 @@ extern struct pid *cad_pid;
 #define PF_MEMALLOC_NOIO	0x00080000	/* All allocations inherit GFP_NOIO. See memalloc_noio_save() */
 #define PF_LOCAL_THROTTLE	0x00100000	/* Throttle writes only against the bdi I write to,
 						 * I am cleaning dirty pages from some other bdi. */
+/* 我是一个内核线程 */
 #define PF_KTHREAD		0x00200000	/* I am a kernel thread */
 #define PF_RANDOMIZE		0x00400000	/* Randomize virtual address space */
 #define PF_MEMALLOC_NORECLAIM	0x00800000	/* All allocation requests will clear __GFP_DIRECT_RECLAIM */

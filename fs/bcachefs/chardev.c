@@ -132,12 +132,14 @@ struct fsck_thread {
 	struct bch_opts		opts;
 };
 
+// 退出检查恢复
 static void bch2_fsck_thread_exit(struct thread_with_stdio *_thr)
 {
 	struct fsck_thread *thr = container_of(_thr, struct fsck_thread, thr);
 	kfree(thr);
 }
 
+// 离线检查线程函数
 static int bch2_fsck_offline_thread_fn(struct thread_with_stdio *stdio)
 {
 	struct fsck_thread *thr = container_of(stdio, struct fsck_thread, thr);
@@ -147,6 +149,8 @@ static int bch2_fsck_offline_thread_fn(struct thread_with_stdio *stdio)
 	if (ret)
 		return ret;
 
+	// 启动文件系统
+	// 内部会执行 recovery_passes
 	ret = bch2_fs_start(thr->c);
 	if (ret)
 		goto err;
@@ -169,6 +173,7 @@ static const struct thread_with_stdio_ops bch2_offline_fsck_ops = {
 	.fn		= bch2_fsck_offline_thread_fn,
 };
 
+// 离线检查
 static long bch2_ioctl_fsck_offline(struct bch_ioctl_fsck_offline __user *user_arg)
 {
 	struct bch_ioctl_fsck_offline arg;
@@ -227,6 +232,7 @@ static long bch2_ioctl_fsck_offline(struct bch_ioctl_fsck_offline __user *user_a
 	/* We need request_key() to be called before we punt to kthread: */
 	opt_set(thr->opts, nostart, true);
 
+	// 初始化离线检查线程
 	bch2_thread_with_stdio_init(&thr->thr, &bch2_offline_fsck_ops);
 
 	thr->c = bch2_fs_open(devs.data, arg.nr_devs, thr->opts);
@@ -235,6 +241,7 @@ static long bch2_ioctl_fsck_offline(struct bch_ioctl_fsck_offline __user *user_a
 	    thr->c->opts.errors == BCH_ON_ERROR_panic)
 		thr->c->opts.errors = BCH_ON_ERROR_ro;
 
+	// 启动离线检查线程
 	ret = __bch2_run_thread_with_stdio(&thr->thr);
 out:
 	darray_for_each(devs, i)
@@ -248,6 +255,7 @@ err:
 	goto out;
 }
 
+// 全局ioctl处理
 static long bch2_global_ioctl(unsigned cmd, void __user *arg)
 {
 	long ret;
@@ -779,6 +787,7 @@ static long bch2_ioctl_disk_resize_journal(struct bch_fs *c,
 	return ret;
 }
 
+// 在线恢复函数
 static int bch2_fsck_online_thread_fn(struct thread_with_stdio *stdio)
 {
 	struct fsck_thread *thr = container_of(stdio, struct fsck_thread, thr);
@@ -800,6 +809,7 @@ static int bch2_fsck_online_thread_fn(struct thread_with_stdio *stdio)
 	set_bit(BCH_FS_fsck_running, &c->flags);
 
 	c->curr_recovery_pass = BCH_RECOVERY_PASS_check_alloc_info;
+	// 进入恢复逻辑
 	int ret = bch2_run_online_recovery_passes(c);
 
 	clear_bit(BCH_FS_fsck_running, &c->flags);
@@ -819,6 +829,7 @@ static const struct thread_with_stdio_ops bch2_online_fsck_ops = {
 	.fn		= bch2_fsck_online_thread_fn,
 };
 
+// ioctl 在线文件系统检查函数
 static long bch2_ioctl_fsck_online(struct bch_fs *c,
 				   struct bch_ioctl_fsck_online arg)
 {
@@ -859,6 +870,7 @@ static long bch2_ioctl_fsck_online(struct bch_fs *c,
 			goto err;
 	}
 
+	// 注册内核线程运行在线文件系统检查函数
 	ret = bch2_run_thread_with_stdio(&thr->thr, &bch2_online_fsck_ops);
 err:
 	if (ret < 0) {
@@ -881,6 +893,7 @@ do {									\
 	goto out;							\
 } while (0)
 
+// 文件系统类型相关 ioctl 处理函数
 long bch2_fs_ioctl(struct bch_fs *c, unsigned cmd, void __user *arg)
 {
 	long ret;
@@ -927,6 +940,7 @@ long bch2_fs_ioctl(struct bch_fs *c, unsigned cmd, void __user *arg)
 	case BCH_IOCTL_DISK_RESIZE_JOURNAL:
 		BCH_IOCTL(disk_resize_journal, struct bch_ioctl_disk_resize_journal);
 	case BCH_IOCTL_FSCK_ONLINE:
+		// 启动在线恢复
 		BCH_IOCTL(fsck_online, struct bch_ioctl_fsck_online);
 	default:
 		return -ENOTTY;
@@ -939,6 +953,7 @@ out:
 
 static DEFINE_IDR(bch_chardev_minor);
 
+// 字符设备 ioctl 处理函数
 static long bch2_chardev_ioctl(struct file *filp, unsigned cmd, unsigned long v)
 {
 	unsigned minor = iminor(file_inode(filp));
@@ -950,6 +965,7 @@ static long bch2_chardev_ioctl(struct file *filp, unsigned cmd, unsigned long v)
 		: bch2_global_ioctl(cmd, arg);
 }
 
+// 字符设备操作集
 static const struct file_operations bch_chardev_fops = {
 	.owner		= THIS_MODULE,
 	.unlocked_ioctl = bch2_chardev_ioctl,

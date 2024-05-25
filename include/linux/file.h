@@ -97,6 +97,7 @@ extern void put_unused_fd(unsigned int fd);
 DEFINE_CLASS(get_unused_fd, int, if (_T >= 0) put_unused_fd(_T),
 	     get_unused_fd_flags(flags), unsigned flags)
 
+// 将打开的文件描述符fd文件file存到该进程的打开文件表中
 extern void fd_install(unsigned int fd, struct file *file);
 
 int receive_fd(struct file *file, int __user *ufd, unsigned int o_flags);

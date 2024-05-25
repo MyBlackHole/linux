@@ -358,7 +358,9 @@ struct workqueue_struct {
 	int			nr_drainers;	/* WQ: drain in progress */
 
 	/* See alloc_workqueue() function comment for info on min/max_active */
+	// 最大并发工作项数
 	int			max_active;	/* WO: max active works */
+	// 最小并发工作项数
 	int			min_active;	/* WO: min active works */
 	int			saved_max_active; /* WQ: saved max_active */
 	int			saved_min_active; /* WQ: saved min_active */
@@ -374,6 +376,7 @@ struct workqueue_struct {
 	struct lock_class_key	key;
 	struct lockdep_map	lockdep_map;
 #endif
+	// 工作队列名称
 	char			name[WQ_NAME_LEN]; /* I: workqueue name */
 
 	/*
@@ -450,6 +453,7 @@ static DEFINE_RAW_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
 /* wait for manager to go away */
 static struct rcuwait manager_wait = __RCUWAIT_INITIALIZER(manager_wait);
 
+// 所有工作队列
 static LIST_HEAD(workqueues);		/* PR: list of all workqueues */
 static bool workqueue_freezing;		/* PL: have wqs started freezing? */
 
@@ -517,6 +521,8 @@ struct workqueue_struct *system_highpri_wq __ro_after_init;
 EXPORT_SYMBOL_GPL(system_highpri_wq);
 struct workqueue_struct *system_long_wq __ro_after_init;
 EXPORT_SYMBOL_GPL(system_long_wq);
+// 未绑定工作队列
+// 使任务同步执行
 struct workqueue_struct *system_unbound_wq __ro_after_init;
 EXPORT_SYMBOL_GPL(system_unbound_wq);
 struct workqueue_struct *system_freezable_wq __ro_after_init;
@@ -2405,6 +2411,8 @@ static bool clear_pending_if_disabled(struct work_struct *work)
  * online will get a splat.
  *
  * Return: %false if @work was already on a queue, %true otherwise.
+ *
+ * 添加到特定 cpu 上的队列工作
  */
 bool queue_work_on(int cpu, struct workqueue_struct *wq,
 		   struct work_struct *work)
@@ -5665,6 +5673,7 @@ static void wq_adjust_max_active(struct workqueue_struct *wq)
 	} while (activated);
 }
 
+// 分配初始化一个 workqueue
 __printf(1, 4)
 struct workqueue_struct *alloc_workqueue(const char *fmt,
 					 unsigned int flags,
@@ -5703,6 +5712,7 @@ struct workqueue_struct *alloc_workqueue(const char *fmt,
 	}
 
 	va_start(args, max_active);
+	// 设置 workqueue 名字
 	name_len = vsnprintf(wq->name, sizeof(wq->name), fmt, args);
 	va_end(args);
 
@@ -5762,6 +5772,7 @@ struct workqueue_struct *alloc_workqueue(const char *fmt,
 	wq_adjust_max_active(wq);
 	mutex_unlock(&wq->mutex);
 
+	// 记录到全局的 workqueues 列表中
 	list_add_tail_rcu(&wq->list, &workqueues);
 
 	mutex_unlock(&wq_pool_mutex);

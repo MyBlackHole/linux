@@ -29,7 +29,13 @@
 #define FOR_ALL_ZONES(xx) DMA_ZONE(xx) DMA32_ZONE(xx) xx##_NORMAL, \
 	HIGHMEM_ZONE(xx) xx##_MOVABLE, DEVICE_ZONE(xx)
 
-enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+enum vm_event_item {
+	// 把块设备页读入内存页
+	PGPGIN,
+	// 把内存页写回块设备页
+	PGPGOUT,
+	PSWPIN,
+	PSWPOUT,
 		FOR_ALL_ZONES(PGALLOC)
 		FOR_ALL_ZONES(ALLOCSTALL)
 		FOR_ALL_ZONES(PGSCAN_SKIP)

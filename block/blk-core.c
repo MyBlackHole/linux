@@ -731,6 +731,13 @@ void submit_bio_noacct_nocheck(struct bio *bio)
 	 * to collect a list of requests submited by a ->submit_bio method while
 	 * it is active, and then process them after it returned.
 	 */
+	/*
+	 * 我们一次只希望一个 ->submit_bio 处于活动状态，
+	 * 否则堆栈设备的堆栈使用可能会出现问题。
+	 * 使用 current->bio_list 收集 ->submit_bio 方法处于活动状态时提交的请求列表，
+	 * 然后在返回后处理它们。
+	 *
+	 */
 	if (current->bio_list)
 		bio_list_add(&current->bio_list[0], bio);
 	else if (!bdev_test_flag(bio->bi_bdev, BD_HAS_SUBMIT_BIO))
@@ -856,6 +863,7 @@ end_io:
 }
 EXPORT_SYMBOL(submit_bio_noacct);
 
+// 设置 bio 优先级
 static void bio_set_ioprio(struct bio *bio)
 {
 	/* Nobody set ioprio so far? Initialize it based on task's nice value */
@@ -876,16 +884,21 @@ static void bio_set_ioprio(struct bio *bio)
  * completion, is delivered asynchronously through the ->bi_end_io() callback
  * in @bio.  The bio must NOT be touched by the caller until ->bi_end_io() has
  * been called.
+ *
+ * 向块设备层提交bio以进行I/O
  */
 void submit_bio(struct bio *bio)
 {
 	if (bio_op(bio) == REQ_OP_READ) {
 		task_io_account_read(bio->bi_iter.bi_size);
+		// 设置数据方向
 		count_vm_events(PGPGIN, bio_sectors(bio));
 	} else if (bio_op(bio) == REQ_OP_WRITE) {
+		// 设置数据方向
 		count_vm_events(PGPGOUT, bio_sectors(bio));
 	}
 
+	// 设置 bio 优先级
 	bio_set_ioprio(bio);
 	submit_bio_noacct(bio);
 }

@@ -14,7 +14,7 @@ typedef void (*work_func_t)(struct work_struct *work);
 void delayed_work_timer_fn(struct timer_list *t);
 
 struct work_struct {
-	// 工作项数据
+	// 工作项数据 (比如状态: 等待执行)
 	atomic_long_t data;
 	// 挂载 worker pool work_list 上
 	struct list_head entry;

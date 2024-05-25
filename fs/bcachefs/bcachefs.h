@@ -508,6 +508,7 @@ struct bch_dev {
 	struct percpu_ref	io_ref;
 	struct completion	io_ref_completion;
 
+	// 关联的文件系统信息
 	struct bch_fs		*fs;
 
 	// 设备 id
@@ -522,6 +523,7 @@ struct bch_dev {
 	__uuid_t		uuid;
 	char			name[BDEVNAME_SIZE];
 
+	// 设备信息
 	struct bch_sb_handle	disk_sb;
 	struct bch_sb		*sb_read_scratch;
 	int			sb_write_error;
@@ -723,7 +725,7 @@ struct bch_fs {
 	struct task_struct	*stdio_filter;
 
 	/* ro/rw, add/remove/resize devices: */
-    /* ro/rw，添加/删除/调整设备大小：*/
+	/* ro/rw，添加/删除/调整设备大小：*/
 	struct rw_semaphore	state_lock;
 
 	/* Counts outstanding writes, for clean transition to read-only */
@@ -783,7 +785,7 @@ struct bch_fs {
 
 	struct bch_sb_handle	disk_sb;
 
-    // 扇区数量 对数
+	// 扇区数量 对数
 	unsigned short		block_bits;	/* ilog2(block_size) */
 
 	u16			btree_foreground_merge_threshold;
@@ -803,7 +805,7 @@ struct bch_fs {
 
 	/* BTREE CACHE */
 	struct bio_set		btree_bio;
-    // worke 队列结构
+	// worke 队列结构
 	struct workqueue_struct	*io_complete_wq;
 
 	struct btree_root	btree_roots_known[BTREE_ID_NR];
@@ -900,7 +902,7 @@ struct bch_fs {
 	struct mutex		usage_scratch_lock;
 	struct bch_fs_usage_online *usage_scratch;
 
-    // 读|写锁
+	// 读|写锁
 	struct io_clock		io_clock[2];
 
 	/* JOURNAL SEQ BLACKLIST */
@@ -1055,12 +1057,16 @@ struct bch_fs {
 	 * And, in certain situations fsck will rewind to an earlier pass: used
 	 * for signaling to the toplevel code which pass we want to run now.
 	 */
+	/* 记录当前的恢复进度 */
 	enum bch_recovery_pass	curr_recovery_pass;
 	/* bitmap of explicitly enabled recovery passes: */
+	/* 显式启用恢复通道的位图: */
 	u64			recovery_passes_explicit;
 	/* bitmask of recovery passes that we actually ran */
+	/* 我们实际运行的恢复过程的位掩码 */
 	u64			recovery_passes_complete;
 	/* never rewinds version of curr_recovery_pass */
+	/* 永远不会倒回 curr_recovery_pass 版本 */
 	enum bch_recovery_pass	recovery_pass_done;
 	struct semaphore	online_fsck_mutex;
 

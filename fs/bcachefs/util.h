@@ -47,6 +47,7 @@ struct closure;
 	 __builtin_types_compatible_p(typeof(_val), const _type))
 
 /* Userspace doesn't align allocations as nicely as the kernel allocators: */
+/* 用户空间并不像内核分配器那样很好地对齐分配： */
 static inline size_t buf_pages(void *p, size_t len)
 {
 	return DIV_ROUND_UP(len +

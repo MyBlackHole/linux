@@ -172,6 +172,8 @@ static inline void add_taint_module(struct module *mod, unsigned flag,
 /*
  * A thread that wants to hold a reference to a module only while it
  * is running can call this to safely exit.
+ *
+ * 只想在运行时保留对模块的引用的线程可以调用此方法来安全退出。
  */
 void __noreturn __module_put_and_kthread_exit(struct module *mod, long code)
 {
@@ -844,6 +846,7 @@ bool try_module_get(struct module *module)
 }
 EXPORT_SYMBOL(try_module_get);
 
+// 减少 mod 引用计数
 void module_put(struct module *module)
 {
 	int ret;

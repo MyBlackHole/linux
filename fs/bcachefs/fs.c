@@ -1930,6 +1930,7 @@ static struct dentry *bch2_mount(struct file_system_type *fs_type,
 	if (!IS_ERR(sb))
 		goto got_sb;
 
+	// 打开文件系统
 	c = bch2_fs_open(devs.data, devs.nr, opts);
 	if (IS_ERR(c)) {
 		sb = ERR_CAST(c);

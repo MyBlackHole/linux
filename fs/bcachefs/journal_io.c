@@ -121,8 +121,11 @@ static void journal_replay_free(struct bch_fs *c, struct journal_replay *i, bool
 }
 
 struct journal_list {
+	// 闭包
 	struct closure		cl;
+	// 最后一个序列号
 	u64			last_seq;
+	// 锁
 	struct mutex		lock;
 	int			ret;
 };
@@ -994,6 +997,7 @@ static int journal_read_buf_realloc(struct journal_read_buf *b,
 	return 0;
 }
 
+// 读取指定桶日志
 static int journal_read_bucket(struct bch_dev *ca,
 			       struct journal_read_buf *buf,
 			       struct journal_list *jlist,
@@ -1003,6 +1007,7 @@ static int journal_read_bucket(struct bch_dev *ca,
 	struct journal_device *ja = &ca->journal;
 	struct jset *j = NULL;
 	unsigned sectors, sectors_read = 0;
+	// 获取当前桶的起始结束扇区位置
 	u64 offset = bucket_to_sector(ca, ja->buckets[bucket]),
 	    end = offset + ca->mi.bucket_size;
 	bool saw_bad = false, csum_good;
@@ -1020,10 +1025,15 @@ reread:
 				end - offset, buf->size >> 9);
 			nr_bvecs = buf_pages(buf->data, sectors_read << 9);
 
+			// 分配 bio
 			bio = bio_kmalloc(nr_bvecs, GFP_KERNEL);
+			// 初始化 bio
+			// 设置为 读
 			bio_init(bio, ca->disk_sb.bdev, bio->bi_inline_vecs, nr_bvecs, REQ_OP_READ);
 
+			// 设置读偏移位置
 			bio->bi_iter.bi_sector = offset;
+			// 设置接受读数据的内存地址
 			bch2_bio_map(bio, buf->data, sectors_read << 9);
 
 			ret = submit_bio_wait(bio);
@@ -1155,6 +1165,7 @@ static CLOSURE_CALLBACK(bch2_journal_read_device)
 	if (!ja->nr)
 		goto out;
 
+	// 分配读取日志的缓冲区
 	ret = journal_read_buf_realloc(&buf, PAGE_SIZE);
 	if (ret)
 		goto err;
@@ -1200,6 +1211,7 @@ int bch2_journal_read(struct bch_fs *c,
 	u64 seq;
 	int ret = 0;
 
+	// 闭包初始化
 	closure_init_stack(&jlist.cl);
 	mutex_init(&jlist.lock);
 	jlist.last_seq = 0;

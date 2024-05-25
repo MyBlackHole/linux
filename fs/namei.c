@@ -566,19 +566,19 @@ EXPORT_SYMBOL(path_put);
 #define EMBEDDED_LEVELS 2
 // 路径查询辅助结构
 struct nameidata {
-    // 查找到的路径
+	// 查找到的路径
 	struct path	path;
-    // 路径名的最后一个分量, (当 LOOKUP_PARENT 标志被设置时使用)
+	// 路径名的最后一个分量, (当 LOOKUP_PARENT 标志被设置时使用)
 	struct qstr	last;
-    // 进程根路径
+	// 进程根路径
 	struct path	root;
 	struct inode	*inode; /* path.dentry.d_inode */
-    // 查找标志
+	// 查找标志
 	unsigned int	flags, state;
 	unsigned	seq, next_seq, m_seq, r_seq;
-    // 最后一个分量类型, (当 LOOKUP_PARENT 标志被设置时使用)
+	// 最后一个分量类型, (当 LOOKUP_PARENT 标志被设置时使用)
 	int		last_type;
-    // 符号连接嵌套的当前级别， 必须小于 6
+	// 符号连接嵌套的当前级别， 必须小于 6
 	unsigned	depth;
 	int		total_link_count;
 	struct saved {
@@ -3196,6 +3196,9 @@ static inline umode_t vfs_prepare_mode(struct mnt_idmap *idmap,
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
  */
+/*
+ * 创建文件
+ */
 int vfs_create(struct mnt_idmap *idmap, struct inode *dir,
 	       struct dentry *dentry, umode_t mode, bool want_excl)
 {
@@ -3626,10 +3629,10 @@ static int do_open(struct nameidata *nd,
 			return error;
 	}
 	if (!(file->f_mode & FMODE_CREATED))
-        // 审计 inode
+		// 审计 inode
 		audit_inode(nd->name, nd->path.dentry, 0);
 	idmap = mnt_idmap(nd->path.mnt);
-    // 处理打开方式
+	// 处理打开方式
 	if (open_flag & O_CREAT) {
 		if ((open_flag & O_EXCL) && !(file->f_mode & FMODE_CREATED))
 			return -EEXIST;
@@ -3805,10 +3808,10 @@ static struct file *path_openat(struct nameidata *nd,
 		return file;
 
 	if (unlikely(file->f_flags & __O_TMPFILE)) {
-        // tmpfile 文件处理
+		// tmpfile 文件处理
 		error = do_tmpfile(nd, flags, op, file);
 	} else if (unlikely(file->f_flags & O_PATH)) {
-        // 不直接打开文件
+		// 不直接打开文件
 		error = do_o_path(nd, flags, file);
 	} else {
 		const char *s = path_init(nd, flags);
@@ -3816,7 +3819,7 @@ static struct file *path_openat(struct nameidata *nd,
 		       (s = open_last_lookups(nd, file, op)) != NULL)
 			;
 		if (!error)
-            // 我们常识的打开文件开始了
+			// 我们常识的打开文件开始了
 			error = do_open(nd, file, op);
 		terminate_walk(nd);
 	}
@@ -3843,7 +3846,7 @@ struct file *do_filp_open(int dfd, struct filename *pathname,
 	int flags = op->lookup_flags;
 	struct file *filp;
 
-    // 初始化 nameidata
+	// 初始化 nameidata
 	set_nameidata(&nd, dfd, pathname, NULL);
 	filp = path_openat(&nd, op, flags | LOOKUP_RCU);
 	if (unlikely(filp == ERR_PTR(-ECHILD)))
@@ -3995,6 +3998,9 @@ EXPORT_SYMBOL(user_path_create);
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
  */
+/*
+ * 创建设备节点或文件
+ */
 int vfs_mknod(struct mnt_idmap *idmap, struct inode *dir,
 	      struct dentry *dentry, umode_t mode, dev_t dev)
 {
@@ -4070,6 +4076,7 @@ retry:
 	idmap = mnt_idmap(path.mnt);
 	switch (mode & S_IFMT) {
 		case 0: case S_IFREG:
+			// 创建普通文件
 			error = vfs_create(idmap, path.dentry->d_inode,
 					   dentry, mode, true);
 			if (!error)

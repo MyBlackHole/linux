@@ -335,7 +335,7 @@ struct btree_path {
 	u8			intent_ref;
 
 	/* btree_iter_copy starts here: */
-    /* btree_iter_copy 从这里开始： */
+	/* btree_iter_copy 从这里开始： */
 	struct bpos		pos;
 
 	enum btree_id		btree_id:5;
@@ -400,10 +400,10 @@ struct btree_iter {
 	u16			flags;
 
 	/* When we're filtering by snapshot, the snapshot ID we're looking for: */
-    /* 当我们按快照过滤时，我们要查找的快照 ID: */
+	/* 当我们按快照过滤时，我们要查找的快照 ID: */
 	unsigned		snapshot;
 
-    // 当前迭代器位置
+	// 当前迭代器位置
 	struct bpos		pos;
 	/*
 	 * Current unpacked key - so that bch2_btree_iter_next()/
@@ -467,7 +467,7 @@ struct btree_insert_entry {
 	btree_path_idx_t	path;
 	struct bkey_i		*k;
 	/* key being overwritten: */
-    /* key 被覆盖: */
+	/* key 被覆盖: */
 	struct bkey		old_k;
 	const struct bch_val	*old_v;
 	unsigned long		ip_allocated;

@@ -5,6 +5,7 @@
 struct bch_sb_handle {
 	struct bch_sb		*sb;
 	struct file		*s_bdev_file;
+	// 块设备
 	struct block_device	*bdev;
 	char			*sb_name;
 	// 块 io 对象
@@ -27,4 +28,3 @@ struct bch_devs_list {
 	u8			data[BCH_BKEY_PTRS_MAX];
 };
 
-#endif /* _BCACHEFS_SUPER_TYPES_H */

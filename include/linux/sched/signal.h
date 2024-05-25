@@ -172,7 +172,7 @@ struct signal_struct {
 	struct pid *tty_old_pgrp;
 
 	/* boolean value for session group leader */
-    // 会话组老大
+	// 会话组老大
 	int leader;
 
 	struct tty_struct *tty; /* NULL if no tty */

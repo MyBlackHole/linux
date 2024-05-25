@@ -79,16 +79,17 @@ static inline void bvec_set_virt(struct bio_vec *bv, void *vaddr,
 }
 
 struct bvec_iter {
-    // 512 字节扇区中的设备地址偏移量
+	// 扇区中的设备地址偏移量(512 字节单位)
+	// 开始读的扇区偏移位置
 	sector_t		bi_sector;	/* device address in 512 byte
 						   sectors */
-    // 剩余数量
+	// 剩余数量
 	unsigned int		bi_size;	/* residual I/O count */
 
-    // bvl_vec 的当前索引
+	// bvl_vec 的当前索引
 	unsigned int		bi_idx;		/* current index into bvl_vec */
 
-    // 当前 bvec 中完成的字节数
+	// 当前 bvec 中完成的字节数
 	unsigned int            bi_bvec_done;	/* number of bytes completed in
 						   current bvec */
 } __packed __aligned(4);

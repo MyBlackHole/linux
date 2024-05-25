@@ -43,6 +43,8 @@
  *	KCOV_TRACE_CMP - to trace only the comparison operands
  *  - then, ioctl(KCOV_DISABLE) to disable the task.
  * Enabling/disabling ioctls can be repeated (only one task a time allowed).
+ *
+ * kcov 描述符（每个打开的 debugfs 文件一个）
  */
 struct kcov {
 	/*

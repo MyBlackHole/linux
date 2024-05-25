@@ -266,9 +266,11 @@ static inline void closure_queue(struct closure *cl)
 		     != offsetof(struct work_struct, func));
 
 	if (wq) {
+		// 队列工作
 		INIT_WORK(&cl->work, cl->work.func);
 		BUG_ON(!queue_work(wq, &cl->work));
 	} else
+		// 立即执行
 		cl->fn(&cl->work);
 }
 
@@ -308,6 +310,7 @@ static inline void closure_init(struct closure *cl, struct closure *parent)
 	closure_set_ip(cl);
 }
 
+// 初始化闭包栈
 static inline void closure_init_stack(struct closure *cl)
 {
 	memset(cl, 0, sizeof(struct closure));

@@ -580,6 +580,7 @@ static bool check_version_upgrade(struct bch_fs *c)
 	return false;
 }
 
+// 进入recovery流程
 int bch2_fs_recovery(struct bch_fs *c)
 {
 	struct bch_sb_field_clean *clean = NULL;
@@ -613,6 +614,8 @@ int bch2_fs_recovery(struct bch_fs *c)
 	}
 
 	if (c->opts.norecovery)
+		// norecovery: 在日志重放之前立即退出恢复
+		// recovery_pass_last: 指定通过后退出恢复
 		c->opts.recovery_pass_last = BCH_RECOVERY_PASS_journal_replay - 1;
 
 	mutex_lock(&c->sb_lock);
@@ -804,6 +807,7 @@ use_clean:
 	if (ret)
 		goto err;
 
+	// 执行文件系统检查与恢复
 	ret = bch2_run_recovery_passes(c);
 	if (ret)
 		goto err;
@@ -830,6 +834,7 @@ use_clean:
 
 		c->curr_recovery_pass = BCH_RECOVERY_PASS_check_alloc_info;
 
+		// 执行文件系统检查与恢复
 		ret = bch2_run_recovery_passes(c);
 		if (ret)
 			goto err;

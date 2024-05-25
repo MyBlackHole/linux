@@ -6,7 +6,7 @@ struct dentry;
 struct vfsmount;
 
 struct path {
-    // 当前文件所在的挂载根目录
+	// 当前文件所在的挂载根目录
 	struct vfsmount *mnt;
 	struct dentry *dentry;
 } __randomize_layout;

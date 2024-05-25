@@ -1380,6 +1380,8 @@ static void submit_bio_wait_endio(struct bio *bio)
  * WARNING: Unlike to how submit_bio() is usually used, this function does not
  * result in bio reference to be consumed. The caller must drop the reference
  * on his own.
+ *
+ * 提交 bio，然后等待完成
  */
 int submit_bio_wait(struct bio *bio)
 {
@@ -1785,6 +1787,7 @@ int bioset_init(struct bio_set *bs,
 	if (mempool_init_slab_pool(&bs->bio_pool, pool_size, bs->bio_slab))
 		goto bad;
 
+	// 创建内存池
 	if ((flags & BIOSET_NEED_BVECS) &&
 	    biovec_init_pool(&bs->bvec_pool, pool_size))
 		goto bad;

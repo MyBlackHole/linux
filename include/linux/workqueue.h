@@ -23,6 +23,7 @@
 #define work_data_bits(work) ((unsigned long *)(&(work)->data))
 
 enum work_bits {
+	// 工作项正在等待执行
 	WORK_STRUCT_PENDING_BIT	= 0,	/* work item is pending execution */
 	WORK_STRUCT_INACTIVE_BIT,	/* work item is inactive */
 	WORK_STRUCT_PWQ_BIT,		/* data points to pwq */
@@ -370,6 +371,7 @@ enum wq_flags {
 	WQ_BH			= 1 << 0, /* execute in bottom half (softirq) context */
 	WQ_UNBOUND		= 1 << 1, /* not bound to any cpu */
 	WQ_FREEZABLE		= 1 << 2, /* freeze during suspend */
+	// 可用于内存回收
 	WQ_MEM_RECLAIM		= 1 << 3, /* may be used for memory reclaim */
 	WQ_HIGHPRI		= 1 << 4, /* high priority */
 	WQ_CPU_INTENSIVE	= 1 << 5, /* cpu intensive workqueue */
@@ -614,6 +616,9 @@ extern void wq_worker_comm(char *buf, size_t size, struct task_struct *task);
  *   r0 = queue_work(wq, work);		  r1 = READ_ONCE(x);
  *
  * Forbids: r0 == true && r1 == 0
+ *
+ * 将工作放入工作队列
+ * 如果工作已经在队列中，则返回false，否则返回true
  */
 static inline bool queue_work(struct workqueue_struct *wq,
 			      struct work_struct *work)

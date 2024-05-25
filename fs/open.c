@@ -950,11 +950,11 @@ static int do_dentry_open(struct file *f,
 	/* normally all 3 are set; ->open() can clear them if needed */
 	f->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
 	if (!open)
-        // 设置对应的文件系统设置的 open 操作函数
+		// 设置对应的文件系统设置的 open 操作函数
 		open = f->f_op->open;
 	if (open) {
-        // 执行对应文件系统 open 操作函数
-        // 例如 xfs_file_open
+		// 执行对应文件系统 open 操作函数
+		// 例如 xfs_file_open
 		error = open(inode, f);
 		if (error)
 			goto cleanup_all;
@@ -1396,29 +1396,29 @@ static long do_sys_openat2(int dfd, const char __user *filename,
 			   struct open_how *how)
 {
 	struct open_flags op;
-    // 验证 flags
+	// 验证 flags
 	int fd = build_open_flags(how, &op);
 	struct filename *tmp;
 
 	if (fd)
 		return fd;
 
-    // 提取文件名
+	// 提取文件名
 	tmp = getname(filename);
 	if (IS_ERR(tmp))
 		return PTR_ERR(tmp);
 
-    // 分配 fd
+	// 分配 fd
 	fd = get_unused_fd_flags(how->flags);
 	if (fd >= 0) {
-        // 进入打开文件流程
+		// 进入打开文件流程
 		struct file *f = do_filp_open(dfd, tmp, &op);
 		if (IS_ERR(f)) {
-            // 异常
+			// 异常
 			put_unused_fd(fd);
 			fd = PTR_ERR(f);
 		} else {
-            // 发送 open 通知
+			// 发送 open 通知
 			fsnotify_open(f);
 			fd_install(fd, f);
 		}

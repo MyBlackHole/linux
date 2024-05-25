@@ -1004,7 +1004,7 @@ EXPORT_SYMBOL(get_next_ino);
  */
 struct inode *new_inode_pseudo(struct super_block *sb)
 {
-    // 分配 inode
+	// 分配 inode
 	struct inode *inode = alloc_inode(sb);
 
 	if (inode) {

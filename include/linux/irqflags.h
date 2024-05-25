@@ -244,6 +244,9 @@ extern void warn_bogus_irq_restore(void);
  * to avoid build issues.
  */
 #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
+/*
+ * 关闭中断
+ */
 #define irqs_disabled()					\
 	({						\
 		unsigned long _flags;			\

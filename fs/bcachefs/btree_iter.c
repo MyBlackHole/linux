@@ -1295,9 +1295,11 @@ __bch2_btree_path_set_pos(struct btree_trans *trans,
 		 * many keys just reinit it (or if we're rewinding, since that
 		 * is expensive).
 		 */
-        // 我们可能必须跳过许多键，或者只是几个键：
-        // 尝试推进节点迭代器，如果我们必须跳过太多键，
-        // 只需重新初始化它（或者如果我们要倒带，因为这很昂贵）。
+		/*
+		 * 我们可能必须跳过许多键，或者只是几个键：
+		 * 尝试推进节点迭代器，如果我们必须跳过太多键，
+		 * 只需重新初始化它（或者如果我们要倒带，因为这很昂贵）。
+		 */
 		if (cmp < 0 ||
 		    !btree_path_advance_to_pos(path, l, 8))
 			bch2_btree_node_iter_init(&l->iter, l->b, &path->pos);
@@ -1305,8 +1307,9 @@ __bch2_btree_path_set_pos(struct btree_trans *trans,
 		/*
 		 * Iterators to interior nodes should always be pointed at the first non
 		 * whiteout:
+		 *
+		 * 内部节点的迭代器应始终指向第一个非空白：
 		 */
-        // 内部节点的迭代器应始终指向第一个非空白：
 		if (unlikely(level))
 			bch2_btree_node_iter_peek(&l->iter, l->b);
 	}
@@ -2270,15 +2273,17 @@ out:
  *
  * Returns:	key if found, or an error extractable with bkey_err().
  */
-// bch2_btree_iter_peek_upto() - 返回大于或等于迭代器当前位置的第一个键
-// @iter：从中查看的迭代器
-// @end：搜索限制：返回小于或等于@end的键
-//
-// 返回：如果找到键，或者使用 bkey_err() 提取错误。
+/*
+ * bch2_btree_iter_peek_upto() - 返回大于或等于迭代器当前位置的第一个键
+ * @iter：从中查看的迭代器
+ * @end：搜索限制：返回小于或等于@end的键
+ *
+ * 返回：如果找到键，或者使用 bkey_err() 提取错误。
+ */
 struct bkey_s_c bch2_btree_iter_peek_upto(struct btree_iter *iter, struct bpos end)
 {
 	struct btree_trans *trans = iter->trans;
-    // 搜索键
+	// 搜索键
 	struct bpos search_key = btree_iter_search_key(iter);
 	struct bkey_s_c k;
 	struct bpos iter_pos;

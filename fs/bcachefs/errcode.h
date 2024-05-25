@@ -260,13 +260,13 @@ enum bch_errcode {
 	BCH_ERR_START		= 2048,
 #define x(class, err) BCH_ERR_##err,
 	BCH_ERRCODES()
-    // BCH_ERR_transaction_restart: 错误食物重新启动
-    // BCH_ERR_mismatched_block_size: 错误块大小
-    // BCH_ERR_bucket_size_too_small: 桶大小异常
-    // BCH_ERR_device_has_been_removed: 设备已删除
-    // BCH_ERR_device_not_a_member_of_filesystem: 错误的 memeber
-    // BCH_ERR_ENOMEM_fs_name_alloc: 内存分配失败
-    // BCH_ERR_erofs_no_writes: 没有写入(只读)
+	// BCH_ERR_transaction_restart: 错误食物重新启动
+	// BCH_ERR_mismatched_block_size: 错误块大小
+	// BCH_ERR_bucket_size_too_small: 桶大小异常
+	// BCH_ERR_device_has_been_removed: 设备已删除
+	// BCH_ERR_device_not_a_member_of_filesystem: 错误的 memeber
+	// BCH_ERR_ENOMEM_fs_name_alloc: 内存分配失败
+	// BCH_ERR_erofs_no_writes: 没有写入(只读)
 #undef x
 	BCH_ERR_MAX
 };

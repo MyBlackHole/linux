@@ -708,9 +708,9 @@ static noinline void __ref __noreturn rest_init(void)
 	 * We need to spawn init first so that it obtains pid 1, however
 	 * the init task will end up wanting to create kthreads, which, if
 	 * we schedule it before we create kthreadd, will OOPS.
-     *
-     * 创建用户线程, 运行 kernel_init
-     *
+	 *
+	 * 创建用户线程, 运行 kernel_init
+	 *
 	 */
 	pid = user_mode_thread(kernel_init, NULL, CLONE_FS);
 	/*
@@ -725,10 +725,10 @@ static noinline void __ref __noreturn rest_init(void)
 	rcu_read_unlock();
 
 	numa_default_policy();
-    // 创建 kthreadd 线程
+	// 创建 kthreadd 线程
 	pid = kernel_thread(kthreadd, NULL, NULL, CLONE_FS | CLONE_FILES);
 	rcu_read_lock();
-    // 通过 pid 找到 kthreadd 线程
+	// 通过 pid 找到 kthreadd 线程
 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
 	rcu_read_unlock();
 
@@ -746,13 +746,13 @@ static noinline void __ref __noreturn rest_init(void)
 	/*
 	 * The boot idle thread must execute schedule()
 	 * at least once to get things moving:
-     *
-     * 开机空闲线程必须调用一次
-     * schedule
+	 *
+	 * 开机空闲线程必须调用一次
+	 * schedule
 	 */
 	schedule_preempt_disabled();
 	/* Call into cpu_idle with preempt disabled */
-    // 给所有 cpu 个空闲任务
+	// 给所有 cpu 个空闲任务
 	cpu_startup_entry(CPUHP_ONLINE);
 }
 

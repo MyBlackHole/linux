@@ -81,33 +81,33 @@ extern const struct qstr dotdot_name;
 
 struct dentry {
 	/* RCU lookup touched fields */
-    // 状态位
+	// 状态位
 	unsigned int d_flags;		/* protected by d_lock */
-    // 自旋锁
+	// 自旋锁
 	seqcount_spinlock_t d_seq;	/* per dentry seqlock */
-    // 哈希链表节点
+	// 哈希链表节点
 	struct hlist_bl_node d_hash;	/* lookup hash list */
-    // 父目录指针
+	// 父目录指针
 	struct dentry *d_parent;	/* parent directory */
-    // 文件或者目录名
+	// 文件或者目录名
 	struct qstr d_name;
-    // 关联的 inode
+	// 关联的 inode
 	struct inode *d_inode;		/* Where the name belongs to - NULL is
 					 * negative */
-    // 短文件名
+	// 短文件名
 	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names */
 
 	/* Ref lookup also touches following */
 	struct lockref d_lockref;	/* per-dentry lock and refcount */
 	const struct dentry_operations *d_op;
-    // 关联的超级块
+	// 关联的超级块
 	struct super_block *d_sb;	/* The root of the dentry tree */
 	unsigned long d_time;		/* used by d_revalidate */
-    // 私有数据
+	// 私有数据
 	void *d_fsdata;			/* fs-specific data */
 
 	union {
-        // 未使用
+		// 未使用
 		struct list_head d_lru;		/* LRU list */
 		wait_queue_head_t *d_wait;	/* in-lookup ones only */
 	};

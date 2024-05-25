@@ -769,7 +769,7 @@ again:
 		 * We don't need to iterate over keys in every snapshot once
 		 * we've found just one:
 		 */
-        // 一旦我们只找到一个快照，我们就不需要迭代每个快照中的键：
+		// 一旦我们只找到一个快照，我们就不需要迭代每个快照中的键：
 		pos = iter->pos.offset + 1;
 		bch2_btree_iter_set_pos(iter, POS(0, pos));
 	}

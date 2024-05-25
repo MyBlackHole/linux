@@ -411,7 +411,12 @@ static inline struct bio *bio_next_split(struct bio *bio, int sectors,
 }
 
 enum {
+	// 创建一个单独的内存池用于分配iovecs，fs_bio_set需设置该标记。
 	BIOSET_NEED_BVECS = BIT(0),
+	// 创建一个workqueue，处理函数为bio_alloc_rescue，
+	// 当内存不足无法从内存池中申请到bio时，
+	// 该workqueue 把处理stack device时（比如raid）暂存在list中的bio（参考后文“bio的提交”）提交处理，从而回收bio。
+	// 对于非stack device场景，不需要这个工作队列。
 	BIOSET_NEED_RESCUER = BIT(1),
 	BIOSET_PERCPU_CACHE = BIT(2),
 };
@@ -698,6 +703,7 @@ struct bio_set {
 	struct bio_alloc_cache __percpu *cache;
 
 	mempool_t bio_pool;
+	// 内存池，用于分配 bio_vec
 	mempool_t bvec_pool;
 #if defined(CONFIG_BLK_DEV_INTEGRITY)
 	mempool_t bio_integrity_pool;

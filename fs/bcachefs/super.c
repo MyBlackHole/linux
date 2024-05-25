@@ -1045,6 +1045,9 @@ int bch2_fs_start(struct bch_fs *c)
 		bch2_dev_allocator_add(c, ca);
 	bch2_recalc_capacity(c);
 
+	// 判断是否初始化过
+	// 有则进入检查恢复逻辑
+	// 没有则执行初始化
 	ret = BCH_SB_INITIALIZED(c->disk_sb.sb)
 		? bch2_fs_recovery(c)
 		: bch2_fs_initialize(c);
@@ -1333,6 +1336,10 @@ static struct bch_dev *__bch2_dev_alloc(struct bch_fs *c,
 	atomic_long_set(&ca->ref, 1);
 #endif
 
+	/*
+	 * 初始化 ref, 在 ref 计数为 0 时，执行 bch2_dev_ref_complete
+	 * 初始化 io_ref, 在 io_ref 计数为 0 时，执行 bch2_dev_io_ref_complete
+	 */
 	if (percpu_ref_init(&ca->io_ref, bch2_dev_io_ref_complete,
 			    PERCPU_REF_INIT_DEAD, GFP_KERNEL) ||
 	    !(ca->sb_read_scratch = (void *) __get_free_page(GFP_KERNEL)) ||
@@ -1959,6 +1966,7 @@ int bch2_dev_online(struct bch_fs *c, const char *path)
 	}
 
 	if (!ca->journal.nr) {
+		// 初始化此设备日志储存信息
 		ret = bch2_dev_journal_alloc(ca);
 		bch_err_msg(ca, ret, "allocating journal");
 		if (ret)
@@ -2166,6 +2174,7 @@ struct bch_fs *bch2_fs_open(char * const *devices, unsigned nr_devices,
 	}
 
 	if (!c->opts.nostart) {
+		// 启动文件系统
 		ret = bch2_fs_start(c);
 		if (ret)
 			goto err;

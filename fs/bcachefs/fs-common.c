@@ -48,7 +48,7 @@ int bch2_create_trans(struct btree_trans *trans,
 
 	if (!(flags & BCH_CREATE_SNAPSHOT)) {
 		/* Normal create path - allocate a new inode: */
-        /* 正常创建路径 - 分配一个新的 inode: */
+		/* 正常创建路径 - 分配一个新的 inode: */
 		bch2_inode_init_late(new_inode, now, uid, gid, mode, rdev, dir_u);
 
 		if (flags & BCH_CREATE_TMPFILE)

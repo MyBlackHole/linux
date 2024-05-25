@@ -100,6 +100,7 @@ struct io_context {
 	atomic_long_t refcount;
 	atomic_t active_ref;
 
+	// io 优先级
 	unsigned short ioprio;
 
 #ifdef CONFIG_BLK_ICQ

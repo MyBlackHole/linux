@@ -2,10 +2,16 @@
 #ifndef _BCACHEFS_RECOVERY_PASSES_TYPES_H
 #define _BCACHEFS_RECOVERY_PASSES_TYPES_H
 
+// 沉默的，不想要执行的
 #define PASS_SILENT		BIT(0)
+// fsck (file system check)
+// 检查文件系统
 #define PASS_FSCK		BIT(1)
+// 清除不干净的
 #define PASS_UNCLEAN		BIT(2)
+// 始终运行
 #define PASS_ALWAYS		BIT(3)
+// 在线检查
 #define PASS_ONLINE		BIT(4)
 
 /*
@@ -54,6 +60,7 @@
 	x(set_fs_needs_rebalance,		34, 0)				\
 
 /* We normally enumerate recovery passes in the order we run them: */
+/* 我们通常按照运行顺序枚举恢复过程：*/
 enum bch_recovery_pass {
 #define x(n, id, when)	BCH_RECOVERY_PASS_##n,
 	BCH_RECOVERY_PASSES()

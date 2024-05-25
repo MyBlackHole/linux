@@ -382,7 +382,7 @@ struct blk_independent_access_ranges {
 /*
  * 系统对块设备读写
  * 通过块设备通用的读写操作函数将请求保存该设备的请求队列 request_queue
- * 
+ *
  * 此结构描述了块设备的请求队列
  */
 struct request_queue {
@@ -1001,13 +1001,14 @@ void blk_mark_disk_dead(struct gendisk *disk);
  * or when attempting a merge. For details, please see schedule() where
  * blk_flush_plug() is called.
  */
-// blk_plug 允许通过短时间保存 I/O 片段来构建相关请求的队列。
-// 这允许将顺序请求合并为单个更大的请求。
-// 由于请求批量从每个任务列表移至设备的 request_queue，因此可提高可扩展性
-// 因为 request_queue 锁的锁争用减少了。
-//
-// 将请求添加到插件列表或尝试合并时，可以不禁用抢占。 
-// 详细信息请参见schedule()，其中调用了blk_flush_plug()。
+/* blk_plug 允许通过短时间保存 I/O 片段来构建相关请求的队列。
+ * 这允许将顺序请求合并为单个更大的请求。
+ * 由于请求批量从每个任务列表移至设备的 request_queue，因此可提高可扩展性
+ * 因为 request_queue 锁的锁争用减少了。
+ *
+ * 将请求添加到插件列表或尝试合并时，可以不禁用抢占。
+ * 详细信息请参见schedule()，其中调用了blk_flush_plug()。
+ */
 struct blk_plug {
 	struct request *mq_list; /* blk-mq requests */
 
@@ -1021,7 +1022,7 @@ struct blk_plug {
 	bool multiple_queues;
 	bool has_elevator;
 
-    // 回调函数的链表，下发请求时会调用到
+	// 回调函数的链表，下发请求时会调用到
 	struct list_head cb_list; /* md requires an unplug callback */
 };
 
@@ -1458,7 +1459,7 @@ struct block_device_operations {
 			unsigned cmd, unsigned long arg);
 	int (*compat_ioctl)(struct block_device *bdev, blk_mode_t mode,
 			unsigned cmd, unsigned long arg);
-    // 检查磁盘是否有修改
+	// 检查磁盘是否有修改
 	unsigned int (*check_events) (struct gendisk *disk,
 				      unsigned int clearing);
 	void (*unlock_native_capacity) (struct gendisk *);
@@ -1473,7 +1474,7 @@ struct block_device_operations {
 	/* returns the length of the identifier or a negative errno: */
 	int (*get_unique_id)(struct gendisk *disk, u8 id[16],
 			enum blk_unique_id id_type);
-    // 指向拥有这个结构的模块，常取值为THIS_MODULE
+	// 指向拥有这个结构的模块，常取值为THIS_MODULE
 	struct module *owner;
 	const struct pr_ops *pr_ops;
 

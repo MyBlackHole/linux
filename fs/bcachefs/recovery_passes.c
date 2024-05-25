@@ -19,6 +19,7 @@
 #include "super.h"
 #include "super-io.h"
 
+// 需要执行恢复的函数名数组
 const char * const bch2_recovery_passes[] = {
 #define x(_fn, ...)	#_fn,
 	BCH_RECOVERY_PASSES()
@@ -49,6 +50,7 @@ struct recovery_pass_fn {
 	unsigned	when;
 };
 
+// 需要执行恢复的函数数组
 static struct recovery_pass_fn recovery_pass_fns[] = {
 #define x(_fn, _id, _when)	{ .fn = bch2_##_fn, .when = _when },
 	BCH_RECOVERY_PASSES()
@@ -171,6 +173,7 @@ static bool should_run_recovery_pass(struct bch_fs *c, enum bch_recovery_pass pa
 	return false;
 }
 
+// 运行恢复函数
 static int bch2_run_recovery_pass(struct bch_fs *c, enum bch_recovery_pass pass)
 {
 	struct recovery_pass_fn *p = recovery_pass_fns + pass;
@@ -188,6 +191,7 @@ static int bch2_run_recovery_pass(struct bch_fs *c, enum bch_recovery_pass pass)
 	return 0;
 }
 
+// 运行在线恢复函数
 int bch2_run_online_recovery_passes(struct bch_fs *c)
 {
 	int ret = 0;
@@ -196,6 +200,7 @@ int bch2_run_online_recovery_passes(struct bch_fs *c)
 		struct recovery_pass_fn *p = recovery_pass_fns + i;
 
 		if (!(p->when & PASS_ONLINE))
+			// 跳过不支持在线恢复函数
 			continue;
 
 		ret = bch2_run_recovery_pass(c, i);
@@ -210,6 +215,7 @@ int bch2_run_online_recovery_passes(struct bch_fs *c)
 	return ret;
 }
 
+// 运行恢复函数
 int bch2_run_recovery_passes(struct bch_fs *c)
 {
 	int ret = 0;

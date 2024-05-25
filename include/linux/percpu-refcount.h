@@ -106,6 +106,9 @@ struct percpu_ref {
 	/*
 	 * The low bit of the pointer indicates whether the ref is in percpu
 	 * mode; if set, then get/put will manipulate the atomic_t.
+	 *
+	 * 指针的低位表示ref是否处于percpu模式；
+	 * 如果设置，则 get/put 将操作atomic_t。
 	 */
 	unsigned long		percpu_count_ptr;
 
@@ -323,6 +326,9 @@ static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
  *
  * This function is safe to call as long as @ref is between init and exit.
  */
+/*
+ *
+ */
 static inline void percpu_ref_put_many(struct percpu_ref *ref, unsigned long nr)
 {
 	unsigned long __percpu *percpu_count;
@@ -332,6 +338,7 @@ static inline void percpu_ref_put_many(struct percpu_ref *ref, unsigned long nr)
 	if (__ref_is_percpu(ref, &percpu_count))
 		this_cpu_sub(*percpu_count, nr);
 	else if (unlikely(atomic_long_sub_and_test(nr, &ref->data->count)))
+		// 如果引用计数为 0，则调用 release 函数（传递给 percpu_ref_init() 的函数）
 		ref->data->release(ref);
 
 	rcu_read_unlock();
@@ -345,6 +352,11 @@ static inline void percpu_ref_put_many(struct percpu_ref *ref, unsigned long nr)
  * to percpu_ref_init())
  *
  * This function is safe to call as long as @ref is between init and exit.
+ */
+/*
+ * 减少 percpu 引用计数
+ *
+ * 如果引用计数为 0，则调用 release 函数（传递给 percpu_ref_init() 的函数）
  */
 static inline void percpu_ref_put(struct percpu_ref *ref)
 {

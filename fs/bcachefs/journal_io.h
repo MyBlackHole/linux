@@ -19,6 +19,7 @@ struct journal_ptr {
  * Only used for holding the journal entries we read in btree_journal_read()
  * during cache_registration
  */
+// 仅用于保存我们在 cache_registration 期间在 btree_journal_read() 中读取的日志条目
 struct journal_replay {
 	DARRAY_PREALLOCATED(struct journal_ptr, 8) ptrs;
 
