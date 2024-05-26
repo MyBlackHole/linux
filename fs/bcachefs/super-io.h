@@ -10,6 +10,7 @@
 
 #include <asm/byteorder.h>
 
+// 版本兼任性检查
 static inline bool bch2_version_compatible(u16 version)
 {
 	return BCH_VERSION_MAJOR(version) <= BCH_VERSION_MAJOR(bcachefs_metadata_version_current) &&

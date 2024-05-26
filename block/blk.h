@@ -397,6 +397,7 @@ static inline bool blk_queue_may_bounce(struct request_queue *q)
 		max_low_pfn >= max_pfn;
 }
 
+// 反弹: 为了确保内存区是外围设备可达的
 static inline struct bio *blk_queue_bounce(struct bio *bio,
 		struct request_queue *q)
 {

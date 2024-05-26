@@ -23,13 +23,18 @@ struct journal_ptr {
 struct journal_replay {
 	DARRAY_PREALLOCATED(struct journal_ptr, 8) ptrs;
 
+	// 是否校验完成(数据未齐?)
 	bool			csum_good;
+	// 忽略黑名单
 	bool			ignore_blacklisted;
+	// 忽略未修改
 	bool			ignore_not_dirty;
 	/* must be last: */
 	struct jset		j;
 };
 
+
+// 是否需要忽略
 static inline bool journal_replay_ignore(struct journal_replay *i)
 {
 	return !i || i->ignore_blacklisted || i->ignore_not_dirty;

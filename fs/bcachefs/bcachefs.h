@@ -809,6 +809,7 @@ struct bch_fs {
 	struct workqueue_struct	*io_complete_wq;
 
 	struct btree_root	btree_roots_known[BTREE_ID_NR];
+	// 额外的 btree 根
 	DARRAY(struct btree_root) btree_roots_extra;
 	struct mutex		btree_root_lock;
 
@@ -1090,6 +1091,7 @@ struct bch_fs {
 	mempool_t		btree_bounce_pool;
 
 	struct journal		journal;
+	// 基数树结构
 	GENRADIX(struct journal_replay *) journal_entries;
 	u64			journal_entries_base_seq;
 	struct journal_keys	journal_keys;

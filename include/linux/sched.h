@@ -1370,7 +1370,7 @@ struct task_struct {
 	struct bio_list			*bio_list;
 
 	/* Stack plugging: */
-	/* 堆堵塞 */
+	/* 堆堵塞, 用于合并 io */
 	struct blk_plug			*plug;
 
 	/* VM state: */

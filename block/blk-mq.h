@@ -420,6 +420,7 @@ static inline bool hctx_may_queue(struct blk_mq_hw_ctx *hctx,
 }
 
 /* run the code block in @dispatch_ops with rcu/srcu read lock held */
+/* 运行 @dispatch_ops 中的代码块并持有 rcu/srcu 读锁 */
 #define __blk_mq_run_dispatch_ops(q, check_sleep, dispatch_ops)	\
 do {								\
 	if ((q)->tag_set->flags & BLK_MQ_F_BLOCKING) {		\

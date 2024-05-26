@@ -260,6 +260,7 @@ enum bch_errcode {
 	BCH_ERR_START		= 2048,
 #define x(class, err) BCH_ERR_##err,
 	BCH_ERRCODES()
+	// BCH_ERR_btree_node_read_error: 错误的btree节点读取
 	// BCH_ERR_transaction_restart: 错误食物重新启动
 	// BCH_ERR_mismatched_block_size: 错误块大小
 	// BCH_ERR_bucket_size_too_small: 桶大小异常

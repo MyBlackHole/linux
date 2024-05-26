@@ -472,6 +472,7 @@ struct bch_set {
 };
 
 /* 128 bits, sufficient for cryptographic MACs: */
+/* 128 位，足以用于加密 */
 struct bch_csum {
 	__le64			lo;
 	__le64			hi;
@@ -672,6 +673,7 @@ struct jset_entry {
 	__le16			u64s;
 	__u8			btree_id;
 	__u8			level;
+	// 指定该 jset 持有的内容
 	__u8			type; /* designates what this jset holds */
 	__u8			pad[3];
 
@@ -1068,6 +1070,7 @@ enum bch_str_hash_opts {
 	x(crc64,			6)	\
 	x(xxhash,			7)
 
+// 校验和类型
 enum bch_csum_type {
 #define x(t, n) BCH_CSUM_##t = n,
 	BCH_CSUM_TYPES()
@@ -1086,6 +1089,7 @@ static const __maybe_unused unsigned bch_crc_bytes[] = {
 	[BCH_CSUM_chacha20_poly1305_128]	= 16,
 };
 
+// 是否是加密校验和类型
 static inline _Bool bch2_csum_type_is_encryption(enum bch_csum_type type)
 {
 	switch (type) {
@@ -1154,6 +1158,7 @@ enum bch_compression_opts {
 
 #define BCACHEFS_STATFS_MAGIC		BCACHEFS_SUPER_MAGIC
 
+// 魔法数
 #define JSET_MAGIC		__cpu_to_le64(0x245235c1a3625032ULL)
 #define BSET_MAGIC		__cpu_to_le64(0x90135c78b99e07f5ULL)
 
@@ -1307,11 +1312,15 @@ struct jset_entry_datetime {
  * flushed to disk yet.
  *
  * version is for on disk format changes.
+ *
+ * 日记条目的磁盘格式
  */
 struct jset {
 	struct bch_csum		csum;
 
 	__le64			magic;
+	// 单调递增；
+	// 每个日记条目都有自己唯一的序列号
 	__le64			seq;
 	__le32			version;
 	__le32			flags;
@@ -1324,6 +1333,8 @@ struct jset {
 	__le16			_write_clock;
 
 	/* Sequence number of oldest dirty journal entry */
+	/* 最旧的脏日志条目的序列号 */
+	// 最旧的日志条目，它仍然具有 btree 尚未刷新到磁盘的键
 	__le64			last_seq;
 
 
@@ -1333,6 +1344,7 @@ struct jset {
 
 LE32_BITMASK(JSET_CSUM_TYPE,	struct jset, flags, 0, 4);
 LE32_BITMASK(JSET_BIG_ENDIAN,	struct jset, flags, 4, 5);
+// 不刷新
 LE32_BITMASK(JSET_NO_FLUSH,	struct jset, flags, 5, 6);
 
 #define BCH_JOURNAL_BUCKETS_MIN		8

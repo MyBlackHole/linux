@@ -316,6 +316,7 @@ err:
 }
 
 /* journal replay early: */
+/* 日记重播准备 */
 
 static int journal_replay_entry_early(struct bch_fs *c,
 				      struct jset_entry *entry)
@@ -332,6 +333,7 @@ static int journal_replay_entry_early(struct bch_fs *c,
 				return ret;
 		}
 
+		// 取出 entry 里 btree_id 对应的的 btree_root 结构体
 		r = bch2_btree_id_root(c, entry->btree_id);
 
 		if (entry->u64s) {
@@ -440,6 +442,7 @@ static int journal_replay_early(struct bch_fs *c,
 			if (journal_replay_ignore(i))
 				continue;
 
+			// 遍历 jset 里的 entry
 			vstruct_for_each(&i->j, entry) {
 				int ret = journal_replay_entry_early(c, entry);
 				if (ret)
@@ -686,6 +689,7 @@ int bch2_fs_recovery(struct bch_fs *c)
 		struct journal_replay **i;
 
 		bch_verbose(c, "starting journal read");
+		// 读取日志
 		ret = bch2_journal_read(c, &last_seq, &blacklist_seq, &journal_seq);
 		if (ret)
 			goto err;
@@ -695,6 +699,7 @@ int bch2_fs_recovery(struct bch_fs *c)
 		 * it can asterisk ignored journal entries:
 		 */
 		if (c->opts.read_journal_only)
+			// 只读取日志，不执行恢复流程
 			goto out;
 
 		genradix_for_each_reverse(&c->journal_entries, iter, i)

@@ -48,6 +48,7 @@ struct genradix_root;
 #define GENRADIX_NODE_SHIFT	9
 #define GENRADIX_NODE_SIZE	(1U << GENRADIX_NODE_SHIFT)
 
+// 基数树
 struct __genradix {
 	struct genradix_root		*root;
 };

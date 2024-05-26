@@ -30,11 +30,11 @@ struct page;
  */
 // struct bio_vec - 连续的物理内存地址范围
 struct bio_vec {
-    // 与地址范围关联的第一页。
+	// 与地址范围关联的第一页。
 	struct page	*bv_page;
-    // 地址范围内的字节数。
+	// 地址范围内的字节数。
 	unsigned int	bv_len;
-    // 相对于@bv_page 开头的地址范围的开头。
+	// 相对于@bv_page 开头的地址范围的开头。
 	unsigned int	bv_offset;
 };
 

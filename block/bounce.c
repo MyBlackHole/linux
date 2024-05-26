@@ -210,12 +210,14 @@ struct bio *__blk_queue_bounce(struct bio *bio_orig, struct request_queue *q)
 	bool bounce = false;
 	int sectors;
 
+	// 遍历 bio 每个数据段，是否需要进行 bounce
 	bio_for_each_segment(from, bio_orig, iter) {
 		if (i++ < BIO_MAX_VECS)
 			bytes += from.bv_len;
 		if (PageHighMem(from.bv_page))
 			bounce = true;
 	}
+	// 如果没有需要 bounce 的数据段，则直接返回原始 bio
 	if (!bounce)
 		return bio_orig;
 
@@ -232,16 +234,21 @@ struct bio *__blk_queue_bounce(struct bio *bio_orig, struct request_queue *q)
 		submit_bio_noacct(bio_orig);
 		bio_orig = bio;
 	}
+	// 克隆原始 bio
 	bio = bounce_clone_bio(bio_orig);
 
 	/*
 	 * Bvec table can't be updated by bio_for_each_segment_all(),
 	 * so retrieve bvec from the table directly. This way is safe
 	 * because the 'bio' is single-page bvec.
+	 *
+	 * 遍历 bio 每个数据段
 	 */
 	for (i = 0, to = bio->bi_io_vec; i < bio->bi_vcnt; to++, i++) {
 		struct page *bounce_page;
 
+		// 如果数据段已经不是高端内存， (外围设备可以到达的)
+		// 则不需要进行 bounce
 		if (!PageHighMem(to->bv_page))
 			continue;
 
@@ -249,14 +256,17 @@ struct bio *__blk_queue_bounce(struct bio *bio_orig, struct request_queue *q)
 		inc_zone_page_state(bounce_page, NR_BOUNCE);
 
 		if (rw == WRITE) {
+			// 写操作需要将数据从高端内存拷贝到 bounce 页
 			flush_dcache_page(to->bv_page);
 			memcpy_from_bvec(page_address(bounce_page), to);
 		}
+		// 设置 bounce 页到 bio 数据段
 		to->bv_page = bounce_page;
 	}
 
 	trace_block_bio_bounce(bio_orig);
 
+	// 标记 bio 已经被 bounce
 	bio->bi_flags |= (1 << BIO_BOUNCED);
 
 	if (rw == READ)
@@ -264,6 +274,7 @@ struct bio *__blk_queue_bounce(struct bio *bio_orig, struct request_queue *q)
 	else
 		bio->bi_end_io = bounce_end_io_write;
 
+	// 保留原始 bio 指针
 	bio->bi_private = bio_orig;
 	return bio;
 }

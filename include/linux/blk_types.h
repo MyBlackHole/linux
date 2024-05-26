@@ -292,6 +292,7 @@ struct bio {
 enum {
 	BIO_PAGE_PINNED,	/* Unpin pages in bio_release_pages() */
 	BIO_CLONED,		/* doesn't own data */
+	// bio 是一个反弹 bio
 	BIO_BOUNCED,		/* bio is a bounce bio */
 	BIO_QUIET,		/* Make BIO Quiet */
 	BIO_CHAIN,		/* chained bio, ->bi_remaining in effect */
@@ -411,6 +412,7 @@ enum req_flag_bits {
 			(__force blk_opf_t)(1ULL << __REQ_FAILFAST_TRANSPORT)
 #define REQ_FAILFAST_DRIVER	\
 			(__force blk_opf_t)(1ULL << __REQ_FAILFAST_DRIVER)
+// 同步请求
 #define REQ_SYNC	(__force blk_opf_t)(1ULL << __REQ_SYNC)
 #define REQ_META	(__force blk_opf_t)(1ULL << __REQ_META)
 #define REQ_PRIO	(__force blk_opf_t)(1ULL << __REQ_PRIO)

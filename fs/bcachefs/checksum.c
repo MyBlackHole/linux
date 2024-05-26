@@ -112,6 +112,7 @@ static inline int do_encrypt_sg(struct crypto_sync_skcipher *tfm,
 	return ret;
 }
 
+// 开始加密
 static inline int do_encrypt(struct crypto_sync_skcipher *tfm,
 			      struct nonce nonce,
 			      void *buf, size_t len)
@@ -241,6 +242,7 @@ int bch2_encrypt(struct bch_fs *c, unsigned type,
 		  struct nonce nonce, void *data, size_t len)
 {
 	if (!bch2_csum_type_is_encryption(type))
+		// 没有加密算法
 		return 0;
 
 	return do_encrypt(c->chacha20, nonce, data, len);

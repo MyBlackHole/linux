@@ -310,6 +310,8 @@ struct blk_mq_hw_ctx {
 
 	/**
 	 * @run_work: Used for scheduling a hardware queue run at a later time.
+	 *
+	 * 用于安排硬件队列稍后运行。
 	 */
 	struct delayed_work	run_work;
 	/** @cpumask: Map of available CPUs where this hctx can run. */
@@ -461,6 +463,8 @@ struct blk_mq_queue_map {
  * @HCTX_TYPE_READ:	Just for READ I/O.
  * @HCTX_TYPE_POLL:	Polled I/O of any kind.
  * @HCTX_MAX_TYPES:	Number of types of hctx.
+ *
+ * 硬件队列类型
  */
 enum hctx_type {
 	HCTX_TYPE_DEFAULT,
@@ -510,21 +514,21 @@ enum hctx_type {
  *
  */
 struct blk_mq_tag_set {
-    // 块设备驱动函数操作
+	// 块设备驱动函数操作
 	const struct blk_mq_ops	*ops;
-    // 队列
+	// 队列
 	struct blk_mq_queue_map	map[HCTX_MAX_TYPES];
-    // map 元素数量
+	// map 元素数量
 	unsigned int		nr_maps;
-    // 块驱动程序支持的硬件队列数
+	// 块驱动程序支持的硬件队列数
 	unsigned int		nr_hw_queues;
 	unsigned int		queue_depth;
 	unsigned int		reserved_tags;
-    // 每个请求分配的附加字节数
+	// 每个请求分配的附加字节数
 	unsigned int		cmd_size;
-    // 存储适配器已连接的 NUMA 节点
+	// 存储适配器已连接的 NUMA 节点
 	int			numa_node;
-    // 请求超时
+	// 请求超时
 	unsigned int		timeout;
 	unsigned int		flags;
 	void			*driver_data;
@@ -560,7 +564,7 @@ struct blk_mq_ops {
 	/**
 	 * @queue_rq: Queue a new request from block IO.
 	 */
-    // 将来自块 IO 的新请求排队。
+	// 将来自块 IO 的新请求排队。
 	blk_status_t (*queue_rq)(struct blk_mq_hw_ctx *,
 				 const struct blk_mq_queue_data *);
 
@@ -571,8 +575,8 @@ struct blk_mq_ops {
 	 * purpose of kicking the hardware (which the last request otherwise
 	 * would have done).
 	 */
-    // 如果驱动程序使用bd->last判断何时向硬件提交请求，则必须定义此函数。
-    // 如果出现错误，使我们停止发出进一步的请求，这个钩子将用于踢击硬件（否则最后一个请求将执行此操作)
+	// 如果驱动程序使用bd->last判断何时向硬件提交请求，则必须定义此函数。
+	// 如果出现错误，使我们停止发出进一步的请求，这个钩子将用于踢击硬件（否则最后一个请求将执行此操作)
 	void (*commit_rqs)(struct blk_mq_hw_ctx *);
 
 	/**
@@ -581,8 +585,8 @@ struct blk_mq_ops {
 	 * empty the @rqlist completely, then the rest will be queued
 	 * individually by the block layer upon return.
 	 */
-    // 将新请求的列表排入队列。驱动程序保证每个请求都属于同一队列。
-    // 如果驱动程序没有完全清空@rqlist，那么其余的将在返回时由块层单独排队。
+	// 将新请求的列表排入队列。驱动程序保证每个请求都属于同一队列。
+	// 如果驱动程序没有完全清空@rqlist，那么其余的将在返回时由块层单独排队。
 	void (*queue_rqs)(struct request **rqlist);
 
 	/**
@@ -591,43 +595,43 @@ struct blk_mq_ops {
 	 * reserved budget. Also we have to handle failure case
 	 * of .get_budget for avoiding I/O deadlock.
 	 */
-    // 在队列请求之前预留预算，一旦.queue_rq运行，驾驶员就有责任释放预留预算。
-    // 此外，我们还必须处理.get_budget的失败情况，以避免I/O死锁。
+	// 在队列请求之前预留预算，一旦.queue_rq运行，驾驶员就有责任释放预留预算。
+	// 此外，我们还必须处理.get_budget的失败情况，以避免I/O死锁。
 	int (*get_budget)(struct request_queue *);
 
 	/**
 	 * @put_budget: Release the reserved budget.
 	 */
-    // 释放预留预算。
+	// 释放预留预算。
 	void (*put_budget)(struct request_queue *, int);
 
 	/**
 	 * @set_rq_budget_token: store rq's budget token
 	 */
-    // 存储rq的预算令牌
+	// 存储rq的预算令牌
 	void (*set_rq_budget_token)(struct request *, int);
 	/**
 	 * @get_rq_budget_token: retrieve rq's budget token
 	 */
-    // 检索rq的预算令牌
+	// 检索rq的预算令牌
 	int (*get_rq_budget_token)(struct request *);
 
 	/**
 	 * @timeout: Called on request timeout.
 	 */
-    // 请求超时时调用。
+	// 请求超时时调用。
 	enum blk_eh_timer_return (*timeout)(struct request *);
 
 	/**
 	 * @poll: Called to poll for completion of a specific tag.
 	 */
-    // 调用以轮询特定标记的完成情况。
+	// 调用以轮询特定标记的完成情况。
 	int (*poll)(struct blk_mq_hw_ctx *, struct io_comp_batch *);
 
 	/**
 	 * @complete: Mark the request as complete.
 	 */
-    // 将请求标记为已完成
+	// 将请求标记为已完成
 	void (*complete)(struct request *);
 
 	/**
@@ -635,12 +639,12 @@ struct blk_mq_ops {
 	 * been set up, allowing the driver to allocate/init matching
 	 * structures.
 	 */
-    // 当设置了硬件队列的块层侧时调用，允许驱动程序分配或初始化匹配结构
+	// 当设置了硬件队列的块层侧时调用，允许驱动程序分配或初始化匹配结构
 	int (*init_hctx)(struct blk_mq_hw_ctx *, void *, unsigned int);
 	/**
 	 * @exit_hctx: Ditto for exit/teardown.
 	 */
-    // 退出/拆卸（exit/teardown）同上
+	// 退出/拆卸（exit/teardown）同上
 	void (*exit_hctx)(struct blk_mq_hw_ctx *, unsigned int);
 
 	/**
@@ -650,14 +654,14 @@ struct blk_mq_ops {
 	 * Tag greater than or equal to queue_depth is for setting up
 	 * flush request.
 	 */
-    // 为块层分配的每个命令调用
-    // 以允许驱动设置驱动专用数据
+	// 为块层分配的每个命令调用
+	// 以允许驱动设置驱动专用数据
 	int (*init_request)(struct blk_mq_tag_set *set, struct request *,
 			    unsigned int, unsigned int);
 	/**
 	 * @exit_request: Ditto for exit/teardown.
 	 */
-    // 退出/拆卸
+	// 退出/拆卸
 	void (*exit_request)(struct blk_mq_tag_set *set, struct request *,
 			     unsigned int);
 
@@ -665,20 +669,20 @@ struct blk_mq_ops {
 	 * @cleanup_rq: Called before freeing one request which isn't completed
 	 * yet, and usually for freeing the driver private data.
 	 */
-    // 在释放一个未完成的请求之前调用并且通常用于释放驱动程序私有数据
+	// 在释放一个未完成的请求之前调用并且通常用于释放驱动程序私有数据
 	void (*cleanup_rq)(struct request *);
 
 	/**
 	 * @busy: If set, returns whether or not this queue currently is busy.
 	 */
-    // 如果设置，则返回此队列当前是否繁忙
+	// 如果设置，则返回此队列当前是否繁忙
 	bool (*busy)(struct request_queue *);
 
 	/**
 	 * @map_queues: This allows drivers specify their own queue mapping by
 	 * overriding the setup-time function that builds the mq_map.
 	 */
-    // 这允许驱动程序通过重写构建mqmap的设置时间函数
+	// 这允许驱动程序通过重写构建mqmap的设置时间函数
 	void (*map_queues)(struct blk_mq_tag_set *set);
 
 #ifdef CONFIG_BLK_DEBUG_FS
@@ -686,7 +690,7 @@ struct blk_mq_ops {
 	 * @show_rq: Used by the debugfs implementation to show driver-specific
 	 * information about a request.
 	 */
-    // 由debugfs实现用于显示特定于驱动程序有关请求的信息
+	// 由debugfs实现用于显示特定于驱动程序有关请求的信息
 	void (*show_rq)(struct seq_file *m, struct request *rq);
 #endif
 };
@@ -849,7 +853,7 @@ static inline int blk_mq_request_completed(struct request *rq)
 }
 
 /*
- * 
+ *
  * Set the state to complete when completing a request from inside ->queue_rq.
  * This is used by drivers that want to ensure special complete actions that
  * need access to the request are called on failure, e.g. by nvme for

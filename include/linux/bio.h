@@ -51,6 +51,8 @@ static inline unsigned int bio_max_segs(unsigned int nr_segs)
 
 /*
  * Check whether this bio carries any data or not. A NULL bio is allowed.
+ *
+ * 检查该 bio 是否携带任何数据。 允许 NULL bio
  */
 static inline bool bio_has_data(struct bio *bio)
 {

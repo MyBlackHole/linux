@@ -141,13 +141,13 @@ struct gendisk {
 	 * major/first_minor/minors should not be set by any new driver, the
 	 * block core will take care of allocating them automatically.
 	 */
-    // 主设备号
+	// 主设备号
 	int major;
 	int first_minor;
-    // 最大的次设备号数量，如果设备不能分区值为 1
+	// 最大的次设备号数量，如果设备不能分区值为 1
 	int minors;
 
-    // 主设备名
+	// 主设备名
 	char disk_name[DISK_NAME_LEN];	/* name of major driver */
 
 	unsigned short events;		/* supported events */
@@ -156,10 +156,10 @@ struct gendisk {
 	struct xarray part_tbl;
 	struct block_device *part0;
 
-    // 设备操作
+	// 设备操作
 	const struct block_device_operations *fops;
 
-    // 请求队列
+	// 请求队列
 	struct request_queue *queue;
 	void *private_data;
 
@@ -402,7 +402,7 @@ struct request_queue {
 	/*
 	 * various queue flags, see QUEUE_* below
 	 */
-    // 各种队列标识
+	// 各种队列标识
 	unsigned long		queue_flags;
 
 	unsigned int		rq_timeout;
@@ -415,11 +415,12 @@ struct request_queue {
 	unsigned int		nr_hw_queues;
 	struct xarray		hctx_table;
 
+	// 队列引用计数器
 	struct percpu_ref	q_usage_counter;
 
 	struct request		*last_merge;
 
-    // 队列保护 lock
+	// 队列保护 lock
 	spinlock_t		queue_lock;
 
 	int			quiesce_depth;
@@ -561,6 +562,7 @@ struct request_queue {
 #define QUEUE_FLAG_DAX		19	/* device supports DAX */
 #define QUEUE_FLAG_STATS	20	/* track IO start and completion times */
 #define QUEUE_FLAG_REGISTERED	22	/* queue has been registered to a disk */
+// 队列停止状态
 #define QUEUE_FLAG_QUIESCED	24	/* queue has been quiesced */
 #define QUEUE_FLAG_PCI_P2PDMA	25	/* device supports PCI p2p requests */
 #define QUEUE_FLAG_ZONE_RESETALL 26	/* supports Zone Reset All */
@@ -604,6 +606,7 @@ bool blk_queue_flag_test_and_set(unsigned int flag, struct request_queue *q);
 #define blk_noretry_request(rq) \
 	((rq)->cmd_flags & (REQ_FAILFAST_DEV|REQ_FAILFAST_TRANSPORT| \
 			     REQ_FAILFAST_DRIVER))
+// 队列是否处于停止状态
 #define blk_queue_quiesced(q)	test_bit(QUEUE_FLAG_QUIESCED, &(q)->queue_flags)
 #define blk_queue_pm_only(q)	atomic_read(&(q)->pm_only)
 #define blk_queue_registered(q)	test_bit(QUEUE_FLAG_REGISTERED, &(q)->queue_flags)
@@ -880,6 +883,7 @@ int bio_poll(struct bio *bio, struct io_comp_batch *iob, unsigned int flags);
 int iocb_bio_iopoll(struct kiocb *kiocb, struct io_comp_batch *iob,
 			unsigned int flags);
 
+// 获取设备请求队列
 static inline struct request_queue *bdev_get_queue(struct block_device *bdev)
 {
 	return bdev->bd_queue;	/* this is never NULL */
@@ -1450,6 +1454,7 @@ enum blk_unique_id {
 };
 
 struct block_device_operations {
+	// 块设备提交 bio 处理函数
 	void (*submit_bio)(struct bio *bio);
 	int (*poll_bio)(struct bio *bio, struct io_comp_batch *iob,
 			unsigned int flags);

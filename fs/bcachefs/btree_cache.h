@@ -114,6 +114,7 @@ static inline unsigned btree_id_nr_alive(struct bch_fs *c)
 	return BTREE_ID_NR + c->btree_roots_extra.nr;
 }
 
+// 取出 btree_id 对应的树root
 static inline struct btree_root *bch2_btree_id_root(struct bch_fs *c, unsigned id)
 {
 	if (likely(id < BTREE_ID_NR)) {

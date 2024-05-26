@@ -2648,6 +2648,7 @@ static int nvme_disable_prepare_reset(struct nvme_dev *dev, bool shutdown)
 	return 0;
 }
 
+// 创建 dma pool 用于 dma 传输
 static int nvme_setup_prp_pools(struct nvme_dev *dev)
 {
 	dev->prp_page_pool = dma_pool_create("prp list page", dev->dev,
@@ -3010,6 +3011,7 @@ out_free_dev:
 	return ERR_PTR(ret);
 }
 
+// 当插入一个 nvme 设备时执行此探测函数
 static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct nvme_dev *dev;
@@ -3023,6 +3025,7 @@ static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (result)
 		goto out_uninit_ctrl;
 
+	// 创建 dma pool
 	result = nvme_setup_prp_pools(dev);
 	if (result)
 		goto out_dev_unmap;
@@ -3529,7 +3532,9 @@ MODULE_DEVICE_TABLE(pci, nvme_id_table);
 
 static struct pci_driver nvme_driver = {
 	.name		= "nvme",
+	// 支持的设备类型
 	.id_table	= nvme_id_table,
+	// 是 id_table 内类型后执行探测设备
 	.probe		= nvme_probe,
 	.remove		= nvme_remove,
 	.shutdown	= nvme_shutdown,
@@ -3553,6 +3558,7 @@ static int __init nvme_init(void)
 	BUILD_BUG_ON(sizeof(struct scatterlist) * NVME_MAX_SEGS > PAGE_SIZE);
 	BUILD_BUG_ON(nvme_pci_npages_prp() > NVME_MAX_NR_ALLOCATIONS);
 
+	// 注册驱动程序
 	return pci_register_driver(&nvme_driver);
 }
 

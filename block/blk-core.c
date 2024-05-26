@@ -69,6 +69,8 @@ static struct kmem_cache *blk_requestq_cachep;
 
 /*
  * Controlling structure to kblockd
+ *
+ * 内核块设备控制结构，用于控制块设备驱动程序的运行。
  */
 static struct workqueue_struct *kblockd_workqueue;
 
@@ -370,6 +372,7 @@ dead:
 	return -ENODEV;
 }
 
+// 引用计数减一
 void blk_queue_exit(struct request_queue *q)
 {
 	percpu_ref_put(&q->q_usage_counter);
@@ -628,7 +631,9 @@ static void __submit_bio(struct bio *bio)
 	} else if (likely(bio_queue_enter(bio) == 0)) {
 		struct gendisk *disk = bio->bi_bdev->bd_disk;
 
+		// 调用设备驱动自定义的 submit_bio 函数
 		disk->fops->submit_bio(bio);
+		// 减少引用计数
 		blk_queue_exit(disk->queue);
 	}
 

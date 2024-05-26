@@ -313,6 +313,9 @@ struct journal_device {
 	/*
 	 * For each journal bucket, contains the max sequence number of the
 	 * journal writes it contains - so we know when a bucket can be reused.
+	 *
+	 * 对于每个日志存储桶，
+	 * 包含其包含的日志写入的最大序列号 - 因此我们知道何时可以重用存储桶。
 	 */
 	u64			*bucket_seq;
 

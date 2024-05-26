@@ -55,6 +55,9 @@ static int blk_hctx_poll(struct request_queue *q, struct blk_mq_hw_ctx *hctx,
 /*
  * Check if any of the ctx, dispatch list or elevator
  * have pending work in this hardware queue.
+ *
+ * 检查此硬件队列中是否有任何 ctx、
+ * 调度列表或电梯有待处理的工作。
  */
 static bool blk_mq_hctx_has_pending(struct blk_mq_hw_ctx *hctx)
 {
@@ -2197,6 +2200,8 @@ select_cpu:
  * @msecs: Milliseconds of delay to wait before running the queue.
  *
  * Run a hardware queue asynchronously with a delay of @msecs.
+ *
+ * 异步运行硬件队列
  */
 void blk_mq_delay_run_hw_queue(struct blk_mq_hw_ctx *hctx, unsigned long msecs)
 {
@@ -2215,6 +2220,10 @@ EXPORT_SYMBOL(blk_mq_delay_run_hw_queue);
  * Check if the request queue is not in a quiesced state and if there are
  * pending requests to be sent. If this is true, run the queue to send requests
  * to hardware.
+ *
+ * 开始运行硬件队列。
+ *
+ * 硬件队列上的请求异步发送到块设备驱动
  */
 void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
 {
@@ -2240,6 +2249,7 @@ void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
 		blk_mq_hctx_has_pending(hctx));
 
 	if (!need_run)
+		// 没有需要运行的请求，直接返回
 		return;
 
 	if (async || !cpumask_test_cpu(raw_smp_processor_id(), hctx->cpumask)) {
@@ -2876,6 +2886,8 @@ static struct request *blk_mq_get_new_requests(struct request_queue *q,
 
 /*
  * Check if there is a suitable cached request and return it.
+ *
+ * 检查是否有合适的缓存请求并返回。
  */
 static struct request *blk_mq_peek_cached_request(struct blk_plug *plug,
 		struct request_queue *q, blk_opf_t opf)
@@ -2926,12 +2938,16 @@ static void blk_mq_use_cached_rq(struct request *rq, struct blk_plug *plug,
  *
  * It will not queue the request if there is an error with the bio, or at the
  * request creation.
+ *
+ * 创建请求并将其发送到块设备。
  */
 void blk_mq_submit_bio(struct bio *bio)
 {
+	// 获取 bio 对应的请求队列
 	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
 	struct blk_plug *plug = current->plug;
 	const int is_sync = op_is_sync(bio->bi_opf);
+	// 硬件队列
 	struct blk_mq_hw_ctx *hctx;
 	unsigned int nr_segs = 1;
 	struct request *rq;
@@ -2955,6 +2971,8 @@ void blk_mq_submit_bio(struct bio *bio)
 		goto new_request;
 	}
 
+	// 处理 bio 队列中的所有分段
+	// 确保外设都是可达的
 	bio = blk_queue_bounce(bio, q);
 
 	/*
@@ -3743,6 +3761,7 @@ blk_mq_alloc_hctx(struct request_queue *q, struct blk_mq_tag_set *set,
 		node = set->numa_node;
 	hctx->numa_node = node;
 
+	// 初始化延迟工作
 	INIT_DELAYED_WORK(&hctx->run_work, blk_mq_run_work_fn);
 	spin_lock_init(&hctx->lock);
 	INIT_LIST_HEAD(&hctx->dispatch);
