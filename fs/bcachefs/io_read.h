@@ -6,7 +6,7 @@
 
 struct bch_read_bio {
 	struct bch_fs		*c;
-    // 去开始时间
+	// 读取开始时间
 	u64			start_time;
 	u64			submit_time;
 
@@ -54,7 +54,7 @@ struct bch_read_bio {
 	/*
 	 * pos we read from - different from data_pos for indirect extents:
 	 */
-    // 我们读取的 pos - 与间接范围的 data_pos 不同：
+	// 我们读取的 pos - 与间接范围的 data_pos 不同：
 	u32			subvol;
 	struct bpos		read_pos;
 

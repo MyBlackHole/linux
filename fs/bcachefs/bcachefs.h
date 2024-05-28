@@ -611,9 +611,11 @@ struct bch_dev {
 	x(errors_not_fixed)		\
 	x(no_invalid_checks)
 
+// 文件系统状态标志
 enum bch_fs_flags {
 #define x(n)		BCH_FS_##n,
 	BCH_FS_FLAGS()
+	// BCH_FS_started: 已启动
 #undef x
 };
 
@@ -714,6 +716,7 @@ struct bch_fs {
 	struct kobject		internal;
 	struct kobject		opts_dir;
 	struct kobject		time_stats;
+	// 状态标志
 	unsigned long		flags;
 
 	int			minor;
@@ -757,6 +760,7 @@ struct bch_fs {
 
 	struct bch_disk_groups_cpu __rcu *disk_groups;
 
+	// 文件系统启动选项设置
 	struct bch_opts		opts;
 
 	/* Updated by bch2_sb_update():*/
@@ -849,6 +853,7 @@ struct bch_fs {
 
 	/* btree_iter.c: */
 	struct seqmutex		btree_trans_lock;
+	// 全局事务列表
 	struct list_head	btree_trans_list;
 	mempool_t		btree_trans_pool;
 	mempool_t		btree_trans_mem_pool;

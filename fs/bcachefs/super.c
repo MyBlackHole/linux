@@ -687,7 +687,7 @@ static int bch2_fs_online(struct bch_fs *c)
 		return -EINVAL;
 	}
 
-    // 字符设备初始化
+	// 字符设备初始化
 	ret = bch2_fs_chardev_init(c);
 	if (ret) {
 		bch_err(c, "error creating character device");
@@ -696,10 +696,10 @@ static int bch2_fs_online(struct bch_fs *c)
 
 	bch2_fs_debug_init(c);
 
-    // 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/
-    // 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/internal/
-    // 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/options/
-    // ...
+	// 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/
+	// 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/internal/
+	// 例如: /sys/fs/bcachefs/3e260aa0-ed73-4fca-a1aa-cbfb1ffbb23a/options/
+	// ...
 	ret = kobject_add(&c->kobj, NULL, "%pU", c->sb.user_uuid.b) ?:
 	    kobject_add(&c->internal, &c->kobj, "internal") ?:
 	    kobject_add(&c->opts_dir, &c->kobj, "options") ?:
@@ -725,7 +725,7 @@ static int bch2_fs_online(struct bch_fs *c)
 	}
 
 	BUG_ON(!list_empty(&c->list));
-    // 把 bch_fs 绑定到全局 bch_fs_list
+	// 把 bch_fs 绑定到全局 bch_fs_list
 	list_add(&c->list, &bch_fs_list);
 err:
 	up_write(&c->state_lock);
@@ -1064,6 +1064,7 @@ int bch2_fs_start(struct bch_fs *c)
 		goto err;
 	}
 
+	// 设置文件系统启动状态
 	set_bit(BCH_FS_started, &c->flags);
 
 	if (c->opts.read_only) {

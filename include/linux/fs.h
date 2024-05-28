@@ -371,13 +371,13 @@ struct kiocb {
 	struct file		*ki_filp;
 	// 数据偏移
 	loff_t			ki_pos;
-	// IO 成功回调
+	// IO 成功回调(为 NULL 则为同步)
 	void (*ki_complete)(struct kiocb *iocb, long ret);
 	// 私有数据
 	void			*private;
 	// IO 属性
 	int			ki_flags;
-    // io 优先级
+	// io 优先级
 	u16			ki_ioprio; /* See linux/ioprio.h */
 	union {
 		/*
@@ -1094,7 +1094,7 @@ struct file {
 	struct file_ra_state	f_ra;
 	// 文件路径
 	struct path		f_path;
-    // 索引节点
+	// 索引节点
 	struct inode		*f_inode;	/* cached value */
 	// 关联的操作
 	const struct file_operations	*f_op;
@@ -1104,7 +1104,7 @@ struct file {
 	void			*f_security;
 #endif
 	/* needed for tty driver, and maybe others */
-    /* tty 驱动程序需要，也许其他驱动程序需要 */
+	/* tty 驱动程序需要，也许其他驱动程序需要 */
 	void			*private_data;
 
 #ifdef CONFIG_EPOLL

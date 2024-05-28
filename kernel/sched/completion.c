@@ -142,6 +142,11 @@ wait_for_common_io(struct completion *x, long timeout, int state)
  *
  * See also similar routines (i.e. wait_for_completion_timeout()) with timeout
  * and interrupt capability. Also see complete().
+ *
+ * 等待完成一个任务
+ *
+ * 它等待收到完成特定任务的信号。
+ * 它是不可中断的，并且没有超时。
  */
 void __sched wait_for_completion(struct completion *x)
 {

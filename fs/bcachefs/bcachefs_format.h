@@ -1426,6 +1426,7 @@ enum btree_id {
 #define x(name, nr, ...) BTREE_ID_##name = nr,
 	BCH_BTREE_IDS()
 	// BTREE_ID_freespace: 空闲桶
+	// BTREE_ID_subvolumes: 子卷
 #undef x
 	BTREE_ID_NR
 };

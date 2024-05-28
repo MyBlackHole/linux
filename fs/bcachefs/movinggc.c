@@ -305,6 +305,7 @@ void bch2_copygc_wait_to_text(struct printbuf *out, struct bch_fs *c)
 	prt_newline(out);
 }
 
+// copygc 处理例程
 static int bch2_copygc_thread(void *arg)
 {
 	struct bch_fs *c = arg;
@@ -393,15 +394,18 @@ static int bch2_copygc_thread(void *arg)
 	return 0;
 }
 
+// 关闭释放 copygc 线程
 void bch2_copygc_stop(struct bch_fs *c)
 {
 	if (c->copygc_thread) {
+		// 关闭 copygc 线程
 		kthread_stop(c->copygc_thread);
 		put_task_struct(c->copygc_thread);
 	}
 	c->copygc_thread = NULL;
 }
 
+// 启动 copygc 线程
 int bch2_copygc_start(struct bch_fs *c)
 {
 	struct task_struct *t;
@@ -411,11 +415,15 @@ int bch2_copygc_start(struct bch_fs *c)
 		return 0;
 
 	if (c->opts.nochanges)
+		// 如果禁止了写操作，
+		// 则不启动 copygc 线程
 		return 0;
 
 	if (bch2_fs_init_fault("copygc_start"))
 		return -ENOMEM;
 
+	// 例如: bch-copygc/nvme0n1p2
+	// 创建 copygc 线程
 	t = kthread_create(bch2_copygc_thread, c, "bch-copygc/%s", c->name);
 	ret = PTR_ERR_OR_ZERO(t);
 	bch_err_msg(c, ret, "creating copygc thread");
@@ -424,7 +432,9 @@ int bch2_copygc_start(struct bch_fs *c)
 
 	get_task_struct(t);
 
+	// 记录 copygc 线程
 	c->copygc_thread = t;
+	// 唤醒 copygc 线程
 	wake_up_process(c->copygc_thread);
 
 	return 0;

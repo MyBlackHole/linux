@@ -4504,6 +4504,8 @@ struct task_struct *cpu_curr_snapshot(int cpu)
  * Return: 1 if the process was woken up, 0 if it was already running.
  *
  * This function executes a full memory barrier before accessing the task state.
+ *
+ * 唤醒指定任务
  */
 int wake_up_process(struct task_struct *p)
 {
@@ -6611,6 +6613,8 @@ pick_next_task(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
  *          - return from interrupt-handler to user-space
  *
  * WARNING: must be called with preemption disabled!
+ *
+ * 主要的调度例程
  */
 static void __sched notrace __schedule(unsigned int sched_mode)
 {
@@ -6687,8 +6691,8 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 			 * Where __schedule() and ttwu() have matching control dependencies.
 			 *
 			 * After this, schedule() must not care about p->state any more.
-             *
-             * 从运行列表移除当前进程
+			 *
+			 * 从运行列表移除当前进程
 			 */
 			deactivate_task(rq, prev, DEQUEUE_SLEEP | DEQUEUE_NOCLOCK);
 
@@ -6700,6 +6704,7 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 		switch_count = &prev->nvcsw;
 	}
 
+	// 选择下一个任务
 	next = pick_next_task(rq, prev, &rf);
 	clear_tsk_need_resched(prev);
 	clear_preempt_need_resched();
@@ -6744,8 +6749,11 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 		trace_sched_switch(sched_mode & SM_MASK_PREEMPT, prev, next, prev_state);
 
 		/* Also unlocks the rq: */
+		// 关键步骤
+		// 上下文切换
 		rq = context_switch(rq, prev, next, &rf);
 	} else {
+		// 还是原先任务
 		rq_unpin_lock(rq, &rf);
 		__balance_callbacks(rq);
 		raw_spin_rq_unlock_irq(rq);
@@ -6805,6 +6813,7 @@ static inline void sched_submit_work(struct task_struct *tsk)
 	lock_map_release(&sched_map);
 }
 
+// 恢复任务关联的任务内容处理
 static void sched_update_worker(struct task_struct *tsk)
 {
 	if (tsk->flags & (PF_WQ_WORKER | PF_IO_WORKER | PF_BLOCK_TS)) {
@@ -6826,6 +6835,7 @@ static __always_inline void __schedule_loop(unsigned int sched_mode)
 	} while (need_resched());
 }
 
+// 任务调度例程
 asmlinkage __visible void __sched schedule(void)
 {
 	struct task_struct *tsk = current;
@@ -6835,6 +6845,9 @@ asmlinkage __visible void __sched schedule(void)
 #endif
 
 	if (!task_is_running(tsk))
+		// 当前任务状态非运行中
+		// 进行一些残留处理
+		// 比如 内存 io 残留等
 		sched_submit_work(tsk);
 	__schedule_loop(SM_NONE);
 	sched_update_worker(tsk);

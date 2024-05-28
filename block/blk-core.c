@@ -1116,8 +1116,10 @@ void blk_start_plug_nr_ios(struct blk_plug *plug, unsigned short nr_ios)
 	 * If this is a nested plug, don't actually assign it.
 	 */
 	if (tsk->plug)
+		// 有了 plug 就不再分配新的 plug
 		return;
 
+	// 初始化
 	plug->cur_ktime = 0;
 	plug->mq_list = NULL;
 	plug->cached_rq = NULL;
@@ -1131,6 +1133,7 @@ void blk_start_plug_nr_ios(struct blk_plug *plug, unsigned short nr_ios)
 	 * Store ordering should not be needed here, since a potential
 	 * preempt will imply a full memory barrier
 	 */
+	/* 跟踪 plug */
 	tsk->plug = plug;
 }
 
@@ -1156,6 +1159,8 @@ void blk_start_plug_nr_ios(struct blk_plug *plug, unsigned short nr_ios)
  *   page belonging to that request that is currently residing in our private
  *   plug. By flushing the pending I/O when the process goes to sleep, we avoid
  *   this kind of deadlock.
+ *
+ * 初始化 blk_plug 并在 task_struct 中跟踪它
  */
 void blk_start_plug(struct blk_plug *plug)
 {
@@ -1232,6 +1237,8 @@ void __blk_flush_plug(struct blk_plug *plug, bool from_schedule)
  * must be paired with an initial call to blk_start_plug().  The intent
  * is to allow the block layer to optimize I/O submission.  See the
  * documentation for blk_start_plug() for more information.
+ *
+ * 标记一批提交的 I/O 的结束
  */
 void blk_finish_plug(struct blk_plug *plug)
 {

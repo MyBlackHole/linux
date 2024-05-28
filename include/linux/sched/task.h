@@ -122,6 +122,7 @@ static inline struct task_struct *get_task_struct(struct task_struct *t)
 extern void __put_task_struct(struct task_struct *t);
 extern void __put_task_struct_rcu_cb(struct rcu_head *rhp);
 
+// 修改task_struct的引用计数，并释放task_struct
 static inline void put_task_struct(struct task_struct *t)
 {
 	if (!refcount_dec_and_test(&t->usage))

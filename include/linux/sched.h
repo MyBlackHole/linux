@@ -93,6 +93,7 @@ struct user_event_mm;
 
 /* Used in tsk->__state: */
 #define TASK_RUNNING			0x00000000
+// 任务可以中断
 #define TASK_INTERRUPTIBLE		0x00000001
 #define TASK_UNINTERRUPTIBLE		0x00000002
 #define __TASK_STOPPED			0x00000004
@@ -137,6 +138,7 @@ struct user_event_mm;
 					 __TASK_TRACED | EXIT_DEAD | EXIT_ZOMBIE | \
 					 TASK_PARKED)
 
+/* 是否运行状态 */
 #define task_is_running(task)		(READ_ONCE((task)->__state) == TASK_RUNNING)
 
 #define task_is_traced(task)		((READ_ONCE(task->jobctl) & JOBCTL_TRACED) != 0)
@@ -1192,6 +1194,7 @@ struct task_struct {
 	int __user			*clear_child_tid;
 
 	/* PF_KTHREAD | PF_IO_WORKER */
+	/* 线程(struct kthread)或 io */
 	void				*worker_private;
 
 	u64				utime;

@@ -388,10 +388,10 @@ static int filemap_check_and_keep_errors(struct address_space *mapping)
 // filemap_fdatawrite_wbc - 在映射范围内的脏页时开始回写
 // @mapping：要写入的地址空间结构
 // @wbc：writeback_control控制写出
-//                                                                          
+//
 // 使用提供的 wbc 调用映射上的 writepages 来控制
 // 写出。
-//                                                                          
+//
 // 返回：成功时返回0，否则返回负错误代码。
 int filemap_fdatawrite_wbc(struct address_space *mapping,
 			   struct writeback_control *wbc)
@@ -432,15 +432,15 @@ EXPORT_SYMBOL(filemap_fdatawrite_wbc);
 // @start：范围开始处的字节偏移量
 // @end：范围结束处（含）的偏移量（以字节为单位）
 // @sync_mode：启用同步操作
-//                                                                              
+//
 // 开始写回映射中所有脏页
 // 在字节偏移量 <start, end> 内（含）。
-//                                                                              
+//
 // 如果sync_mode是WB_SYNC_ALL那么这是一个“数据完整性”操作，如下所示
 // 与常规的内存清理写回相反。 和...之间的不同
 // 这两个操作就是如果遇到脏页/缓冲区，必须
 // 被等待，而不是被跳过。
-//                                                                              
+//
 // 返回：成功时返回0，否则返回负错误代码。
 int __filemap_fdatawrite_range(struct address_space *mapping, loff_t start,
 				loff_t end, int sync_mode)
@@ -2799,7 +2799,7 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 		return 0; /* skip atime */
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
-        // 直接读硬盘
+		// 直接读硬盘
 		struct file *file = iocb->ki_filp;
 		struct address_space *mapping = file->f_mapping;
 		struct inode *inode = mapping->host;
@@ -2832,8 +2832,8 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 			return retval;
 	}
 
-    // 去查页缓存
-    // 没有读硬盘
+	// 去查页缓存
+	// 没有读硬盘
 	return filemap_read(iocb, iter, retval);
 }
 EXPORT_SYMBOL(generic_file_read_iter);
@@ -4116,19 +4116,19 @@ EXPORT_SYMBOL(generic_perform_write);
 // __generic_file_write_iter - 将数据写入文件
 // @iocb：IO状态结构（文件、偏移量等）
 // @from：iov_iter，有要写入的数据
-//                                                                              
+//
 // 该函数完成了实际将数据写入到文件中所需的所有工作。
 // 它执行所有基本检查、从文件中删除 SUID、更新
 // 修改时间并调用适当的子例程取决于我们是否
 // 进行直接 IO 或标准缓冲写入。
-//                                                                              
+//
 // 它期望 i_rwsem 被抓取，除非我们在块设备或类似设备上工作
 // 根本不需要锁定的对象。
-//                                                                              
+//
 // 在 O_SYNC 写入的情况下，此函数*不*负责同步数据。
 // 调用者必须处理它。 这主要是因为我们想要
 // 避免在 i_rwsem 下同步。
-//                                                                              
+//
 // 返回：
 // * 写入的字节数，即使是截断的写入
 // * 如果根本没有写入任何数据，则为负错误代码

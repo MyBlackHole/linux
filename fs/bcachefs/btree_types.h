@@ -474,6 +474,7 @@ struct btree_insert_entry {
 };
 
 /* Number of btree paths we preallocate, usually enough */
+/* 我们预先分配的btree路径数量，通常足够了 */
 #define BTREE_ITER_INITIAL		64
 /*
  * Lmiit for btree_trans_too_many_iters(); this is enough that almost all code

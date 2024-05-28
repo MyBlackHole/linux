@@ -491,7 +491,8 @@ struct bch_opts {
 	// recovery_pass_last: 指定通过哪个pass退出recovery
 	// norecovery: 在日志重放之前立即退出恢复
 	// recovery_pass_last: 指定通过后退出恢复
-	// nochanges: 超级只读模式 - 即使我们必须重播日志，也不会发出任何写入操作
+	// nochanges: 即使我们必须重播日志，也不会发出任何写入操作
+	// read_only: 只读模式
 #undef x
 };
 

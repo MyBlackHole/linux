@@ -32,6 +32,7 @@
 
 
 static DEFINE_SPINLOCK(kthread_create_lock);
+// 定义一个链表，用于存放需要创建的 kthread
 static LIST_HEAD(kthread_create_list);
 struct task_struct *kthreadd_task;
 
@@ -67,7 +68,7 @@ struct kthread {
 
 enum KTHREAD_BITS {
 	KTHREAD_IS_PER_CPU = 0,
-	// 是否已退出
+	// 标记退出
 	KTHREAD_SHOULD_STOP,
 	KTHREAD_SHOULD_PARK,
 };
@@ -711,6 +712,8 @@ EXPORT_SYMBOL_GPL(kthread_park);
  *
  * Returns the result of threadfn(), or %-EINTR if wake_up_process()
  * was never called.
+ *
+ * 线程退出
  */
 int kthread_stop(struct task_struct *k)
 {
@@ -724,8 +727,11 @@ int kthread_stop(struct task_struct *k)
 	set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);
 	kthread_unpark(k);
 	set_tsk_thread_flag(k, TIF_NOTIFY_SIGNAL);
+	// 唤醒
 	wake_up_process(k);
+	// 等待退出
 	wait_for_completion(&kthread->exited);
+	// 获取退出状态
 	ret = kthread->result;
 	put_task_struct(k);
 
@@ -768,20 +774,27 @@ int kthreadd(void *unused)
 	cgroup_init_kthreadd();
 
 	for (;;) {
+		// 设置当前任务状态: 可以中断
 		set_current_state(TASK_INTERRUPTIBLE);
 		if (list_empty(&kthread_create_list))
+			// 没有任务就休眠
+			// 发起任务调度切换
 			schedule();
 		__set_current_state(TASK_RUNNING);
 
 		spin_lock(&kthread_create_lock);
+		// 遍历线程创建列表
 		while (!list_empty(&kthread_create_list)) {
 			struct kthread_create_info *create;
 
+			// 获取线程创建信息
 			create = list_entry(kthread_create_list.next,
 					    struct kthread_create_info, list);
+			// 从列表中删除
 			list_del_init(&create->list);
 			spin_unlock(&kthread_create_lock);
 
+			// 创建线程
 			create_kthread(create);
 
 			spin_lock(&kthread_create_lock);

@@ -813,14 +813,14 @@ int __bch2_read_extent(struct btree_trans *trans, struct bch_read_bio *orig,
 	int pick_ret;
 
 	if (bkey_extent_is_inline_data(k.k)) {
-        // 内联数据
+		// 内联数据
 
-        // 内联数据大小
+		// 内联数据大小
 		unsigned bytes = min_t(unsigned, iter.bi_size,
 				       bkey_inline_data_bytes(k.k));
 
 		swap(iter.bi_size, bytes);
-        // 移动数据到 orig bio
+		// 移动数据到 orig bio
 		memcpy_to_bio(&orig->bio, iter, bkey_inline_data_p(k));
 		swap(iter.bi_size, bytes);
 		bio_advance_iter(&orig->bio, &iter, bytes);
@@ -831,7 +831,7 @@ retry_pick:
 	pick_ret = bch2_bkey_pick_read_device(c, k, failed, &pick);
 
 	/* hole or reservation - just zero fill: */
-    /* 洞或预留 - 只需零填充： */
+	/* 洞或预留 - 只需零填充： */
 	if (!pick_ret)
 		goto hole;
 
@@ -1109,6 +1109,7 @@ void __bch2_read(struct bch_fs *c, struct bch_read_bio *rbio,
 		 struct bvec_iter bvec_iter, subvol_inum inum,
 		 struct bch_io_failures *failed, unsigned flags)
 {
+	// 初始化一个 btree_trans
 	struct btree_trans *trans = bch2_trans_get(c);
 	struct btree_iter iter;
 	struct bkey_buf sk;
@@ -1120,9 +1121,11 @@ void __bch2_read(struct bch_fs *c, struct bch_read_bio *rbio,
 
 	bch2_bkey_buf_init(&sk);
 retry:
+	// 开始一个事务
 	bch2_trans_begin(trans);
 	iter = (struct btree_iter) { NULL };
 
+	// 获取快照 ID
 	ret = bch2_subvolume_get_snapshot(trans, inum.subvol, &snapshot);
 	if (ret)
 		goto err;

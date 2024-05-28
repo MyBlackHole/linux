@@ -255,6 +255,7 @@ static void bch2_btree_iter_verify(struct btree_iter *iter)
 {
 	struct btree_trans *trans = iter->trans;
 
+	// 不可以大于
 	BUG_ON(iter->btree_id >= BTREE_ID_NR);
 
 	BUG_ON(!!(iter->flags & BTREE_ITER_cached) != btree_iter_path(trans, iter)->cached);
@@ -2600,6 +2601,7 @@ struct bkey_s_c bch2_btree_iter_peek_slot(struct btree_iter *iter)
 	struct bkey_s_c k;
 	int ret;
 
+	// 验证迭代器
 	bch2_trans_verify_not_unlocked(trans);
 	bch2_btree_iter_verify(iter);
 	bch2_btree_iter_verify_entry_exit(iter);
@@ -3148,8 +3150,10 @@ struct btree_trans *__bch2_trans_get(struct bch_fs *c, unsigned fn_idx)
 	struct btree_trans *trans;
 
 	if (IS_ENABLED(__KERNEL__)) {
+		// 从 buf 获取事务
 		trans = this_cpu_xchg(c->btree_trans_bufs->trans, NULL);
 		if (trans) {
+			// 存在，清零
 			memset(trans, 0, offsetof(struct btree_trans, list));
 			goto got_trans;
 		}
@@ -3166,6 +3170,7 @@ struct btree_trans *__bch2_trans_get(struct bch_fs *c, unsigned fn_idx)
 
 		trans->locking_wait.task = current;
 
+		// 遍历所有事务，找到最小的 pid，并插入到该位置
 		list_for_each_entry(pos, &c->btree_trans_list, list) {
 			struct task_struct *pos_task = READ_ONCE(pos->locking_wait.task);
 			/*
@@ -3173,6 +3178,11 @@ struct btree_trans *__bch2_trans_get(struct bch_fs *c, unsigned fn_idx)
 			 * disallow multiple btree_trans in the same thread -
 			 * but the data move path calls bch2_write when we
 			 * already have a btree_trans initialized.
+			 */
+			/*
+			 * 我们更愿意在这里更严格，
+			 * 完全不允许同一线程中存在多个 btree_trans - 但是当我们已经初始化了 btree_trans 时，
+			 * 数据移动路径会调用 bch2_write 。
 			 */
 			BUG_ON(pos_task &&
 			       pid == pos_task->pid &&
@@ -3188,6 +3198,7 @@ struct btree_trans *__bch2_trans_get(struct bch_fs *c, unsigned fn_idx)
 list_add_done:
 	seqmutex_unlock(&c->btree_trans_lock);
 got_trans:
+	// 初始化事务
 	trans->c		= c;
 	trans->last_begin_time	= local_clock();
 	trans->fn_idx		= fn_idx;

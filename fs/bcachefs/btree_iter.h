@@ -475,9 +475,11 @@ static inline void bch2_trans_iter_init_common(struct btree_trans *trans,
 	iter->trans		= trans;
 	iter->update_path	= 0;
 	iter->key_cache_path	= 0;
+	// 设置迭代器的 btree_id, 类型
 	iter->btree_id		= btree_id;
 	iter->min_depth		= 0;
 	iter->flags		= flags;
+	// 设置迭代器的 pos
 	iter->snapshot		= pos.snapshot;
 	iter->pos		= pos;
 	iter->k			= POS_KEY(pos);
@@ -552,6 +554,7 @@ static inline struct bkey_s_c __bch2_bkey_get_iter(struct btree_trans *trans,
 {
 	struct bkey_s_c k;
 
+	// 初始化迭代器
 	bch2_trans_iter_init(trans, iter, btree_id, pos, flags);
 	k = bch2_btree_iter_peek_slot(iter);
 

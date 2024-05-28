@@ -1726,6 +1726,8 @@ int biovec_init_pool(mempool_t *pool, int pool_entries)
  *
  * May be called on a zeroed but uninitialized bioset (i.e. allocated with
  * kzalloc()).
+ *
+ * 退出一个 bioset_init() 初始化的 bioset
  */
 void bioset_exit(struct bio_set *bs)
 {
@@ -1734,6 +1736,7 @@ void bioset_exit(struct bio_set *bs)
 		destroy_workqueue(bs->rescue_workqueue);
 	bs->rescue_workqueue = NULL;
 
+	// 释放内存池
 	mempool_exit(&bs->bio_pool);
 	mempool_exit(&bs->bvec_pool);
 

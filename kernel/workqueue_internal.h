@@ -30,7 +30,7 @@ struct worker {
 		struct hlist_node	hentry;	/* L: while busy */
 	};
 
-    // 指向 work 的处理函数
+	// 指向 work 的处理函数
 	struct work_struct	*current_work;	/* K: work being processed and its */
 	work_func_t		current_func;	/* K: function */
 	struct pool_workqueue	*current_pwq;	/* K: pwq */
@@ -45,12 +45,12 @@ struct worker {
 	struct list_head	scheduled;	/* L: scheduled works */
 
 	/* 64 bytes boundary on 64bit, 32 on 32bit */
-    // worker 关联的内核线程
+	// worker 关联的内核线程
 	struct task_struct	*task;		/* I: worker task */
-    // worker 关联的 worker pool
+	// worker 关联的 worker pool
 	struct worker_pool	*pool;		/* A: the associated pool */
 						/* L: for rescuers */
-    // 挂载在 worker pool workers 上
+	// 挂载在 worker pool workers 上
 	struct list_head	node;		/* A: anchored at pool->workers */
 						/* A: runs through worker->node */
 
@@ -62,7 +62,7 @@ struct worker {
 	 * Opaque string set with work_set_desc().  Printed out with task
 	 * dump for debugging - WARN, BUG, panic or sysrq.
 	 */
-    // 工作者名
+	// 工作者名
 	char			desc[WORKER_DESC_LEN];
 
 	/* used only by rescuers to point to the target workqueue */

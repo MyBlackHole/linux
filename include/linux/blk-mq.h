@@ -585,7 +585,8 @@ struct blk_mq_ops {
 	 * empty the @rqlist completely, then the rest will be queued
 	 * individually by the block layer upon return.
 	 */
-	// 将新请求的列表排入队列。驱动程序保证每个请求都属于同一队列。
+	// 将新请求的列表排入队列。
+	// 驱动程序保证每个请求都属于同一队列。
 	// 如果驱动程序没有完全清空@rqlist，那么其余的将在返回时由块层单独排队。
 	void (*queue_rqs)(struct request **rqlist);
 

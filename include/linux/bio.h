@@ -704,6 +704,7 @@ struct bio_set {
 	 */
 	struct bio_alloc_cache __percpu *cache;
 
+	// 内存池，用于分配 bio
 	mempool_t bio_pool;
 	// 内存池，用于分配 bio_vec
 	mempool_t bvec_pool;
@@ -720,6 +721,7 @@ struct bio_set {
 	spinlock_t		rescue_lock;
 	struct bio_list		rescue_list;
 	struct work_struct	rescue_work;
+	/* rescue 工作队列 */
 	struct workqueue_struct	*rescue_workqueue;
 
 	/*

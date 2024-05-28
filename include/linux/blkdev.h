@@ -1044,6 +1044,8 @@ extern void blk_start_plug_nr_ios(struct blk_plug *, unsigned short);
 extern void blk_finish_plug(struct blk_plug *);
 
 void __blk_flush_plug(struct blk_plug *plug, bool from_schedule);
+
+/* 刷新 io */
 static inline void blk_flush_plug(struct blk_plug *plug, bool async)
 {
 	if (plug)
