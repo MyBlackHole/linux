@@ -396,7 +396,7 @@ static inline void __bch2_btree_iter_set_pos(struct btree_iter *iter, struct bpo
 	iter->k.size = 0;
 }
 
-// 设置迭代的 pos
+/* 设置迭代的 pos */
 static inline void bch2_btree_iter_set_pos(struct btree_iter *iter, struct bpos new_pos)
 {
 	struct btree_trans *trans = iter->trans;

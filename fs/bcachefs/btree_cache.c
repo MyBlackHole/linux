@@ -122,6 +122,7 @@ static int btree_node_data_alloc(struct bch_fs *c, struct btree *b, gfp_t gfp)
 	return 0;
 }
 
+/* 分配一个新的 btree 节点 */
 static struct btree *__btree_node_mem_alloc(struct bch_fs *c, gfp_t gfp)
 {
 	struct btree *b;
@@ -185,6 +186,7 @@ int __bch2_btree_node_hash_insert(struct btree_cache *bc, struct btree *b)
 	return ret;
 }
 
+/* 记录一个 btree 节点的 hash 值，并将其插入到 hash 表中 */
 int bch2_btree_node_hash_insert(struct btree_cache *bc, struct btree *b,
 				unsigned level, enum btree_id id)
 {
@@ -651,6 +653,7 @@ static struct btree *btree_node_cannibalize(struct bch_fs *c)
 	}
 }
 
+/* 分配一个新的btree节点，并锁定它 */
 struct btree *bch2_btree_node_mem_alloc(struct btree_trans *trans, bool pcpu_read_locks)
 {
 	struct bch_fs *c = trans->c;
@@ -675,6 +678,7 @@ struct btree *bch2_btree_node_mem_alloc(struct btree_trans *trans, bool pcpu_rea
 			goto got_node;
 		}
 
+	// btree 节点内存准备好了
 	b = __btree_node_mem_alloc(c, GFP_NOWAIT|__GFP_NOWARN);
 	if (!b) {
 		mutex_unlock(&bc->lock);
@@ -813,6 +817,7 @@ static noinline struct btree *bch2_btree_node_fill(struct btree_trans *trans,
 		return ERR_PTR(btree_trans_restart(trans, BCH_ERR_transaction_restart_fill_relock));
 	}
 
+	/* btree 节点空间搞好了，也初始化了 */
 	b = bch2_btree_node_mem_alloc(trans, level != 0);
 
 	if (bch2_err_matches(PTR_ERR_OR_ZERO(b), ENOMEM)) {
@@ -853,6 +858,7 @@ static noinline struct btree *bch2_btree_node_fill(struct btree_trans *trans,
 		six_unlock_intent(&b->c.lock);
 		bch2_trans_unlock_noassert(trans);
 
+		// 真正的读取处理
 		bch2_btree_node_read(trans, b, sync);
 
 		if (!sync)
@@ -861,6 +867,7 @@ static noinline struct btree *bch2_btree_node_fill(struct btree_trans *trans,
 		if (!six_relock_type(&b->c.lock, lock_type, seq))
 			b = NULL;
 	} else {
+		// 真正的读取处理
 		bch2_btree_node_read(trans, b, sync);
 		if (lock_type == SIX_LOCK_read)
 			six_lock_downgrade(&b->c.lock);
@@ -908,6 +915,7 @@ static inline void btree_check_header(struct bch_fs *c, struct btree *b)
 		btree_bad_header(c, b);
 }
 
+/* 节点读取 */
 static struct btree *__bch2_btree_node_get(struct btree_trans *trans, struct btree_path *path,
 					   const struct bkey_i *k, unsigned level,
 					   enum six_lock_type lock_type,
@@ -921,12 +929,17 @@ static struct btree *__bch2_btree_node_get(struct btree_trans *trans, struct btr
 
 	EBUG_ON(level >= BTREE_MAX_DEPTH);
 retry:
+	/* 查询缓存 */
 	b = btree_cache_find(bc, k);
 	if (unlikely(!b)) {
 		/*
 		 * We must have the parent locked to call bch2_btree_node_fill(),
 		 * else we could read in a btree node from disk that's been
 		 * freed:
+		 */
+		/*
+		 * 我们必须锁定父节点才能调用 bch2_btree_node_fill()，
+		 * 否则我们可以从已被释放的磁盘中读取一个 btree 节点：
 		 */
 		b = bch2_btree_node_fill(trans, path, k, path->btree_id,
 					 level, lock_type, true);
@@ -1027,6 +1040,8 @@ retry:
  * the @write parameter.
  *
  * Returns: btree node or ERR_PTR()
+ *
+ * 在缓存中查找一个 btree 节点并锁定它，如果需要就从磁盘读取它。
  */
 struct btree *bch2_btree_node_get(struct btree_trans *trans, struct btree_path *path,
 				  const struct bkey_i *k, unsigned level,

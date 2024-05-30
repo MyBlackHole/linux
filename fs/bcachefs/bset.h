@@ -348,12 +348,14 @@ void bch2_btree_node_iter_advance(struct btree_node_iter *, struct btree *);
 	     (_set)->k != (_set)->end;					\
 	     _set++)
 
+/* 迭代是否结束 */
 static inline bool __btree_node_iter_set_end(struct btree_node_iter *iter,
 					     unsigned i)
 {
 	return iter->data[i].k == iter->data[i].end;
 }
 
+/* 迭代是否结束 */
 static inline bool bch2_btree_node_iter_end(struct btree_node_iter *iter)
 {
 	return __btree_node_iter_set_end(iter, 0);
@@ -408,6 +410,7 @@ __bch2_btree_node_iter_peek_all(struct btree_node_iter *iter,
 	return __btree_node_offset_to_key(b, iter->data->k);
 }
 
+/* 迭代单个节点数据 */
 static inline struct bkey_packed *
 bch2_btree_node_iter_peek_all(struct btree_node_iter *iter, struct btree *b)
 {
@@ -416,6 +419,7 @@ bch2_btree_node_iter_peek_all(struct btree_node_iter *iter, struct btree *b)
 		: NULL;
 }
 
+/* 迭代下一个数据 */
 static inline struct bkey_packed *
 bch2_btree_node_iter_peek(struct btree_node_iter *iter, struct btree *b)
 {

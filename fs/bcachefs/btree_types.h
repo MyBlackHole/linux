@@ -229,6 +229,7 @@ struct btree_cache {
 
 struct btree_node_iter {
 	struct btree_node_iter_set {
+		/* k == end 代表迭代到最后了 */
 		u16	k, end;
 	} data[MAX_BSETS];
 };
@@ -329,6 +330,9 @@ enum btree_path_uptodate {
 
 typedef u16 btree_path_idx_t;
 
+/*
+ * 路径表达
+ */
 struct btree_path {
 	btree_path_idx_t	sorted_idx;
 	u8			ref;
@@ -353,6 +357,7 @@ struct btree_path {
 				locks_want:3;
 	u8			nodes_locked;
 
+	/* 每层路径表达 */
 	struct btree_path_level {
 		struct btree	*b;
 		struct btree_node_iter iter;
@@ -403,12 +408,14 @@ struct btree_iter {
 	/* 当我们按快照过滤时，我们要查找的快照 ID: */
 	unsigned		snapshot;
 
-	// 当前迭代器位置
+	/* 当前迭代器位置 */
+	/* 外部看的迭代位置 */
 	struct bpos		pos;
 	/*
 	 * Current unpacked key - so that bch2_btree_iter_next()/
 	 * bch2_btree_iter_next_slot() can correctly advance pos.
 	 */
+	/* 内部树的迭代位置 */
 	struct bkey		k;
 
 	/* BTREE_ITER_with_journal: */

@@ -100,6 +100,7 @@ static inline int bkey_cmp_left_packed_byval(const struct btree *b,
 	return bkey_cmp_left_packed(b, l, &r);
 }
 
+/* 等于 */
 static __always_inline bool bpos_eq(struct bpos l, struct bpos r)
 {
 	return  !((l.inode	^ r.inode) |
@@ -107,6 +108,7 @@ static __always_inline bool bpos_eq(struct bpos l, struct bpos r)
 		  (l.snapshot	^ r.snapshot));
 }
 
+/* 小于 */
 static __always_inline bool bpos_lt(struct bpos l, struct bpos r)
 {
 	return  l.inode	!= r.inode ? l.inode < r.inode :
@@ -114,6 +116,7 @@ static __always_inline bool bpos_lt(struct bpos l, struct bpos r)
 		l.snapshot != r.snapshot ? l.snapshot < r.snapshot : false;
 }
 
+/* 小于等于 */
 static __always_inline bool bpos_le(struct bpos l, struct bpos r)
 {
 	return  l.inode	!= r.inode ? l.inode < r.inode :
@@ -121,11 +124,13 @@ static __always_inline bool bpos_le(struct bpos l, struct bpos r)
 		l.snapshot != r.snapshot ? l.snapshot < r.snapshot : true;
 }
 
+/* 大于 */
 static __always_inline bool bpos_gt(struct bpos l, struct bpos r)
 {
 	return bpos_lt(r, l);
 }
 
+/* 大于等于 */
 static __always_inline bool bpos_ge(struct bpos l, struct bpos r)
 {
 	return bpos_le(r, l);
@@ -149,12 +154,14 @@ static inline struct bpos bpos_max(struct bpos l, struct bpos r)
 	return bpos_gt(l, r) ? l : r;
 }
 
+/* 等于 */
 static __always_inline bool bkey_eq(struct bpos l, struct bpos r)
 {
 	return  !((l.inode	^ r.inode) |
 		  (l.offset	^ r.offset));
 }
 
+/* 小于 */
 static __always_inline bool bkey_lt(struct bpos l, struct bpos r)
 {
 	return  l.inode	!= r.inode
@@ -162,6 +169,7 @@ static __always_inline bool bkey_lt(struct bpos l, struct bpos r)
 		: l.offset < r.offset;
 }
 
+/* 小于等于 */
 static __always_inline bool bkey_le(struct bpos l, struct bpos r)
 {
 	return  l.inode	!= r.inode
@@ -169,11 +177,13 @@ static __always_inline bool bkey_le(struct bpos l, struct bpos r)
 		: l.offset <= r.offset;
 }
 
+/* 大于 */
 static __always_inline bool bkey_gt(struct bpos l, struct bpos r)
 {
 	return bkey_lt(r, l);
 }
 
+/* 大于等于 */
 static __always_inline bool bkey_ge(struct bpos l, struct bpos r)
 {
 	return bkey_le(r, l);
@@ -251,8 +261,17 @@ static inline unsigned bkey_format_key_bits(const struct bkey_format *format)
 		format->bits_per_field[BKEY_FIELD_SNAPSHOT];
 }
 
+/* 下一个继承者 */
 static inline struct bpos bpos_successor(struct bpos p)
 {
+	/*
+	 * 一个个来
+	 * 先遍历快照
+	 *
+	 * 再遍历偏移
+	 *
+	 * 最后遍历 inode
+	 */
 	if (!++p.snapshot &&
 	    !++p.offset &&
 	    !++p.inode)
@@ -261,8 +280,17 @@ static inline struct bpos bpos_successor(struct bpos p)
 	return p;
 }
 
+/* 上一个继承者 */
 static inline struct bpos bpos_predecessor(struct bpos p)
 {
+	/*
+	 * 一个个来
+	 * 先遍历快照
+	 *
+	 * 再遍历偏移
+	 *
+	 * 最后遍历 inode
+	 */
 	if (!p.snapshot-- &&
 	    !p.offset-- &&
 	    !p.inode--)
@@ -271,6 +299,7 @@ static inline struct bpos bpos_predecessor(struct bpos p)
 	return p;
 }
 
+/* 不管快照的下一个继承者 */
 static inline struct bpos bpos_nosnap_successor(struct bpos p)
 {
 	p.snapshot = 0;
@@ -282,6 +311,7 @@ static inline struct bpos bpos_nosnap_successor(struct bpos p)
 	return p;
 }
 
+/* 不管快照的上一个继承者 */
 static inline struct bpos bpos_nosnap_predecessor(struct bpos p)
 {
 	p.snapshot = 0;

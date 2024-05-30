@@ -129,6 +129,7 @@
 
 enum six_lock_type {
 	SIX_LOCK_read,
+	/* 意向锁,用于升级到写锁 */
 	SIX_LOCK_intent,
 	SIX_LOCK_write,
 };

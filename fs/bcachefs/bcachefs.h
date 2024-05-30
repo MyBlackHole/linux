@@ -817,6 +817,7 @@ struct bch_fs {
 	DARRAY(struct btree_root) btree_roots_extra;
 	struct mutex		btree_root_lock;
 
+	// btree 节点缓存
 	struct btree_cache	btree_cache;
 
 	/*

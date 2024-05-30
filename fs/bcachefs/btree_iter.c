@@ -60,6 +60,7 @@ static inline int btree_path_cmp(const struct btree_path *l,
 	return __btree_path_cmp(l, r->btree_id, r->cached, r->pos, r->level);
 }
 
+/* 键的下一个继承者 */
 static inline struct bpos bkey_successor(struct btree_iter *iter, struct bpos p)
 {
 	/* Are we iterating over keys in all snapshots? */
@@ -74,6 +75,7 @@ static inline struct bpos bkey_successor(struct btree_iter *iter, struct bpos p)
 	return p;
 }
 
+/* 键的上一个继承者 */
 static inline struct bpos bkey_predecessor(struct btree_iter *iter, struct bpos p)
 {
 	/* Are we iterating over keys in all snapshots? */
@@ -626,6 +628,7 @@ static inline bool btree_path_advance_to_pos(struct btree_path *path,
 	return true;
 }
 
+/* 初始化路径层的迭代器 */
 static inline void __btree_path_level_init(struct btree_path *path,
 					   unsigned level)
 {
@@ -650,7 +653,9 @@ void bch2_btree_path_level_init(struct btree_trans *trans,
 	EBUG_ON(!btree_path_pos_in_node(path, b));
 
 	path->l[b->c.level].lock_seq = six_lock_seq(&b->c.lock);
+	/* 把自己设置到路径中 */
 	path->l[b->c.level].b = b;
+	/* 初始化路径层的迭代器 */
 	__btree_path_level_init(path, b->c.level);
 }
 
@@ -912,14 +917,17 @@ static noinline int btree_node_iter_and_journal_peek(struct btree_trans *trans,
 	return ret;
 }
 
+/* 向下一个节点 */
 static __always_inline int btree_path_down(struct btree_trans *trans,
 					   struct btree_path *path,
 					   unsigned flags,
 					   unsigned long trace_ip)
 {
 	struct bch_fs *c = trans->c;
+	/* 获取当前路径层 */
 	struct btree_path_level *l = path_l(path);
 	struct btree *b;
+	/* 下一层 */
 	unsigned level = path->level - 1;
 	enum six_lock_type lock_type = __btree_lock_want(path, level);
 	struct bkey_buf tmp;
@@ -934,6 +942,7 @@ static __always_inline int btree_path_down(struct btree_trans *trans,
 		if (ret)
 			goto err;
 	} else {
+		/* 迭代下一键包 */
 		struct bkey_packed *k = bch2_btree_node_iter_peek(&l->iter, l->b);
 		if (!k) {
 			struct printbuf buf = PRINTBUF;
@@ -959,6 +968,7 @@ static __always_inline int btree_path_down(struct btree_trans *trans,
 		}
 	}
 
+	/* 读取锁定 btree 节点 */
 	b = bch2_btree_node_get(trans, path, tmp.k, level, lock_type, trace_ip);
 	ret = PTR_ERR_OR_ZERO(b);
 	if (unlikely(ret))
@@ -974,7 +984,9 @@ static __always_inline int btree_path_down(struct btree_trans *trans,
 
 	mark_btree_node_locked(trans, path, level,
 			       (enum btree_node_locked_type) lock_type);
+	/* 往下一层(往叶子节点走) */
 	path->level = level;
+	/* 初始化 btree_path::l[?]::iter 的指向 */
 	bch2_btree_path_level_init(trans, path, b);
 
 	bch2_btree_path_verify_locks(path);
@@ -1134,12 +1146,15 @@ static inline unsigned btree_path_up_until_good_node(struct btree_trans *trans,
  *
  * On error, caller (peek_node()/peek_key()) must return NULL; the error is
  * stashed in the iterator and returned from bch2_trans_exit().
+ *
+ * 这是遍历 B 树的主要状态机 - 遍历到指定的深度
  */
 int bch2_btree_path_traverse_one(struct btree_trans *trans,
 				 btree_path_idx_t path_idx,
 				 unsigned flags,
 				 unsigned long trace_ip)
 {
+	// 取一个 path
 	struct btree_path *path = &trans->paths[path_idx];
 	unsigned depth_want = path->level;
 	int ret = -((int) trans->restarted);
@@ -2009,6 +2024,7 @@ err:
 }
 
 /* Iterate across keys (in leaf nodes only) */
+/* 遍历键（仅在叶节点中） */
 
 inline bool bch2_btree_iter_advance(struct btree_iter *iter)
 {
@@ -2018,6 +2034,7 @@ inline bool bch2_btree_iter_advance(struct btree_iter *iter)
 		     : bkey_eq(pos, SPOS_MAX));
 
 	if (ret && !(iter->flags & BTREE_ITER_is_extents))
+		/* 已经到最大键，获取下一个继承的键 */
 		pos = bkey_successor(iter, pos);
 	bch2_btree_iter_set_pos(iter, pos);
 	return ret;
@@ -2178,6 +2195,7 @@ struct bkey_s_c btree_trans_peek_key_cache(struct btree_iter *iter, struct bpos 
 	return k;
 }
 
+/* 返回迭代器当前位置的下一个键 */
 static struct bkey_s_c __bch2_btree_iter_peek(struct btree_iter *iter, struct bpos search_key)
 {
 	struct btree_trans *trans = iter->trans;

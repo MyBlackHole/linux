@@ -141,6 +141,13 @@ struct bpos {
 	 * structure, it has to be byte swabbed when reading in metadata that
 	 * wasn't written in native endian order:
 	 */
+	/*
+	 * 字序与机器字节序匹配 - btree 代码将 bpos 视为单个大整数，
+	 * 用于搜索/比较目的
+	 *
+	 * 请注意，无论 bpos 嵌入另一个磁盘数据结构中的何处，
+	 * 在读取未按本机字节序写入的元数据时都必须对其进行字节交换：
+	 */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	/* 我们要查找的快照 ID: */
 	__u32		snapshot;
@@ -440,8 +447,9 @@ static inline void bkey_init(struct bkey *k)
 enum bch_bkey_type {
 #define x(name, nr) KEY_TYPE_##name	= nr,
 	BCH_BKEY_TYPES()
-    // KEY_TYPE_inline_data: 内联数据
-    // KEY_TYPE_indirect_inline_data: 间接内联数据
+	// KEY_TYPE_inline_data: 内联数据
+	// KEY_TYPE_indirect_inline_data: 间接内联数据
+	// KEY_TYPE_deleted: 删除
 #undef x
 	KEY_TYPE_MAX,
 };

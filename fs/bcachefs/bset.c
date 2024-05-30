@@ -1112,6 +1112,7 @@ static inline bool bkey_mantissa_bits_dropped(const struct btree *b,
 #endif
 }
 
+/* 搜索树查找 */
 __flatten
 static struct bkey_packed *bset_search_tree(const struct btree *b,
 				const struct bset_tree *t,
@@ -1166,6 +1167,7 @@ slowpath:
 	return cacheline_to_bkey(b, t, inorder, f->key_offset);
 }
 
+/* 在键集合中查找键 */
 static __always_inline __flatten
 struct bkey_packed *__bch2_bset_search(struct btree *b,
 				struct bset_tree *t,
@@ -1328,6 +1330,7 @@ void bch2_btree_node_iter_init(struct btree_node_iter *iter,
 	struct bkey_packed *k[MAX_BSETS];
 	unsigned i;
 
+	/* 不可能搜索 key 小于 min_key 或 大于 max_key */
 	EBUG_ON(bpos_lt(*search, b->data->min_key));
 	EBUG_ON(bpos_gt(*search, b->data->max_key));
 	bset_aux_tree_verify(b);
