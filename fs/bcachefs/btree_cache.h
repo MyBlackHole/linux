@@ -77,6 +77,7 @@ static inline bool btree_node_hashed(struct btree *b)
 	     _iter = 0;	_iter < (_tbl)->size; _iter++)			\
 		rht_for_each_entry_rcu((_b), (_pos), _tbl, _iter, hash)
 
+/* 字節大小 */
 static inline size_t btree_buf_bytes(const struct btree *b)
 {
 	return 1UL << b->byte_order;

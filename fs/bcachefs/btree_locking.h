@@ -389,6 +389,7 @@ static inline void btree_path_set_should_be_locked(struct btree_path *path)
 	path->should_be_locked = true;
 }
 
+/* 重置坏路径 */
 static inline void __btree_path_set_level_up(struct btree_trans *trans,
 				      struct btree_path *path,
 				      unsigned l)

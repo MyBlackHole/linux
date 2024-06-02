@@ -100,18 +100,21 @@ static inline struct bpos btree_iter_search_key(struct btree_iter *iter)
 	return pos;
 }
 
+/* 在节点最小 key 之前  */
 static inline bool btree_path_pos_before_node(struct btree_path *path,
 					      struct btree *b)
 {
 	return bpos_lt(path->pos, b->data->min_key);
 }
 
+/* 在节点最大 key 之后  */
 static inline bool btree_path_pos_after_node(struct btree_path *path,
 					     struct btree *b)
 {
 	return bpos_gt(path->pos, b->key.k.p);
 }
 
+/* 是否在当前节点 */
 static inline bool btree_path_pos_in_node(struct btree_path *path,
 					  struct btree *b)
 {
@@ -1070,6 +1073,7 @@ err:
 	return ret;
 }
 
+/* 判断 pos 是否在此节点 */
 static inline bool btree_path_check_pos_in_node(struct btree_path *path,
 						unsigned l, int check_pos)
 {
@@ -1105,17 +1109,20 @@ static void btree_path_set_level_down(struct btree_trans *trans,
 	bch2_btree_path_verify(trans, path);
 }
 
+/* */
 static noinline unsigned __btree_path_up_until_good_node(struct btree_trans *trans,
 							 struct btree_path *path,
 							 int check_pos)
 {
 	unsigned i, l = path->level;
 again:
+	/* 遍历坏层级重置坏路径 */
 	while (btree_path_node(path, l) &&
 	       !btree_path_good_node(trans, path, l, check_pos))
 		__btree_path_set_level_up(trans, path, l++);
 
 	/* If we need intent locks, take them too: */
+	/* 如果我们需要意向锁，也请获取它们：*/
 	for (i = l + 1;
 	     i < path->locks_want && btree_path_node(path, i);
 	     i++)
@@ -1128,10 +1135,12 @@ again:
 	return l;
 }
 
+/* 找到 path 复用路径 */
 static inline unsigned btree_path_up_until_good_node(struct btree_trans *trans,
 						     struct btree_path *path,
 						     int check_pos)
 {
+	/* path 在此节点则返回 path->level, 否则返回 __btree_path_up_until_good_node() */
 	return likely(btree_node_locked(path, path->level) &&
 		      btree_path_check_pos_in_node(path, path->level, check_pos))
 		? path->level
@@ -1184,6 +1193,7 @@ int bch2_btree_path_traverse_one(struct btree_trans *trans,
 	if (unlikely(path->level >= BTREE_MAX_DEPTH))
 		goto out_uptodate;
 
+	/* 找到 path 复用路径 */
 	path->level = btree_path_up_until_good_node(trans, path, 0);
 	unsigned max_level = path->level;
 
@@ -1195,6 +1205,9 @@ int bch2_btree_path_traverse_one(struct btree_trans *trans,
 	 * would indicate to other code that we got to the end of the btree,
 	 * here it indicates that relocking the root failed - it's critical that
 	 * btree_path_lock_root() comes next and that it can't fail
+	 *
+	 * 注意：path->nodes[path->level] 在这里可能暂时为 NULL - 这会向其他代码表明我们已经到达了 btree 的末尾，
+	 * 这里它表明重新锁定根失败 - 接下来是 btree_path_lock_root() 并且它不能失败，这一点至关重要
 	 */
 	while (path->level > depth_want) {
 		ret = btree_path_node(path, path->level)
@@ -2612,6 +2625,7 @@ struct bkey_s_c bch2_btree_iter_prev(struct btree_iter *iter)
 	return bch2_btree_iter_peek_prev(iter);
 }
 
+/* 查看当前迭代器的位置 key */
 struct bkey_s_c bch2_btree_iter_peek_slot(struct btree_iter *iter)
 {
 	struct btree_trans *trans = iter->trans;

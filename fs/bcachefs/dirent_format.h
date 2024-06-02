@@ -29,8 +29,10 @@ struct bch_dirent {
 	 * Copy of mode bits 12-15 from the target inode - so userspace can get
 	 * the filetype without having to do a stat()
 	 */
+	/* 目录项类型 */
 	__u8			d_type;
 
+	/* 目录项名 */
 	__u8			d_name[];
 } __packed __aligned(8);
 

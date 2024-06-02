@@ -414,6 +414,7 @@ __bch2_btree_node_iter_peek_all(struct btree_node_iter *iter,
 static inline struct bkey_packed *
 bch2_btree_node_iter_peek_all(struct btree_node_iter *iter, struct btree *b)
 {
+	/* 未结束則返回第一個 */
 	return !bch2_btree_node_iter_end(iter)
 		? __btree_node_offset_to_key(b, iter->data->k)
 		: NULL;

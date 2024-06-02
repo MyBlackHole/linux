@@ -734,8 +734,10 @@ static inline void bch2_cut_back(struct bpos where, struct bkey_i *k)
  *
  * bkey_start_offset(k) will be preserved, modifies where the extent ends
  */
-// bch_key_resize - 调整@k的大小
-// bkey_start_offset(k) 将被保留，修改范围结束的位置
+/*
+ * bch_key_resize - 调整@k的大小
+ * bkey_start_offset(k) 将被保留，修改范围结束的位置
+ */
 static inline void bch2_key_resize(struct bkey *k, unsigned new_size)
 {
 	k->p.offset -= k->size;

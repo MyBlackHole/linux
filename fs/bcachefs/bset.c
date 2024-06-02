@@ -1361,6 +1361,7 @@ void bch2_btree_node_iter_init(struct btree_node_iter *iter,
 		k[i] = bch2_bset_search_linear(b, t, search,
 					       packed_search, &p, k[i]);
 		if (k[i] != end)
+			// 设置 btree 节点 set 迭代器
 			*pos++ = (struct btree_node_iter_set) {
 				__btree_node_key_to_offset(b, k[i]),
 				__btree_node_key_to_offset(b, end)

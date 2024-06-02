@@ -547,6 +547,7 @@ static inline void *bch2_trans_kmalloc_nomemzero(struct btree_trans *trans, size
 	}
 }
 
+/* 查询指定 pos */
 static inline struct bkey_s_c __bch2_bkey_get_iter(struct btree_trans *trans,
 				struct btree_iter *iter,
 				unsigned btree_id, struct bpos pos,
@@ -640,6 +641,7 @@ static inline struct bkey_s_c bch2_btree_iter_peek_type(struct btree_iter *iter,
 						bch2_btree_iter_peek(iter);
 }
 
+/* 迭代下一个键 */
 static inline struct bkey_s_c bch2_btree_iter_peek_upto_type(struct btree_iter *iter,
 							     struct bpos end,
 							     unsigned flags)

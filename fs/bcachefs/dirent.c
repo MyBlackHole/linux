@@ -32,6 +32,7 @@ static unsigned bch2_dirent_name_bytes(struct bkey_s_c_dirent d)
 		trailing_nuls;
 }
 
+/* 获取目录项的名字 */
 struct qstr bch2_dirent_get_name(struct bkey_s_c_dirent d)
 {
 	return (struct qstr) QSTR_INIT(d.v->d_name, bch2_dirent_name_bytes(d));
@@ -564,11 +565,13 @@ retry:
 	for_each_btree_key_upto_norestart(trans, iter, BTREE_ID_dirents,
 			   SPOS(inum.inum, ctx->pos, snapshot),
 			   POS(inum.inum, U64_MAX), 0, k, ret) {
+		/* 跳过非 dirent */
 		if (k.k->type != KEY_TYPE_dirent)
 			continue;
 
 		/* dir_emit() can fault and block: */
 		bch2_bkey_buf_reassemble(&sk, c, k);
+		/* key 转换 dirent */
 		struct bkey_s_c_dirent dirent = bkey_i_to_s_c_dirent(sk.k);
 
 		ret = bch2_dirent_read_target(trans, inum, dirent, &target);

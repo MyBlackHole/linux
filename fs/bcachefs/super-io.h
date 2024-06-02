@@ -70,6 +70,7 @@ static inline __u64 jset_magic(struct bch_fs *c)
 	return __le64_to_cpu(bch2_sb_magic(c) ^ JSET_MAGIC);
 }
 
+/* bset 魔法字校驗 */
 static inline __u64 bset_magic(struct bch_fs *c)
 {
 	return __le64_to_cpu(bch2_sb_magic(c) ^ BSET_MAGIC);

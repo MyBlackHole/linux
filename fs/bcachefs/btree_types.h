@@ -57,10 +57,14 @@ struct bset_tree {
 	/* 大小函数 - 为 to_inorder() 预先计算 */
 	u16			extra;
 
-	// data_offset/end_offset 指出
-	// 本 bset_tree(bset) 在 btree::data 中的开始结束偏移
+	/*
+	 * data_offset/end_offset 指出
+	 * 本 bset_tree(bset) 在 btree::data 中的开始结束偏移
+	 */
 	u16			data_offset;
-	// 辅助数据(二叉树)在 btree::data 的偏移量
+	/*
+	 * 辅助数据(二叉树)在 btree::data 的偏移量
+	 */
 	u16			aux_data_offset;
 	u16			end_offset;
 };
@@ -81,7 +85,9 @@ struct btree_bkey_cached_common {
 	bool			cached;
 };
 
-// 代表 btree 节点
+/*
+ * 代表 btree 节点
+ */
 struct btree {
 	struct btree_bkey_cached_common c;
 
@@ -89,24 +95,32 @@ struct btree {
 	u64			hash_val;
 
 	unsigned long		flags;
-	// 已写入磁盘计数(单位是扇区)
+	/*
+	 * 已写入磁盘计数(单位是扇区)
+	 */
 	u16			written;
-	// 当前有多少 set
+	/*
+	 * 当前有多少 set
+	 */
 	u8			nsets;
 	u8			nr_key_bits;
 	u16			version_ondisk;
 
 	struct bkey_format	format;
 
-	// <---------- 256KB ----------->
-	// ------------------------------
-	// ||||||||||||****           ***
-	// ------------------------------
-	//            ^               ^
-	//            |               b->whiteout_u64s
-	//            b->written
+	/*
+	 * <---------- 256KB ----------->
+	 * ------------------------------
+	 * ||||||||||||****           ***
+	 * ------------------------------
+	 *            ^               ^
+	 *            |               b->whiteout_u64s
+	 *            b->written
+	 */
 	struct btree_node	*data;
-	// 二叉树, 每个 bset 一个
+	/*
+	 * 二叉树, 每个 bset 一个
+	 */
 	void			*aux_data;
 
 	/*
@@ -126,18 +140,23 @@ struct btree {
 
 	struct btree_nr_keys	nr;
 	u16			sib_u64s[2];
-	// 未写入的 whiteouts 计数(单位 u64)
-	// 这些 whiteout 掉的 bkeys 写入从
-	// btree::data 尾部起反向生长的空间
+	/*
+	 * 未写入的 whiteouts 计数(单位 u64)
+	 * 这些 whiteout 掉的 bkeys 写入从
+	 * btree::data 尾部起反向生长的空间
+	 */
 	u16			whiteout_u64s;
+	/* log2(btree_node_size) */
 	u8			byte_order;
 	u8			unpack_fn_len;
 
 	struct btree_write	writes[2];
 
 	/* Key/pointer for this btree node */
-	/* 该 btree 节点的键/指针 */
-	// 父节点的 key value 的拷贝
+	/* 指向该 btree 节点的键/指针 */
+	/*
+	 * 父节点的 key value 的拷贝
+	 */
 	__BKEY_PADDED(key, BKEY_BTREE_PTR_VAL_U64s_MAX);
 
 	/*
@@ -339,9 +358,10 @@ struct btree_path {
 	u8			intent_ref;
 
 	/* btree_iter_copy starts here: */
-	/* btree_iter_copy 从这里开始： */
+	/* 从这里开始： */
 	struct bpos		pos;
 
+	/* 树类型 */
 	enum btree_id		btree_id:5;
 	bool			cached:1;
 	bool			preserve:1;
@@ -669,23 +689,27 @@ static inline struct btree_write *btree_prev_write(struct btree *b)
 	return b->writes + (btree_node_write_idx(b) ^ 1);
 }
 
+/* 獲取最後一個 bset_tree */
 static inline struct bset_tree *bset_tree_last(struct btree *b)
 {
 	EBUG_ON(!b->nsets);
 	return b->set + b->nsets - 1;
 }
 
+/* 通過偏移量獲取地址 */
 static inline void *
 __btree_node_offset_to_ptr(const struct btree *b, u16 offset)
 {
 	return (void *) ((u64 *) b->data + 1 + offset);
 }
 
+/* 通過地址獲取偏移量 */
 static inline u16
 __btree_node_ptr_to_offset(const struct btree *b, const void *p)
 {
 	u16 ret = (u64 *) p - 1 - (u64 *) b->data;
 
+	// 確認偏移量是否正確
 	EBUG_ON(__btree_node_offset_to_ptr(b, ret) != p);
 	return ret;
 }
@@ -696,19 +720,24 @@ static inline struct bset *bset(const struct btree *b,
 	return __btree_node_offset_to_ptr(b, t->data_offset);
 }
 
+/* 設置 bset 結束偏移量 */
 static inline void set_btree_bset_end(struct btree *b, struct bset_tree *t)
 {
 	t->end_offset =
 		__btree_node_ptr_to_offset(b, vstruct_last(bset(b, t)));
 }
 
+/* 設置 bset 開始偏移量結束偏移量 */
 static inline void set_btree_bset(struct btree *b, struct bset_tree *t,
 				  const struct bset *i)
 {
+	/* 設置 bset 開始偏移量 */
 	t->data_offset = __btree_node_ptr_to_offset(b, i);
+	/* 設置 bset 結束偏移量 */
 	set_btree_bset_end(b, t);
 }
 
+/* 首個 bset */
 static inline struct bset *btree_bset_first(struct btree *b)
 {
 	return bset(b, b->set);
@@ -863,6 +892,7 @@ static inline bool btree_type_has_ptrs(enum btree_id id)
 	return (1U << id) & mask;
 }
 
+/* 树的根结构 */
 struct btree_root {
 	struct btree		*b;
 

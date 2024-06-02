@@ -151,7 +151,7 @@ struct bpos {
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	/* 我们要查找的快照 ID: */
 	__u32		snapshot;
-	// 扇区数?
+	// 逻辑偏移位置
 	__u64		offset;
 	__u64		inode;
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -167,9 +167,13 @@ __aligned(4)
 #endif
 ;
 
+/* 索引节点的最大大小 */
 #define KEY_INODE_MAX			((__u64)~0ULL)
+/* 偏移量最大值 */
 #define KEY_OFFSET_MAX			((__u64)~0ULL)
+/* 快照 ID 最大值 */
 #define KEY_SNAPSHOT_MAX		((__u32)~0U)
+/* key 最大值 */
 #define KEY_SIZE_MAX			((__u32)~0U)
 
 static inline struct bpos SPOS(__u64 inode, __u64 offset, __u32 snapshot)
@@ -447,6 +451,8 @@ static inline void bkey_init(struct bkey *k)
 enum bch_bkey_type {
 #define x(name, nr) KEY_TYPE_##name	= nr,
 	BCH_BKEY_TYPES()
+	// KEY_TYPE_inode_v3|KEY_TYPE_inode_v2|KEY_TYPE_inode: 索引节点
+	// KEY_TYPE_dirent: 目录项
 	// KEY_TYPE_inline_data: 内联数据
 	// KEY_TYPE_indirect_inline_data: 间接内联数据
 	// KEY_TYPE_deleted: 删除
@@ -1487,7 +1493,10 @@ struct bset {
 
 	__le32			flags;
 	__le16			version;
-	// 描述了本 bset 中，全部 payload 长度，以 u64 为单位计
+	/*
+	 * 描述了本 bset 中，全部 payload 长度，
+	 * 以 u64 为单位计
+	 */
 	__le16			u64s; /* count of d[] in u64s */
 
 	struct bkey_packed	start[0];

@@ -789,7 +789,7 @@ struct bch_fs {
 
 	struct bch_sb_handle	disk_sb;
 
-	// 扇区数量 对数
+	// block_size 对数 ilog2(block_size)
 	unsigned short		block_bits;	/* ilog2(block_size) */
 
 	u16			btree_foreground_merge_threshold;
@@ -812,12 +812,13 @@ struct bch_fs {
 	// worke 队列结构
 	struct workqueue_struct	*io_complete_wq;
 
+	/* 所有 btree 节点的根 */
 	struct btree_root	btree_roots_known[BTREE_ID_NR];
-	// 额外的 btree 根
+	/* 额外的 btree 根 */
 	DARRAY(struct btree_root) btree_roots_extra;
 	struct mutex		btree_root_lock;
 
-	// btree 节点缓存
+	/* btree 节点缓存 */
 	struct btree_cache	btree_cache;
 
 	/*

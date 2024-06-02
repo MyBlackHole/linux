@@ -42,6 +42,7 @@ int bch2_trigger_inode(struct btree_trans *, enum btree_id, unsigned,
 	.min_val_size	= 48,				\
 })
 
+/* 判断 key 是否是 inode 类型 */
 static inline bool bkey_is_inode(const struct bkey *k)
 {
 	return  k->type == KEY_TYPE_inode ||

@@ -316,6 +316,7 @@ static noinline int bch2_inode_unpack_slowpath(struct bkey_s_c k,
 	}
 }
 
+/* key 拆包给赋值 unpacked */
 int bch2_inode_unpack(struct bkey_s_c k,
 		      struct bch_inode_unpacked *unpacked)
 {
@@ -344,6 +345,7 @@ int bch2_inode_peek_nowarn(struct btree_trans *trans,
 	if (ret)
 		return ret;
 
+	/* 判断是否是 inode */
 	ret = bkey_is_inode(k.k) ? 0 : -BCH_ERR_ENOENT_inode;
 	if (ret)
 		goto err;
@@ -947,6 +949,7 @@ int bch2_inode_find_by_inum_trans(struct btree_trans *trans,
 	return ret;
 }
 
+/* 查找 inode */
 int bch2_inode_find_by_inum(struct bch_fs *c, subvol_inum inum,
 			    struct bch_inode_unpacked *inode)
 {
