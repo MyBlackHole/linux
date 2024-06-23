@@ -218,13 +218,16 @@ static struct inode *bch2_alloc_inode(struct super_block *sb)
 	BUG();
 }
 
+// 创建一个新的 inode
 static struct bch_inode_info *__bch2_new_inode(struct bch_fs *c)
 {
 	struct bch_inode_info *inode = kmem_cache_alloc(bch2_inode_cache, GFP_NOFS);
 	if (!inode)
 		return NULL;
 
+	// 初始化系统架构的 inode
 	inode_init_once(&inode->v);
+	// 初始化 bcachefs 的 inode
 	mutex_init(&inode->ei_update_lock);
 	two_state_lock_init(&inode->ei_pagecache_lock);
 	INIT_LIST_HEAD(&inode->ei_vfs_inode_list);
@@ -314,6 +317,7 @@ __bch2_create(struct mnt_idmap *idmap,
 	if (ret)
 		return ERR_PTR(ret);
 #endif
+	// 创建 inode
 	inode = __bch2_new_inode(c);
 	if (unlikely(!inode)) {
 		inode = ERR_PTR(-ENOMEM);
@@ -327,6 +331,7 @@ __bch2_create(struct mnt_idmap *idmap,
 
 	trans = bch2_trans_get(c);
 retry:
+	// 开始事务
 	bch2_trans_begin(trans);
 
 	ret   = bch2_subvol_is_ro_trans(trans, dir->ei_subvol) ?:

@@ -2291,7 +2291,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
 	 * allowed. The __WQ_DESTROYING helps to spot the issue that
 	 * queues a new work item to a wq after destroy_workqueue(wq).
 	 */
-     // 如果所有的active。worker都在处理，则先将任务delay，放到delayed_works链表
+	// 如果所有的active。worker都在处理，则先将任务delay，放到delayed_works链表
 	if (unlikely(wq->flags & (__WQ_DESTROYING | __WQ_DRAINING) &&
 		     WARN_ON_ONCE(!is_chained_work(wq))))
 		return;
@@ -2790,7 +2790,7 @@ static struct worker *create_worker(struct worker_pool *pool)
 		return NULL;
 	}
 
-    // 分配 worker
+	// 分配 worker
 	worker = alloc_worker(pool->node);
 	if (!worker) {
 		pr_err_once("workqueue: Failed to allocate a worker\n");
@@ -3370,7 +3370,7 @@ static int worker_thread(void *__worker)
 	struct worker_pool *pool = worker->pool;
 
 	/* tell the scheduler that this is a workqueue worker */
-    // 告诉调度这是工作队列工作者
+	// 告诉调度这是工作队列工作者
 	set_pf_worker(true);
 woke_up:
 	raw_spin_lock_irq(&pool->lock);
@@ -3421,7 +3421,7 @@ recheck:
 
 		if (assign_work(work, worker, NULL))
 			process_scheduled_works(worker);
-    // 如果worker_pool上还有work并且只有当前内核线程是running的那么继续由当前
+	// 如果worker_pool上还有work并且只有当前内核线程是running的那么继续由当前
 	// 内核线程执行，考虑一直执行有阻塞cpu风险，因此加了workqueue的watchdog机制
 	} while (keep_working(pool));
 
@@ -3435,13 +3435,13 @@ sleep:
 	 * event.
 	 */
 	worker_enter_idle(worker);
-    // 设置空闲状态
+	// 设置空闲状态
 	__set_current_state(TASK_IDLE);
 	raw_spin_unlock_irq(&pool->lock);
-    // 发起主动调度
-    // 释放 CPU 占有
+	// 发起主动调度
+	// 释放 CPU 占有
 	schedule();
-    // 循环
+	// 循环
 	goto woke_up;
 }
 
@@ -7872,7 +7872,7 @@ void __init workqueue_init(void)
 	 * Per-cpu pools created earlier could be missing node hint. Fix them
 	 * up. Also, create a rescuer for workqueues that requested it.
 	 */
-    // 遍历 CPU
+	// 遍历 CPU
 	for_each_possible_cpu(cpu) {
 		for_each_bh_worker_pool(pool, cpu)
 			pool->node = cpu_to_node(cpu);

@@ -468,6 +468,7 @@ EXPORT_SYMBOL_GPL(flush_delayed_fput);
 
 static DECLARE_DELAYED_WORK(delayed_fput_work, delayed_fput);
 
+/* 减少引用计数，如果引用计数为0，则调用__fput()释放资源 */
 void fput(struct file *file)
 {
 	if (atomic_long_dec_and_test(&file->f_count)) {

@@ -4045,7 +4045,7 @@ again:
 			break;
 		}
 
-        // 写前处理
+		// 写前处理
 		status = a_ops->write_begin(file, mapping, pos, bytes,
 						&page, &fsdata);
 		if (unlikely(status < 0))
@@ -4057,7 +4057,7 @@ again:
 		copied = copy_page_from_iter_atomic(page, offset, bytes, i);
 		flush_dcache_page(page);
 
-        // 写后处理
+		// 写后处理
 		status = a_ops->write_end(file, mapping, pos, bytes, copied,
 						page, fsdata);
 		if (unlikely(status != copied)) {
@@ -4148,7 +4148,7 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		return ret;
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
-        // io 直接写处理
+		// io 直接写处理
 		ret = generic_file_direct_write(iocb, from);
 		/*
 		 * If the write stopped short of completing, fall back to
@@ -4159,7 +4159,7 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		 */
 		if (ret < 0 || !iov_iter_count(from) || IS_DAX(inode))
 			return ret;
-        // 通用写处理
+		// 通用写处理
 		return direct_write_fallback(iocb, from, ret,
 				generic_perform_write(iocb, from));
 	}
@@ -4192,12 +4192,12 @@ ssize_t generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	inode_lock(inode);
 	ret = generic_write_checks(iocb, from);
 	if (ret > 0)
-        // 内部通用写实现
+		// 内部通用写实现
 		ret = __generic_file_write_iter(iocb, from);
 	inode_unlock(inode);
 
 	if (ret > 0)
-        // 同步写
+		// 同步写
 		ret = generic_write_sync(iocb, ret);
 	return ret;
 }

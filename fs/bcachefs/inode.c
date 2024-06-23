@@ -664,7 +664,7 @@ void bch2_inode_init_early(struct bch_fs *c,
 	enum bch_str_hash_type str_hash =
 		bch2_str_hash_opt_to_type(c, c->opts.str_hash);
 
-    // 内存初始化
+	// 内存初始化
 	memset(inode_u, 0, sizeof(*inode_u));
 
 	/* ick */
@@ -673,7 +673,7 @@ void bch2_inode_init_early(struct bch_fs *c,
 			 sizeof(inode_u->bi_hash_seed));
 }
 
-// 初始化 inode
+// 初始化 inode 数据包
 void bch2_inode_init_late(struct bch_inode_unpacked *inode_u, u64 now,
 			  uid_t uid, gid_t gid, umode_t mode, dev_t rdev,
 			  struct bch_inode_unpacked *parent)

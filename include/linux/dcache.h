@@ -143,39 +143,39 @@ enum d_real_type {
 };
 
 struct dentry_operations {
-    // VFS用于检查在dcache里找到的dentry是否有效
-    // 通常设置为NULL，则只要在dcache找到即认为是有效的
-    // 但对网络文件系统如NFS来说，dentry可能在一段时间之后就会失效，因此需要实现该函数用于检查是否有效
-    // 如果有效，函数需要返回一个正数
+	// VFS用于检查在dcache里找到的dentry是否有效
+	// 通常设置为NULL，则只要在dcache找到即认为是有效的
+	// 但对网络文件系统如NFS来说，dentry可能在一段时间之后就会失效，因此需要实现该函数用于检查是否有效
+	// 如果有效，函数需要返回一个正数
 	int (*d_revalidate)(struct dentry *, unsigned int);
-    // 用于检查'jumped'的dentry，即那些不是通过lookup获取的dentry，如'', '.'或者'..'
-    // 这种场景只需要检查dentry对应inode是否OK即可
-    // 该函数不会在rcu-walk模式下调用，所以可以放心的使用inode
+	// 用于检查'jumped'的dentry，即那些不是通过lookup获取的dentry，如'', '.'或者'..'
+	// 这种场景只需要检查dentry对应inode是否OK即可
+	// 该函数不会在rcu-walk模式下调用，所以可以放心的使用inode
 	int (*d_weak_revalidate)(struct dentry *, unsigned int);
-    // 用于VFS将dentry放入HASH列表
-    // 并不清楚HASH表用来做啥，通常不需要设置它，使用VFS默认的即可
+	// 用于VFS将dentry放入HASH列表
+	// 并不清楚HASH表用来做啥，通常不需要设置它，使用VFS默认的即可
 	int (*d_hash)(const struct dentry *, struct qstr *);
-    // 用于比较dentry name和指定的name。该函数必须是可重入的，即每次的返回结果一样
+	// 用于比较dentry name和指定的name。该函数必须是可重入的，即每次的返回结果一样
 	int (*d_compare)(const struct dentry *,
 			unsigned int, const char *, const struct qstr *);
-    // 用于引用计数递减为0时调用，返回1则dcache立即删除dentry，返回0则继续缓存该dentry
-    // 默认为NULL，则总是将dentry进行缓存
-    // 该函数必须是可重入的，即每次的返回结果一样
+	// 用于引用计数递减为0时调用，返回1则dcache立即删除dentry，返回0则继续缓存该dentry
+	// 默认为NULL，则总是将dentry进行缓存
+	// 该函数必须是可重入的，即每次的返回结果一样
 	int (*d_delete)(const struct dentry *);
 	int (*d_init)(struct dentry *);
-    // 用于释放dentry资源
+	// 用于释放dentry资源
 	void (*d_release)(struct dentry *);
 	void (*d_prune)(struct dentry *);
-    // 用于释放dentry对应inode引用计数。该函数在释放dentry之前调用
-    // 如果为NULL，则VFS默认调用iput()
+	// 用于释放dentry对应inode引用计数。该函数在释放dentry之前调用
+	// 如果为NULL，则VFS默认调用iput()
 	void (*d_iput)(struct dentry *, struct inode *);
-    // 用于生成dentry的pathname，主要是一些伪文件系统（sockfs, pipefs等）用于延迟生成pathname
-    // 一般文件系统不实现该函数，因为其dentry存在于dcache的hash表里（通过pathname做hash），所以并不希望pathname变化
+	// 用于生成dentry的pathname，主要是一些伪文件系统（sockfs, pipefs等）用于延迟生成pathname
+	// 一般文件系统不实现该函数，因为其dentry存在于dcache的hash表里（通过pathname做hash），所以并不希望pathname变化
 	char *(*d_dname)(struct dentry *, char *, int);
-    // 可选函数，用于穿越到一个自动挂载的dentry
-    // 它会创建一个新的vfsmount记录，并将其返回，成功后调用者将根据vfsmount去尝试mount它到挂载点
+	// 可选函数，用于穿越到一个自动挂载的dentry
+	// 它会创建一个新的vfsmount记录，并将其返回，成功后调用者将根据vfsmount去尝试mount它到挂载点
 	struct vfsmount *(*d_automount)(struct path *);
-    // 可选函数，用于管理从dentry进行transition
+	// 可选函数，用于管理从dentry进行transition
 	int (*d_manage)(const struct path *, bool);
 	struct dentry *(*d_real)(struct dentry *, enum d_real_type type);
 } ____cacheline_aligned;

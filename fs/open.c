@@ -1617,7 +1617,7 @@ SYSCALL_DEFINE0(vhangup)
 int generic_file_open(struct inode * inode, struct file * filp)
 {
 	if (!(filp->f_flags & O_LARGEFILE) && i_size_read(inode) > MAX_NON_LFS)
-        // 超过大文件最大大小
+		// 超过大文件最大大小
 		return -EOVERFLOW;
 	return 0;
 }

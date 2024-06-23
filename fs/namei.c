@@ -3505,6 +3505,7 @@ static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 	}
 
 	/* Negative dentry, just create the file */
+	/* 创建文件 */
 	if (!dentry->d_inode && (open_flag & O_CREAT)) {
 		file->f_mode |= FMODE_CREATED;
 		audit_inode_child(dir_inode, dentry, AUDIT_TYPE_CHILD_CREATE);
@@ -3815,6 +3816,8 @@ static struct file *path_openat(struct nameidata *nd,
 		error = do_o_path(nd, flags, file);
 	} else {
 		const char *s = path_init(nd, flags);
+		/* link_path_walk: 找路径的最后一个分量 */
+		/* open_last_lookups: 对最后一个分量进行处理，会查找文件是否存在，不存在则根据条件创建 */
 		while (!(error = link_path_walk(s, nd)) &&
 		       (s = open_last_lookups(nd, file, op)) != NULL)
 			;
@@ -3829,6 +3832,8 @@ static struct file *path_openat(struct nameidata *nd,
 		WARN_ON(1);
 		error = -EINVAL;
 	}
+
+	/* 减少文件引用计数 */
 	fput(file);
 	if (error == -EOPENSTALE) {
 		if (flags & LOOKUP_RCU)
