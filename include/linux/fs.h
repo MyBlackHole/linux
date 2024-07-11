@@ -96,11 +96,16 @@ typedef int (get_block_t)(struct inode *inode, sector_t iblock,
 typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 			ssize_t bytes, void *private);
 
+/* inode是否可执行 */
 #define MAY_EXEC		0x00000001
+/* inode是否可写 */
 #define MAY_WRITE		0x00000002
+/* inode是否可读 */
 #define MAY_READ		0x00000004
+/* inode是否可追加 */
 #define MAY_APPEND		0x00000008
 #define MAY_ACCESS		0x00000010
+/* inode是否可打开 */
 #define MAY_OPEN		0x00000020
 #define MAY_CHDIR		0x00000040
 /* called from RCU mode, don't block */
@@ -814,6 +819,7 @@ struct inode {
 	struct fsverity_info	*i_verity_info;
 #endif
 
+	// 指向文件系统的私有数据
 	void			*i_private; /* fs or device private pointer */
 } __randomize_layout;
 
@@ -2218,6 +2224,7 @@ int wrap_directory_iterator(struct file *, struct dir_context *,
 struct inode_operations {
 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
 	const char * (*get_link) (struct dentry *, struct inode *, struct delayed_call *);
+	/* 确认是否允许对 inode 索引节点所指的文件进行指定模式的访问 */
 	int (*permission) (struct mnt_idmap *, struct inode *, int);
 	struct posix_acl * (*get_inode_acl)(struct inode *, int, bool);
 
@@ -2248,9 +2255,9 @@ struct inode_operations {
 	// rename系统调用使用，用于改名
 	int (*rename) (struct mnt_idmap *, struct inode *, struct dentry *,
 			struct inode *, struct dentry *, unsigned int);
-	// VFS调用，用于设置文件的attr属性。它将被chmod等相关系统调用使用
+	// VFS 调用，用于设置文件的 attr 属性。它将被 chmod 等相关系统调用使用
 	int (*setattr) (struct mnt_idmap *, struct dentry *, struct iattr *);
-	// VFS调用，用于获取文件的attr属性。它将被stat等相关系统调用使用
+	// VFS调用，用于获取文件的 attr 属性。它将被 stat 等相关系统调用使用
 	int (*getattr) (struct mnt_idmap *, const struct path *,
 			struct kstat *, u32, unsigned int);
 	// VFS调用，用于列出给定文件的所有扩展属性。它将被listxattr系统调用使用

@@ -46,22 +46,28 @@
  * cacheline bouncing problem.
  */
 struct rw_semaphore {
+	// 记录锁的状态
 	atomic_long_t count;
 	/*
 	 * Write owner or one of the read owners as well flags regarding
 	 * the current state of the rwsem. Can be used as a speculative
 	 * check to see if the write owner is running on the cpu.
 	 */
+	// 记录当前持有读锁的任务
 	atomic_long_t owner;
 #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+	// 用于自旋锁的优化
 	struct optimistic_spin_queue osq; /* spinner MCS lock */
 #endif
+	// 保护 wait_list 的自旋锁
 	raw_spinlock_t wait_lock;
 	struct list_head wait_list;
 #ifdef CONFIG_DEBUG_RWSEMS
+	// 魔法值
 	void *magic;
 #endif
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
+	// 死锁检测
 	struct lockdep_map	dep_map;
 #endif
 };

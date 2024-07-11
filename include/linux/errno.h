@@ -17,6 +17,7 @@
 #define ENOIOCTLCMD	515	/* No ioctl command */
 #define ERESTART_RESTARTBLOCK 516 /* restart by calling sys_restart_syscall */
 #define EPROBE_DEFER	517	/* Driver requests probe retry */
+/* open 发现一个过时的 dentry */
 #define EOPENSTALE	518	/* open found a stale dentry */
 #define ENOPARAM	519	/* Parameter not supported */
 

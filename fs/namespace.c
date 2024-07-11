@@ -3634,7 +3634,7 @@ int path_mount(const char *dev_name, struct path *path,
 	if (flags & MS_NOUSER)
 		return -EINVAL;
 
-    // 验证挂载
+	// 验证挂载
 	ret = security_sb_mount(dev_name, path, type_page, flags, data_page);
 	if (ret)
 		return ret;
@@ -3693,7 +3693,7 @@ int path_mount(const char *dev_name, struct path *path,
 	if (flags & MS_MOVE)
 		return do_move_mount_old(path, dev_name);
 
-    // 进入挂载流程
+	// 进入挂载流程
 	return do_new_mount(path, type_page, sb_flags, mnt_flags, dev_name,
 			    data_page);
 }
