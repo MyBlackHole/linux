@@ -724,8 +724,8 @@ static inline u32 bkey_generation(struct bkey_s_c k)
 
 /*
  * This just finds an empty slot:
+ * 找一个空位置
  */
-// 这只是找到一个空槽：
 int bch2_inode_create(struct btree_trans *trans,
 		      struct btree_iter *iter,
 		      struct bch_inode_unpacked *inode_u,
@@ -751,6 +751,7 @@ int bch2_inode_create(struct btree_trans *trans,
 		hint = c->unused_inode_hints;
 	}
 
+	/* 原子读取 */
 	start = READ_ONCE(*hint);
 
 	if (start >= max || start < min)

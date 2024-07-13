@@ -28,3 +28,4 @@ struct bch_devs_list {
 	u8			data[BCH_BKEY_PTRS_MAX];
 };
 
+#endif /* _BCACHEFS_SUPER_TYPES_H */

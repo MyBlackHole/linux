@@ -1724,6 +1724,7 @@ void bch2_btree_node_read(struct btree_trans *trans, struct btree *b,
 	INIT_WORK(&rb->work, btree_node_read_work);
 	bio->bi_iter.bi_sector	= pick.ptr.offset;
 	bio->bi_end_io		= btree_node_read_endio;
+	/* 映射 bio 到物理内存 */
 	bch2_bio_map(bio, b->data, btree_buf_bytes(b));
 
 	if (rb->have_ioref) {

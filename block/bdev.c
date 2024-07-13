@@ -1030,7 +1030,7 @@ struct file *bdev_file_open_by_path(const char *path, blk_mode_t mode,
 	dev_t dev;
 	int error;
 
-    // 通过 path 查找填充 dev
+	// 通过 path 查找填充 dev
 	error = lookup_bdev(path, &dev);
 	if (error)
 		return ERR_PTR(error);

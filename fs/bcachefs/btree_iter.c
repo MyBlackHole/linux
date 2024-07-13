@@ -734,6 +734,7 @@ void bch2_trans_node_reinit_iter(struct btree_trans *trans, struct btree *b)
 }
 
 /* Btree path: traverse, set_pos: */
+/* Btree 路径: 遍历，set_pos：*/
 
 static inline int btree_path_lock_root(struct btree_trans *trans,
 				       struct btree_path *path,
@@ -1159,6 +1160,7 @@ int bch2_btree_path_traverse_one(struct btree_trans *trans,
 {
 	// 取一个 path
 	struct btree_path *path = &trans->paths[path_idx];
+	// 期望的深度
 	unsigned depth_want = path->level;
 	int ret = -((int) trans->restarted);
 
@@ -3186,6 +3188,7 @@ struct btree_trans *__bch2_trans_get(struct bch_fs *c, unsigned fn_idx)
 		}
 	}
 
+	/* 分配清零事务 */
 	trans = mempool_alloc(&c->btree_trans_pool, GFP_NOFS);
 	memset(trans, 0, sizeof(*trans));
 
@@ -3196,7 +3199,7 @@ struct btree_trans *__bch2_trans_get(struct bch_fs *c, unsigned fn_idx)
 
 		trans->locking_wait.task = current;
 
-		// 遍历所有事务，找到最小的 pid，并插入到该位置
+		// 遍历所有事务，检查是否有相同 pid 的任务
 		list_for_each_entry(pos, &c->btree_trans_list, list) {
 			struct task_struct *pos_task = READ_ONCE(pos->locking_wait.task);
 			/*
@@ -3216,6 +3219,9 @@ struct btree_trans *__bch2_trans_get(struct bch_fs *c, unsigned fn_idx)
 		}
 	}
 
+	/*
+	 * 记录当前事务
+	 */
 	list_add(&trans->list, &c->btree_trans_list);
 	seqmutex_unlock(&c->btree_trans_lock);
 got_trans:

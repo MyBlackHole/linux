@@ -867,8 +867,9 @@ struct bch_fs {
 
 	/* btree_iter.c: */
 	struct seqmutex		btree_trans_lock;
-	// 全局事务列表
+	/* 全局事务列表 */
 	struct list_head	btree_trans_list;
+	/* 用于分配 btree_trans */
 	mempool_t		btree_trans_pool;
 	mempool_t		btree_trans_mem_pool;
 	struct btree_trans_buf  __percpu	*btree_trans_bufs;

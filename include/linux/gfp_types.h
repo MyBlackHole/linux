@@ -370,13 +370,18 @@ enum {
  * version does not attempt reclaim/compaction at all and is by default used
  * in page fault path, while the non-light is used by khugepaged.
  */
-/* 用来从中断处理和进程上下文之外的其他代码中分配内存. 从不睡眠. */
+/* 
+ * 用来从中断处理和进程上下文之外的其他代码中分配内存,
+ * 保证分配成功,
+ * 从不睡眠
+ */
 #define GFP_ATOMIC	(__GFP_HIGH|__GFP_KSWAPD_RECLAIM)
 /* 内核内存的正常分配. 可能睡眠. */
 #define GFP_KERNEL	(__GFP_RECLAIM | __GFP_IO | __GFP_FS)
 #define GFP_KERNEL_ACCOUNT (GFP_KERNEL | __GFP_ACCOUNT)
 #define GFP_NOWAIT	(__GFP_KSWAPD_RECLAIM | __GFP_NOWARN)
 #define GFP_NOIO	(__GFP_RECLAIM)
+/* 不会访问任何的文件系统的接口和操作 */
 #define GFP_NOFS	(__GFP_RECLAIM | __GFP_IO)
 /* 用来为用户空间页来分配内存; 它可能睡眠 */
 #define GFP_USER	(__GFP_RECLAIM | __GFP_IO | __GFP_FS | __GFP_HARDWALL)

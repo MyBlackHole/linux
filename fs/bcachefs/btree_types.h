@@ -577,6 +577,9 @@ struct btree_trans {
 	unsigned long		last_unlock_ip;
 	unsigned long		srcu_lock_time;
 
+	/*
+	 * 记录申请当前事务的函数名字
+	 */
 	const char		*fn;
 	struct btree_bkey_cached_common *locking;
 	struct six_lock_waiter	locking_wait;
@@ -602,6 +605,7 @@ struct btree_trans {
 
 	/* Entries before this are zeroed out on every bch2_trans_get() call */
 
+	/* 用于挂在 bch_fs.btree_trans_list */
 	struct list_head	list;
 	struct closure		ref;
 

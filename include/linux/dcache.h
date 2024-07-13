@@ -107,7 +107,6 @@ struct dentry {
 	void *d_fsdata;			/* fs-specific data */
 
 	union {
-		// 未使用
 		struct list_head d_lru;		/* LRU list */
 		wait_queue_head_t *d_wait;	/* in-lookup ones only */
 	};

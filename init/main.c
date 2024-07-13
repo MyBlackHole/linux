@@ -1503,7 +1503,7 @@ static int __ref kernel_init(void *unused)
 
 	rcu_end_inkernel_boot();
 
-    // 执行 proc 文件系统挂载等
+	// 执行 proc 文件系统挂载等
 	do_sysctl_args();
 
 	if (ramdisk_execute_command) {
@@ -1603,6 +1603,9 @@ static noinline void __init kernel_init_freeable(void)
 	/*
 	 * check if there is an early userspace init.  If yes, let it do all
 	 * the work
+	 *
+	 * 检查是否存在早期用户空间初始化。
+	 * 如果是，则让它完成所有工作
 	 */
 	if (init_eaccess(ramdisk_execute_command) != 0) {
 		ramdisk_execute_command = NULL;

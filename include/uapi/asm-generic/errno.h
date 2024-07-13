@@ -55,7 +55,7 @@
 #define	EMULTIHOP	72	/* Multihop attempted */
 #define	EDOTDOT		73	/* RFS specific error */
 #define	EBADMSG		74	/* Not a data message */
-// 值太大
+/* 值太大 */
 #define	EOVERFLOW	75	/* Value too large for defined data type */
 #define	ENOTUNIQ	76	/* Name not unique on network */
 #define	EBADFD		77	/* File descriptor in bad state */
@@ -104,7 +104,7 @@
 #define	ENAVAIL		119	/* No XENIX semaphores available */
 #define	EISNAM		120	/* Is a named type file */
 #define	EREMOTEIO	121	/* Remote I/O error */
-// 磁盘已满或超过配额
+/* 磁盘已满或超过配额 */
 #define	EDQUOT		122	/* Quota exceeded */
 
 #define	ENOMEDIUM	123	/* No medium found */

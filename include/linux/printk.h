@@ -190,6 +190,7 @@ __printf(1, 2) void dump_stack_set_arch_desc(const char *fmt, ...);
 void dump_stack_print_info(const char *log_lvl);
 void show_regs_print_info(const char *log_lvl);
 extern asmlinkage void dump_stack_lvl(const char *log_lvl) __cold;
+/* 输出栈信息 */
 extern asmlinkage void dump_stack(void) __cold;
 void printk_trigger_flush(void);
 void console_replay_all(void);
@@ -607,6 +608,7 @@ struct pi_entry {
 	no_printk(fmt, ##__VA_ARGS__)
 #endif
 
+/* 以下打印宏的once版本，只打印一次，不打印后面的信息 */
 #define pr_emerg_once(fmt, ...)					\
 	printk_once(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_alert_once(fmt, ...)					\
@@ -659,6 +661,12 @@ struct pi_entry {
 	no_printk(fmt, ##__VA_ARGS__)
 #endif
 
+/* 限制打印频率的宏 */
+/*
+ * 可动态修改打印频率的宏
+ * /proc/sys/kernel/printk_ratelimit
+ * /proc/sys/kernel/printk_ratelimit_burst
+ */
 #define pr_emerg_ratelimited(fmt, ...)					\
 	printk_ratelimited(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_alert_ratelimited(fmt, ...)					\
