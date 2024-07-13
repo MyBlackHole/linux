@@ -1891,8 +1891,10 @@ static int bch2_test_super(struct super_block *s, void *data)
 	return true;
 }
 
-// 来啦小老弟
-// 就等你了
+/*
+ * 来啦小老弟
+* 就等你了
+ */
 static struct dentry *bch2_mount(struct file_system_type *fs_type,
 				 int flags, const char *dev_name, void *data)
 {
