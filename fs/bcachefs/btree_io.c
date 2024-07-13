@@ -1394,7 +1394,7 @@ static void btree_node_read_endio(struct bio *bio)
 		bch2_latency_acct(ca, rb->start_time, READ);
 	}
 
-	queue_work(c->io_complete_wq, &rb->work);
+	queue_work(c->btree_read_complete_wq, &rb->work);
 }
 
 struct btree_node_read_all {
@@ -1661,7 +1661,7 @@ static int btree_node_read_all_replicas(struct bch_fs *c, struct btree *b, bool 
 		btree_node_read_all_replicas_done(&ra->cl.work);
 	} else {
 		continue_at(&ra->cl, btree_node_read_all_replicas_done,
-			    c->io_complete_wq);
+			    c->btree_read_complete_wq);
 	}
 
 	return 0;
@@ -1747,7 +1747,7 @@ void bch2_btree_node_read(struct btree_trans *trans, struct btree *b,
 			btree_node_read_work(&rb->work);
 		else
 			// 放入 IO 完成队列异步处理
-			queue_work(c->io_complete_wq, &rb->work);
+			queue_work(c->btree_read_complete_wq, &rb->work);
 	}
 }
 
@@ -2268,7 +2268,7 @@ do_write:
 	/* 初始化 wbio work */
 	INIT_WORK(&wbio->work, btree_write_submit);
 	/* 添加写到 work */
-	queue_work(c->io_complete_wq, &wbio->work);
+	queue_work(c->btree_write_submit_wq, &wbio->work);
 	return;
 err:
 	set_btree_node_noevict(b);

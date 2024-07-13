@@ -22,16 +22,18 @@ struct bucket_array {
 	struct rcu_head		rcu;
 	u16			first_bucket;
 	size_t			nbuckets;
+	size_t			nbuckets_minus_first;
 	struct bucket		b[];
 };
 
 struct bucket_gens {
 	struct rcu_head		rcu;
-    // 低一个桶
+	// 低一个桶
 	u16			first_bucket;
-    // 桶数量
+	// 桶数量
 	size_t			nbuckets;
-    // bit 标志位(标记桶)
+	// bit 标志位(标记桶)
+	size_t			nbuckets_minus_first;
 	u8			b[];
 };
 

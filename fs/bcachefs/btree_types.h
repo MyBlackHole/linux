@@ -559,6 +559,7 @@ struct btree_trans {
 	bool			lock_may_not_fail:1;
 	bool			srcu_held:1;
 	bool			locked:1;
+	bool			pf_memalloc_nofs:1;
 	bool			write_locked:1;
 	bool			used_mempool:1;
 	bool			in_traverse_all:1;
@@ -845,13 +846,13 @@ static inline bool btree_node_type_needs_gc(enum btree_node_type type)
 
 static inline bool btree_node_type_is_extents(enum btree_node_type type)
 {
-	const unsigned mask = 0
+	const u64 mask = 0
 #define x(name, nr, flags, ...)	|((!!((flags) & BTREE_ID_EXTENTS)) << (nr + 1))
 	BCH_BTREE_IDS()
 #undef x
 	;
 
-	return (1U << type) & mask;
+	return BIT_ULL(type) & mask;
 }
 
 static inline bool btree_id_is_extents(enum btree_id btree)
@@ -861,35 +862,35 @@ static inline bool btree_id_is_extents(enum btree_id btree)
 
 static inline bool btree_type_has_snapshots(enum btree_id id)
 {
-	const unsigned mask = 0
+	const u64 mask = 0
 #define x(name, nr, flags, ...)	|((!!((flags) & BTREE_ID_SNAPSHOTS)) << nr)
 	BCH_BTREE_IDS()
 #undef x
 	;
 
-	return (1U << id) & mask;
+	return BIT_ULL(id) & mask;
 }
 
 static inline bool btree_type_has_snapshot_field(enum btree_id id)
 {
-	const unsigned mask = 0
+	const u64 mask = 0
 #define x(name, nr, flags, ...)	|((!!((flags) & (BTREE_ID_SNAPSHOT_FIELD|BTREE_ID_SNAPSHOTS))) << nr)
 	BCH_BTREE_IDS()
 #undef x
 	;
 
-	return (1U << id) & mask;
+	return BIT_ULL(id) & mask;
 }
 
 static inline bool btree_type_has_ptrs(enum btree_id id)
 {
-	const unsigned mask = 0
+	const u64 mask = 0
 #define x(name, nr, flags, ...)	|((!!((flags) & BTREE_ID_DATA)) << nr)
 	BCH_BTREE_IDS()
 #undef x
 	;
 
-	return (1U << id) & mask;
+	return BIT_ULL(id) & mask;
 }
 
 /* 树的根结构 */
