@@ -127,12 +127,12 @@ SYSCALL_DEFINE2(fsopen, const char __user *, _fs_name, unsigned int, flags)
 	if (flags & ~FSOPEN_CLOEXEC)
 		return -EINVAL;
 
-    // 转移数据到内核空间
+	// 转移数据到内核空间
 	fs_name = strndup_user(_fs_name, PAGE_SIZE);
 	if (IS_ERR(fs_name))
 		return PTR_ERR(fs_name);
 
-    // 获取对应文件系统类型 file_system_type
+	// 获取对应文件系统类型 file_system_type
 	fs_type = get_fs_type(fs_name);
 	kfree(fs_name);
 	if (!fs_type)

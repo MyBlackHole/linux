@@ -1501,7 +1501,7 @@ xfs_fs_fill_super(
 	struct super_block	*sb,
 	struct fs_context	*fc)
 {
-    // 去除 xfs 私有数据
+	// 取出 xfs 私有数据
 	struct xfs_mount	*mp = sb->s_fs_info;
 	struct inode		*root;
 	int			flags = 0, error;
@@ -2426,7 +2426,7 @@ init_xfs_fs(void)
 	if (error)
 		goto out_remove_dbg_kobj;
 
-    // 注册 xfs 文件系统
+	// 注册 xfs 文件系统
 	error = register_filesystem(&xfs_fs_type);
 	if (error)
 		goto out_qm_exit;
