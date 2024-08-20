@@ -69,11 +69,10 @@ void bch2_latency_acct(struct bch_dev *ca, u64 submit_time, int rw)
 	u64 io_latency = time_after64(now, submit_time)
 		? now - submit_time
 		: 0;
-	u64 old, new, v = atomic64_read(latency);
+	u64 old, new;
 
+	old = atomic64_read(latency);
 	do {
-		old = v;
-
 		/*
 		 * If the io latency was reasonably close to the current
 		 * latency, skip doing the update and atomic operation - most of
@@ -84,7 +83,7 @@ void bch2_latency_acct(struct bch_dev *ca, u64 submit_time, int rw)
 			break;
 
 		new = ewma_add(old, io_latency, 5);
-	} while ((v = atomic64_cmpxchg(latency, old, new)) != old);
+	} while (!atomic64_try_cmpxchg(latency, &old, new));
 
 	bch2_congested_acct(ca, io_latency, now, rw);
 
@@ -559,7 +558,7 @@ out:
 err:
 	keys->top = keys->keys;
 	op->error = ret;
-	op->flags |= BCH_WRITE_DONE;
+	op->flags |= BCH_WRITE_SUBMITTED;
 	goto out;
 }
 
@@ -594,7 +593,7 @@ static CLOSURE_CALLBACK(bch2_write_index)
 	struct workqueue_struct *wq = index_update_wq(op);
 	unsigned long flags;
 
-	if ((op->flags & BCH_WRITE_DONE) &&
+	if ((op->flags & BCH_WRITE_SUBMITTED) &&
 	    (op->flags & BCH_WRITE_MOVE))
 		bch2_bio_free_pages_pool(op->c, &op->wbio.bio);
 
@@ -639,7 +638,7 @@ void bch2_write_point_do_index_updates(struct work_struct *work)
 
 		__bch2_write_index(op);
 
-		if (!(op->flags & BCH_WRITE_DONE))
+		if (!(op->flags & BCH_WRITE_SUBMITTED))
 			__bch2_write(op);
 		else
 			bch2_write_done(&op->cl);
@@ -1086,7 +1085,10 @@ do_write:
 	*_dst = dst;
 	return more;
 csum_err:
-	bch_err(c, "%s writ error: error verifying existing checksum while rewriting existing data (memory corruption?)",
+	bch_err_inum_offset_ratelimited(c,
+		op->pos.inode,
+		op->pos.offset << 9,
+		"%s write error: error verifying existing checksum while rewriting existing data (memory corruption?)",
 		op->flags & BCH_WRITE_MOVE ? "move" : "user");
 	ret = -EIO;
 err:
@@ -1321,7 +1323,7 @@ retry:
 			wbio_init(bio)->put_bio = true;
 			bio->bi_opf = op->wbio.bio.bi_opf;
 		} else {
-			op->flags |= BCH_WRITE_DONE;
+			op->flags |= BCH_WRITE_SUBMITTED;
 		}
 
 		op->pos.offset += bio_sectors(bio);
@@ -1335,7 +1337,7 @@ retry:
 					  op->insert_keys.top, true);
 
 		bch2_keylist_push(&op->insert_keys);
-		if (op->flags & BCH_WRITE_DONE)
+		if (op->flags & BCH_WRITE_SUBMITTED)
 			break;
 		bch2_btree_iter_advance(&iter);
 	}
@@ -1350,14 +1352,14 @@ err:
 			op->pos.inode, op->pos.offset << 9,
 			"%s: btree lookup error %s", __func__, bch2_err_str(ret));
 		op->error = ret;
-		op->flags |= BCH_WRITE_DONE;
+		op->flags |= BCH_WRITE_SUBMITTED;
 	}
 
 	bch2_trans_put(trans);
 	darray_exit(&buckets);
 
 	/* fallback to cow write path? */
-	if (!(op->flags & BCH_WRITE_DONE)) {
+	if (!(op->flags & BCH_WRITE_SUBMITTED)) {
 		closure_sync(&op->cl);
 		__bch2_nocow_write_done(op);
 		op->insert_keys.top = op->insert_keys.keys;
@@ -1413,7 +1415,7 @@ static void __bch2_write(struct bch_write_op *op)
 
 	if (unlikely(op->opts.nocow && c->opts.nocow_enabled)) {
 		bch2_nocow_write(op);
-		if (op->flags & BCH_WRITE_DONE)
+		if (op->flags & BCH_WRITE_SUBMITTED)
 			goto out_nofs_restore;
 	}
 again:
@@ -1468,7 +1470,7 @@ again:
 		bch2_alloc_sectors_done_inlined(c, wp);
 err:
 		if (ret <= 0) {
-			op->flags |= BCH_WRITE_DONE;
+			op->flags |= BCH_WRITE_SUBMITTED;
 
 			if (ret < 0) {
 				if (!(op->flags & BCH_WRITE_ALLOC_NOWAIT))
@@ -1505,16 +1507,13 @@ err:
 	 * once, as that signals backpressure to the caller.
 	 */
 	if ((op->flags & BCH_WRITE_SYNC) ||
-	    (!(op->flags & BCH_WRITE_DONE) &&
+	    (!(op->flags & BCH_WRITE_SUBMITTED) &&
 	     !(op->flags & BCH_WRITE_IN_WORKER))) {
-		if (closure_sync_timeout(&op->cl, HZ * 10)) {
-			bch2_print_allocator_stuck(c);
-			closure_sync(&op->cl);
-		}
+		bch2_wait_on_allocator(c, &op->cl);
 
 		__bch2_write_index(op);
 
-		if (!(op->flags & BCH_WRITE_DONE))
+		if (!(op->flags & BCH_WRITE_SUBMITTED))
 			goto again;
 		bch2_write_done(&op->cl);
 	} else {
@@ -1537,7 +1536,7 @@ static void bch2_write_data_inline(struct bch_write_op *op, unsigned data_len)
 	memset(&op->failed, 0, sizeof(op->failed));
 
 	op->flags |= BCH_WRITE_WROTE_DATA_INLINE;
-	op->flags |= BCH_WRITE_DONE;
+	op->flags |= BCH_WRITE_SUBMITTED;
 
 	// 设置特征为内联数据
 	bch2_check_set_feature(op->c, BCH_FEATURE_inline_data);

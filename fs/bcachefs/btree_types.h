@@ -454,7 +454,6 @@ struct bkey_cached {
 	unsigned long		flags;
 	unsigned long		btree_trans_barrier_seq;
 	u16			u64s;
-	bool			valid;
 	struct bkey_cached_key	key;
 
 	struct rhash_head	hash;
@@ -552,9 +551,9 @@ struct btree_trans {
 	btree_path_idx_t	nr_sorted;
 	btree_path_idx_t	nr_paths;
 	btree_path_idx_t	nr_paths_max;
-	u8			fn_idx;
 	// 待更新的元数据数目跟踪
-	u8			nr_updates;
+	btree_path_idx_t	nr_updates;
+	u8			fn_idx;
 	u8			lock_must_abort;
 	bool			lock_may_not_fail:1;
 	bool			srcu_held:1;
@@ -601,8 +600,10 @@ struct btree_trans {
 
 	unsigned		journal_u64s;
 	unsigned		extra_disk_res; /* XXX kill */
-	struct replicas_delta_list *fs_usage_deltas;
 
+#ifdef CONFIG_DEBUG_LOCK_ALLOC
+	struct lockdep_map	dep_map;
+#endif
 	/* Entries before this are zeroed out on every bch2_trans_get() call */
 
 	/* 用于挂在 bch_fs.btree_trans_list */
@@ -843,9 +844,19 @@ const char *bch2_btree_node_type_str(enum btree_node_type);
 	(BTREE_NODE_TYPE_HAS_TRANS_TRIGGERS|		\
 	 BTREE_NODE_TYPE_HAS_ATOMIC_TRIGGERS)
 
-static inline bool btree_node_type_needs_gc(enum btree_node_type type)
+static inline bool btree_node_type_has_trans_triggers(enum btree_node_type type)
 {
-	return BTREE_NODE_TYPE_HAS_TRIGGERS & BIT_ULL(type);
+	return BIT_ULL(type) & BTREE_NODE_TYPE_HAS_TRANS_TRIGGERS;
+}
+
+static inline bool btree_node_type_has_atomic_triggers(enum btree_node_type type)
+{
+	return BIT_ULL(type) & BTREE_NODE_TYPE_HAS_ATOMIC_TRIGGERS;
+}
+
+static inline bool btree_node_type_has_triggers(enum btree_node_type type)
+{
+	return BIT_ULL(type) & BTREE_NODE_TYPE_HAS_TRIGGERS;
 }
 
 static inline bool btree_node_type_is_extents(enum btree_node_type type)

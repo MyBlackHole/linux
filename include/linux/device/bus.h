@@ -88,7 +88,7 @@ struct bus_type {
 	const struct attribute_group **drv_groups;
 
 	// 匹配设备的驱动，匹配成功后调用驱动(driver).probe
-	int (*match)(struct device *dev, struct device_driver *drv);
+	int (*match)(struct device *dev, const struct device_driver *drv);
 	// 消息传递 （热插拔操作, 添加、删除等）
 	int (*uevent)(const struct device *dev, struct kobj_uevent_env *env);
 	// 有新设备或驱动添加到这个总线时调用, 匹配成功后调用驱动(driver).probe

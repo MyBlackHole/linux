@@ -336,6 +336,7 @@ static void __exit exit_nfs_v4(void)
 	nfs_dns_resolver_destroy();
 }
 
+MODULE_DESCRIPTION("NFSv4 client support");
 MODULE_LICENSE("GPL");
 
 // nfs v4 版本文件系统版本描述结构注册

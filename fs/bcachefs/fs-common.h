@@ -2,6 +2,8 @@
 #ifndef _BCACHEFS_FS_COMMON_H
 #define _BCACHEFS_FS_COMMON_H
 
+#include "dirent.h"
+
 struct posix_acl;
 
 // 创建临时文件
