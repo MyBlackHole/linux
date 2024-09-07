@@ -1030,7 +1030,8 @@ struct task_struct {
 	进程地址空间
 	1) mm: 指向进程所拥有的内存描述符
 	2) active_mm: active_mm指向进程运行时所使用的内存描述符
-	对于普通进程而言，这两个指针变量的值相同。但是，内核线程不拥有任何内存描述符，所以它们的mm成员总是为NULL。当内核线程得以运行时，它的active_mm成员被初始化为前一个运行进程的active_mm值
+	对于普通进程而言，这两个指针变量的值相同。但是，内核线程不拥有任何内存描述符，所以它们的mm成员总是为NULL。
+	当内核线程得以运行时，它的active_mm成员被初始化为前一个运行进程的active_mm值
 	*/
 	struct mm_struct		*mm;
 	struct mm_struct		*active_mm;

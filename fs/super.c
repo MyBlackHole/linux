@@ -756,9 +756,9 @@ retry:
 		}
 	}
 	if (!s) {
-        // 为空
+		// 为空
 		spin_unlock(&sb_lock);
-        // 分配一个超级块
+		// 分配一个超级块
 		s = alloc_super(fc->fs_type, fc->sb_flags, user_ns);
 		if (!s)
 			return ERR_PTR(-ENOMEM);
@@ -766,7 +766,7 @@ retry:
 	}
 
 	s->s_fs_info = fc->s_fs_info;
-    // set_anon_super_fc
+	// set_anon_super_fc
 	err = set(s, fc);
 	if (err) {
 		s->s_fs_info = NULL;
@@ -1280,7 +1280,7 @@ static int vfs_get_super(struct fs_context *fc,
 		return PTR_ERR(sb);
 
 	if (!sb->s_root) {
-        // pseudo_fs_fill_super
+		// pseudo_fs_fill_super
 		err = fill_super(sb, fc);
 		if (err)
 			goto error;
