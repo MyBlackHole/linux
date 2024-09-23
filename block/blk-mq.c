@@ -1131,7 +1131,7 @@ static void blk_complete_reqs(struct llist_head *list)
 		rq->q->mq_ops->complete(rq);
 }
 
-static __latent_entropy void blk_done_softirq(struct softirq_action *h)
+static __latent_entropy void blk_done_softirq(void)
 {
 	blk_complete_reqs(this_cpu_ptr(&blk_cpu_done));
 }
@@ -2763,6 +2763,7 @@ static void blk_mq_dispatch_plug_list(struct blk_plug *plug, bool from_sched)
 void blk_mq_flush_plug_list(struct blk_plug *plug, bool from_schedule)
 {
 	struct request *rq;
+	unsigned int depth;
 
 	/*
 	 * We may have been called recursively midway through handling
@@ -2773,6 +2774,7 @@ void blk_mq_flush_plug_list(struct blk_plug *plug, bool from_schedule)
 	 */
 	if (plug->rq_count == 0)
 		return;
+	depth = plug->rq_count;
 	plug->rq_count = 0;
 
 	if (!plug->multiple_queues && !plug->has_elevator && !from_schedule) {
@@ -2780,6 +2782,7 @@ void blk_mq_flush_plug_list(struct blk_plug *plug, bool from_schedule)
 
 		rq = rq_list_peek(&plug->mq_list);
 		q = rq->q;
+		trace_block_unplug(q, depth, true);
 
 		/*
 		 * Peek first request and see if we have a ->queue_rqs() hook.
@@ -2955,7 +2958,7 @@ void blk_mq_submit_bio(struct bio *bio)
 	const int is_sync = op_is_sync(bio->bi_opf);
 	// 硬件队列
 	struct blk_mq_hw_ctx *hctx;
-	unsigned int nr_segs = 1;
+	unsigned int nr_segs;
 	struct request *rq;
 	blk_status_t ret;
 
@@ -2999,11 +3002,10 @@ void blk_mq_submit_bio(struct bio *bio)
 		goto queue_exit;
 	}
 
-	if (unlikely(bio_may_exceed_limits(bio, &q->limits))) {
-		bio = __bio_split_to_limits(bio, &q->limits, &nr_segs);
-		if (!bio)
-			goto queue_exit;
-	}
+	bio = __bio_split_to_limits(bio, &q->limits, &nr_segs);
+	if (!bio)
+		goto queue_exit;
+
 	if (!bio_integrity_prep(bio))
 		goto queue_exit;
 

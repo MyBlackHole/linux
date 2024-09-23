@@ -109,7 +109,7 @@ struct page {
 			/**
 			 * @private: Mapping-private opaque data.
 			 * Usually used for buffer_heads if PagePrivate.
-			 * Used for swp_entry_t if PageSwapCache.
+			 * Used for swp_entry_t if swapcache flag set.
 			 * Indicates order in the buddy system if PageBuddy.
 			 */
 			unsigned long private;
@@ -693,17 +693,20 @@ struct vma_numab_state {
  * per VM-area/task. A VM area is any part of the process virtual memory
  * space that has a special rule for the page-fault handlers (ie a shared
  * library, the executable area etc).
+ *
+ * Only explicitly marked struct members may be accessed by RCU readers before
+ * getting a stable reference.
  */
 struct vm_area_struct {
 	/* The first cache line has the info for VMA tree walking. */
-/*     第一个缓存行具有VMA树移动的信息 */
+	/* 第一个缓存行具有VMA树移动的信息 */
 
 	union {
 		struct {
 			/* VMA covers [vm_start; vm_end) addresses within mm */
-            /* 起始地址 */
+			/* 起始地址 */
 			unsigned long vm_start;
-            /* 结束地址(最后一个字节的下一个) */
+			/* 结束地址(最后一个字节的下一个) */
 			unsigned long vm_end;
 		};
 #ifdef CONFIG_PER_VMA_LOCK
@@ -711,9 +714,13 @@ struct vm_area_struct {
 #endif
 	};
 
-    /* 我们所属的address space */
-	struct mm_struct *vm_mm;	/* The address space we belong to. */
-    // VMA的访问权限
+	/*
+	 * The address space we belong to.
+	 * Unstable RCU readers are allowed to read this.
+	 */
+	/* 我们所属的address space */
+	struct mm_struct *vm_mm;
+	// VMA的访问权限
 	pgprot_t vm_page_prot;          /* Access permissions of this VMA. */
 
 	/*
@@ -726,7 +733,10 @@ struct vm_area_struct {
 	};
 
 #ifdef CONFIG_PER_VMA_LOCK
-	/* Flag to indicate areas detached from the mm->mm_mt tree */
+	/*
+	 * Flag to indicate areas detached from the mm->mm_mt tree.
+	 * Unstable RCU readers are allowed to read this.
+	 */
 	bool detached;
 
 	/*
@@ -744,6 +754,7 @@ struct vm_area_struct {
 	 * slowpath.
 	 */
 	int vm_lock_seq;
+	/* Unstable RCU readers are allowed to read this. */
 	struct vma_lock *vm_lock;
 #endif
 
@@ -985,7 +996,7 @@ struct mm_struct {
 #ifdef CONFIG_MMU_NOTIFIER
 		struct mmu_notifier_subscriptions *notifier_subscriptions;
 #endif
-#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !defined(CONFIG_SPLIT_PMD_PTLOCKS)
 		pgtable_t pmd_huge_pte; /* protected by page_table_lock */
 #endif
 #ifdef CONFIG_NUMA_BALANCING
@@ -1351,6 +1362,9 @@ struct vm_special_mapping {
 
 	int (*mremap)(const struct vm_special_mapping *sm,
 		     struct vm_area_struct *new_vma);
+
+	void (*close)(const struct vm_special_mapping *sm,
+		      struct vm_area_struct *vma);
 };
 
 enum tlb_flush_reason {
