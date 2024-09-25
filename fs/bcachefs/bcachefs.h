@@ -551,7 +551,7 @@ struct bch_dev {
 	// 每个存储桶数组均受 c->mark_lock、bucket_lock 和 gc_lock 保护，
 	// 用于设备调整大小 - 持有任何内容就足以进行访问：
 	// 或 rcu_read_lock()，但仅适用于 ptr_stale()：
-	struct bucket_array __rcu *buckets_gc;
+	GENRADIX(struct bucket)	buckets_gc;
 	struct bucket_gens __rcu *bucket_gens;
 	u8			*oldest_gen;
 	unsigned long		*buckets_nouse;
@@ -896,6 +896,7 @@ struct bch_fs {
 
 	/* ALLOCATION */
 	struct bch_devs_mask	rw_devs[BCH_DATA_NR];
+	unsigned long		rw_devs_change_count;
 
 	u64			capacity; /* sectors */
 	u64			reserved; /* sectors */
@@ -1051,6 +1052,7 @@ struct bch_fs {
         // 挂载 inode 的列表
 	struct list_head	vfs_inodes_list;
 	struct mutex		vfs_inodes_lock;
+	struct rhashtable	vfs_inodes_table;
 
 	/* VFS IO PATH - fs-io.c */
 	struct bio_set		writepage_bioset;
@@ -1073,9 +1075,6 @@ struct bch_fs {
 	 */
 	/* 记录当前的恢复进度 */
 	enum bch_recovery_pass	curr_recovery_pass;
-	/* bitmap of explicitly enabled recovery passes: */
-	/* 显式启用恢复通道的位图: */
-	u64			recovery_passes_explicit;
 	/* bitmask of recovery passes that we actually ran */
 	/* 我们实际运行的恢复过程的位掩码 */
 	u64			recovery_passes_complete;
@@ -1118,7 +1117,6 @@ struct bch_fs {
 	u64 __percpu		*counters;
 
 	unsigned		copy_gc_enabled:1;
-	bool			promote_whole_extents;
 
 	struct bch2_time_stats	times[BCH_TIME_STAT_NR];
 
@@ -1229,12 +1227,15 @@ static inline bool btree_id_cached(const struct bch_fs *c, enum btree_id btree)
 static inline struct timespec64 bch2_time_to_timespec(const struct bch_fs *c, s64 time)
 {
 	struct timespec64 t;
+	s64 sec;
 	s32 rem;
 
 	time += c->sb.time_base_lo;
 
-	t.tv_sec = div_s64_rem(time, c->sb.time_units_per_sec, &rem);
-	t.tv_nsec = rem * c->sb.nsec_per_time_unit;
+	sec = div_s64_rem(time, c->sb.time_units_per_sec, &rem);
+
+	set_normalized_timespec64(&t, sec, rem * (s64)c->sb.nsec_per_time_unit);
+
 	return t;
 }
 

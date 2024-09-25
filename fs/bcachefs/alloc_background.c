@@ -30,6 +30,7 @@
 #include <linux/rcupdate.h>
 #include <linux/sched/task.h>
 #include <linux/sort.h>
+#include <linux/jiffies.h>
 
 static void bch2_discard_one_bucket_fast(struct bch_dev *, u64);
 
@@ -2178,7 +2179,7 @@ int bch2_dev_freespace_init(struct bch_fs *c, struct bch_dev *ca,
 	BUG_ON(bucket_start > bucket_end);
 	BUG_ON(bucket_end > ca->mi.nbuckets);
 
-    // 初始化迭代器
+	// 初始化迭代器
 	bch2_trans_iter_init(trans, &iter, BTREE_ID_alloc,
 		POS(ca->dev_idx, max_t(u64, ca->mi.first_bucket, bucket_start)),
 		BTREE_ITER_prefetch);
@@ -2186,17 +2187,17 @@ int bch2_dev_freespace_init(struct bch_fs *c, struct bch_dev *ca,
 	 * Scan the alloc btree for every bucket on @ca, and add buckets to the
 	 * freespace/need_discard/need_gc_gens btrees as needed:
 	 */
-    // 扫描 ca 上每个桶的分配树
-    // 并根据需要将存储桶添加到
-    // freespace/need_discard/need_gc_gens btree
+	// 扫描 ca 上每个桶的分配树
+	// 并根据需要将存储桶添加到
+	// freespace/need_discard/need_gc_gens btree
 	while (1) {
-		if (last_updated + HZ * 10 < jiffies) {
+		if (time_after(jiffies, last_updated + HZ * 10)) {
 			bch_info(ca, "%s: currently at %llu/%llu",
 				 __func__, iter.pos.offset, ca->mi.nbuckets);
 			last_updated = jiffies;
 		}
 
-        // 开启事务
+		// 开启事务
 		bch2_trans_begin(trans);
 
 		if (bkey_ge(iter.pos, end)) {
@@ -2278,8 +2279,8 @@ int bch2_fs_freespace_init(struct bch_fs *c)
 	 * We can crash during the device add path, so we need to check this on
 	 * every mount:
 	 */
-    // 我们可能会在设备添加路径期间崩溃，
-    // 因此我们需要在每次安装时检查这一点：
+	// 我们可能会在设备添加路径期间崩溃，
+	// 因此我们需要在每次安装时检查这一点：
 
 	for_each_member_device(c, ca) {
 		if (ca->mi.freespace_initialized)
@@ -2290,7 +2291,7 @@ int bch2_fs_freespace_init(struct bch_fs *c)
 			doing_init = true;
 		}
 
-        // 设备空间初始化
+		// 设备空间初始化
 		ret = bch2_dev_freespace_init(c, ca, 0, ca->mi.nbuckets);
 		if (ret) {
 			bch2_dev_put(ca);
@@ -2307,6 +2308,37 @@ int bch2_fs_freespace_init(struct bch_fs *c)
 	}
 
 	return 0;
+}
+
+/* device removal */
+// 设备删除
+
+int bch2_dev_remove_alloc(struct bch_fs *c, struct bch_dev *ca)
+{
+	struct bpos start	= POS(ca->dev_idx, 0);
+	struct bpos end		= POS(ca->dev_idx, U64_MAX);
+	int ret;
+
+	/*
+	 * We clear the LRU and need_discard btrees first so that we don't race
+	 * with bch2_do_invalidates() and bch2_do_discards()
+	 */
+	ret =   bch2_dev_remove_stripes(c, ca->dev_idx) ?:
+		bch2_btree_delete_range(c, BTREE_ID_lru, start, end,
+					BTREE_TRIGGER_norun, NULL) ?:
+		bch2_btree_delete_range(c, BTREE_ID_need_discard, start, end,
+					BTREE_TRIGGER_norun, NULL) ?:
+		bch2_btree_delete_range(c, BTREE_ID_freespace, start, end,
+					BTREE_TRIGGER_norun, NULL) ?:
+		bch2_btree_delete_range(c, BTREE_ID_backpointers, start, end,
+					BTREE_TRIGGER_norun, NULL) ?:
+		bch2_btree_delete_range(c, BTREE_ID_bucket_gens, start, end,
+					BTREE_TRIGGER_norun, NULL) ?:
+		bch2_btree_delete_range(c, BTREE_ID_alloc, start, end,
+					BTREE_TRIGGER_norun, NULL) ?:
+		bch2_dev_usage_remove(c, ca->dev_idx);
+	bch_err_msg(ca, ret, "removing dev alloc info");
+	return ret;
 }
 
 /* Bucket IO clocks: */
@@ -2444,12 +2476,14 @@ static bool bch2_dev_has_open_write_point(struct bch_fs *c, struct bch_dev *ca)
 /* device goes ro: */
 void bch2_dev_allocator_remove(struct bch_fs *c, struct bch_dev *ca)
 {
-	unsigned i;
+	lockdep_assert_held(&c->state_lock);
 
 	/* First, remove device from allocation groups: */
 
-	for (i = 0; i < ARRAY_SIZE(c->rw_devs); i++)
+	for (unsigned i = 0; i < ARRAY_SIZE(c->rw_devs); i++)
 		clear_bit(ca->dev_idx, c->rw_devs[i].d);
+
+	c->rw_devs_change_count++;
 
 	/*
 	 * Capacity is calculated based off of devices in allocation groups:
@@ -2479,11 +2513,13 @@ void bch2_dev_allocator_remove(struct bch_fs *c, struct bch_dev *ca)
 /* device goes rw: */
 void bch2_dev_allocator_add(struct bch_fs *c, struct bch_dev *ca)
 {
-	unsigned i;
+	lockdep_assert_held(&c->state_lock);
 
-	for (i = 0; i < ARRAY_SIZE(c->rw_devs); i++)
+	for (unsigned i = 0; i < ARRAY_SIZE(c->rw_devs); i++)
 		if (ca->mi.data_allowed & (1 << i))
 			set_bit(ca->dev_idx, c->rw_devs[i].d);
+
+	c->rw_devs_change_count++;
 }
 
 void bch2_dev_allocator_background_exit(struct bch_dev *ca)

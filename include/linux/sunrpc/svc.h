@@ -21,6 +21,7 @@
 #include <linux/wait.h>
 #include <linux/mm.h>
 #include <linux/pagevec.h>
+#include <linux/kthread.h>
 
 /*
  *
@@ -33,9 +34,9 @@
  * node traffic on multi-node NUMA NFS servers.
  */
 struct svc_pool {
-	unsigned int		sp_id;	    	/* pool id; also node id on NUMA */
+	unsigned int		sp_id;		/* pool id; also node id on NUMA */
 	struct lwq		sp_xprts;	/* pending transports */
-	atomic_t		sp_nrthreads;	/* # of threads in pool */
+	unsigned int		sp_nrthreads;	/* # of threads in pool */
 	struct list_head	sp_all_threads;	/* all server threads */
 	struct llist_head	sp_idle_threads; /* idle server threads */
 
@@ -66,9 +67,10 @@ enum {
  * We currently do not support more than one RPC program per daemon.
  */
 struct svc_serv {
-	struct svc_program *	sv_program;	/* RPC program */
+	struct svc_program *	sv_programs;	/* RPC programs */
 	struct svc_stat *	sv_stats;	/* RPC statistics */
 	spinlock_t		sv_lock;
+	unsigned int		sv_nprogs;	/* Number of sv_programs */
 	unsigned int		sv_nrthreads;	/* # of server threads */
 	unsigned int		sv_maxconn;	/* max connections allowed or
 						 * '0' causing max to be based
@@ -234,6 +236,11 @@ struct svc_rqst {
 	struct net		*rq_bc_net;	/* pointer to backchannel's
 						 * net namespace
 						 */
+
+	int			rq_err;		/* Thread sets this to inidicate
+						 * initialisation success.
+						 */
+
 	unsigned long	bc_to_initval;
 	unsigned int	bc_to_retries;
 	void **			rq_lease_breaker; /* The v4 client breaking a lease */
@@ -307,6 +314,31 @@ static inline bool svc_thread_should_stop(struct svc_rqst *rqstp)
 	return test_bit(RQ_VICTIM, &rqstp->rq_flags);
 }
 
+/**
+ * svc_thread_init_status - report whether thread has initialised successfully
+ * @rqstp: the thread in question
+ * @err: errno code
+ *
+ * After performing any initialisation that could fail, and before starting
+ * normal work, each sunrpc svc_thread must call svc_thread_init_status()
+ * with an appropriate error, or zero.
+ *
+ * If zero is passed, the thread is ready and must continue until
+ * svc_thread_should_stop() returns true.  If a non-zero error is passed
+ * the call will not return - the thread will exit.
+ */
+static inline void svc_thread_init_status(struct svc_rqst *rqstp, int err)
+{
+	rqstp->rq_err = err;
+	/* memory barrier ensures assignment to error above is visible before
+	 * waitqueue_active() test below completes.
+	 */
+	smp_mb();
+	wake_up_var(&rqstp->rq_err);
+	if (err)
+		kthread_exit(1);
+}
+
 struct svc_deferred_req {
 	u32			prot;	/* protocol (UDP or TCP) */
 	struct svc_xprt		*xprt;
@@ -331,26 +363,24 @@ struct svc_process_info {
 };
 
 /*
- * List of RPC programs on the same transport endpoint
+ * RPC program - an array of these can use the same transport endpoint
  */
 struct svc_program {
-    // 指向了下一套处理程序，可以将多套处理程序注册在同一个端口上
-	struct svc_program *	pg_next;	/* other programs (same xprt) */
-    // RPC程序编号
+	// RPC程序编号
 	u32			pg_prog;	/* program number */
-    // 这是最低版本
+	// 这是最低版本
 	unsigned int		pg_lovers;	/* lowest version */
-    // 这是最高版本
+	// 这是最高版本
 	unsigned int		pg_hivers;	/* highest version */
-    // 服务程序中版本的数量
+	// 服务程序中版本的数量
 	unsigned int		pg_nvers;	/* number of versions */
-    // 这是各个版本处理程序的指针
+	// 这是各个版本处理程序的指针
 	const struct svc_version **pg_vers;	/* version array */
-    // RPC服务名称
+	// RPC服务名称
 	char *			pg_name;	/* service name */
-    // 属于某个类别，同类别的RPC服务共享相同的认证方式
+	// 属于某个类别，同类别的RPC服务共享相同的认证方式
 	char *			pg_class;	/* class name: services sharing authentication */
-	// 这是RPC处理程序中验证用户信息的函数
+	// 这是RPC处理程序中验证用户信息的函数
 	enum svc_auth_status	(*pg_authenticate)(struct svc_rqst *rqstp);
 	__be32			(*pg_init_request)(struct svc_rqst *,
 						   const struct svc_program *,
@@ -402,30 +432,30 @@ struct svc_version {
  */
 struct svc_procedure {
 	/* process the request: */
-    // 这是RPC请求的处理函数
+	// 这是RPC请求的处理函数
 	__be32			(*pc_func)(struct svc_rqst *);
 	/* XDR decode args: */
-    // 这是RPC请求的解码函数，RPC报文的内容是pc_func的参数，
-    // 这个函数负责解析这些内容
+	// 这是RPC请求的解码函数，RPC报文的内容是pc_func的参数，
+	// 这个函数负责解析这些内容
 	bool			(*pc_decode)(struct svc_rqst *rqstp,
 					     struct xdr_stream *xdr);
 	/* XDR encode result: */
-    // 这是RPC请求的编码函数，服务器端需要将pc_func的处理结果封装到
-    // RPC应答报文中，这就是封装函数
+	// 这是RPC请求的编码函数，服务器端需要将pc_func的处理结果封装到
+	// RPC应答报文中，这就是封装函数
 	bool			(*pc_encode)(struct svc_rqst *rqstp,
 					     struct xdr_stream *xdr);
 	/* XDR free result: */
-    // 这是释放内存的一个函数，因为pc_func可能需要分配额外的内存
+	// 这是释放内存的一个函数，因为pc_func可能需要分配额外的内存
 	void			(*pc_release)(struct svc_rqst *);
-    // 这是RPC请求报文中数据的长度
+	// 这是RPC请求报文中数据的长度
 	unsigned int		pc_argsize;	/* argument struct size */
 	unsigned int		pc_argzero;	/* how much of argument to clear */
-    // 这是RPC应答报文中数据的长度
+	// 这是RPC应答报文中数据的长度
 	unsigned int		pc_ressize;	/* result struct size */
-    // 这是缓存类型，NFS中某些请求可以缓存处理结果。当再次接收到相同的请求后，
-    // 就不处理了，直接将缓存中的数据返回给客户端就可以了。
+	// 这是缓存类型，NFS中某些请求可以缓存处理结果。当再次接收到相同的请求后，
+	// 就不处理了，直接将缓存中的数据返回给客户端就可以了。
 	unsigned int		pc_cachetype;	/* cache info (NFS) */
-    // 这是调整RPC应答消息缓存的一个数据量
+	// 这是调整RPC应答消息缓存的一个数据量
 	unsigned int		pc_xdrressize;	/* maximum size of XDR reply */
 	const char *		pc_name;	/* for display */
 };
@@ -435,19 +465,16 @@ struct svc_procedure {
  */
 int sunrpc_set_pool_mode(const char *val);
 int sunrpc_get_pool_mode(char *val, size_t size);
-int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
 void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
 int svc_bind(struct svc_serv *serv, struct net *net);
 struct svc_serv *svc_create(struct svc_program *, unsigned int,
 			    int (*threadfn)(void *data));
-struct svc_rqst *svc_rqst_alloc(struct svc_serv *serv,
-					struct svc_pool *pool, int node);
 bool		   svc_rqst_replace_page(struct svc_rqst *rqstp,
 					 struct page *page);
 void		   svc_rqst_release_pages(struct svc_rqst *rqstp);
-void		   svc_rqst_free(struct svc_rqst *);
 void		   svc_exit_thread(struct svc_rqst *);
 struct svc_serv *  svc_create_pooled(struct svc_program *prog,
+				     unsigned int nprog,
 				     struct svc_stat *stats,
 				     unsigned int bufsize,
 				     int (*threadfn)(void *data));
@@ -476,11 +503,6 @@ __be32		   svc_generic_init_request(struct svc_rqst *rqstp,
 					    const struct svc_program *progp,
 					    struct svc_process_info *procinfo);
 int		   svc_generic_rpcbind_set(struct net *net,
-					   const struct svc_program *progp,
-					   u32 version, int family,
-					   unsigned short proto,
-					   unsigned short port);
-int		   svc_rpcbind_set_version(struct net *net,
 					   const struct svc_program *progp,
 					   u32 version, int family,
 					   unsigned short proto,
