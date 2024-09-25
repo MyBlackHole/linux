@@ -1049,7 +1049,7 @@ struct bch_fs {
 	size_t			reflink_gc_nr;
 
 	/* fs.c */
-        // 挂载 inode 的列表
+	// 挂载 inode 的列表
 	struct list_head	vfs_inodes_list;
 	struct mutex		vfs_inodes_lock;
 	struct rhashtable	vfs_inodes_table;

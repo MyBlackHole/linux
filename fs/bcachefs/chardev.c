@@ -329,7 +329,7 @@ static long bch2_ioctl_disk_add(struct bch_fs *c, struct bch_ioctl_disk arg)
 	if (ret)
 		return ret;
 
-    // 添加 dev 到运行中的文件系统
+	// 添加 dev 到运行中的文件系统
 	ret = bch2_dev_add(c, path);
 	if (!IS_ERR(path))
 		kfree(path);
