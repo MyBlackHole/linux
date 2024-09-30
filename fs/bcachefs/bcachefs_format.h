@@ -235,7 +235,7 @@ struct bkey {
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	__u8		pad[1];
 
-	struct bversion	version;
+	struct bversion	bversion;
 	/* 范围大小，以扇区为单位(512 Bytes) */
 	__u32		size;		/* extent size, in sectors */
 	struct bpos	p;
@@ -355,8 +355,8 @@ enum bch_bkey_fields {
 		bkey_format_field(OFFSET,	p.offset),		\
 		bkey_format_field(SNAPSHOT,	p.snapshot),		\
 		bkey_format_field(SIZE,		size),			\
-		bkey_format_field(VERSION_HI,	version.hi),		\
-		bkey_format_field(VERSION_LO,	version.lo),		\
+		bkey_format_field(VERSION_HI,	bversion.hi),		\
+		bkey_format_field(VERSION_LO,	bversion.lo),		\
 	},								\
 })
 
