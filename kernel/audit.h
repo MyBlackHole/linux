@@ -101,7 +101,9 @@ struct audit_proctitle {
 
 /* A timestamp/serial pair to identify an event */
 struct audit_stamp {
+	/* 生成记录时间 */
 	struct timespec64	ctime;	/* time of syscall entry */
+	/* 审计记录的序列号 */
 	unsigned int		serial;	/* serial number for record */
 };
 
@@ -113,13 +115,18 @@ struct audit_context {
 		AUDIT_CTX_SYSCALL,	/* in use by syscall */
 		AUDIT_CTX_URING,	/* in use by io_uring */
 	} context;
+	/* 当前审计状态 */
 	enum audit_state    state, current_state;
 	struct audit_stamp  stamp;	/* event identifier */
+	/* 系统调用号 */
 	int		    major;      /* syscall number */
 	int		    uring_op;   /* uring operation */
+	/* 系统调用参数 */
 	unsigned long	    argv[4];    /* syscall arguments */
+	/* 系统调用返回值 */
 	long		    return_code;/* syscall return code */
 	u64		    prio;
+	/* 系统调用返回值是否合法 */
 	int		    return_valid; /* return code is valid */
 	/*
 	 * The names_list is the list of all audit_names collected during this
@@ -129,6 +136,7 @@ struct audit_context {
 	 * through the preallocated_names array and should only be found/used
 	 * by running the names_list.
 	 */
+	/* 预分配名 */
 	struct audit_names  preallocated_names[AUDIT_NAMES];
 	int		    name_count; /* total records in names_list */
 	struct list_head    names_list;	/* struct audit_names->list anchor */
@@ -139,6 +147,7 @@ struct audit_context {
 	struct sockaddr_storage *sockaddr;
 	size_t sockaddr_len;
 	/* Save things to print about task_struct */
+	/* 保留的 task 信息 */
 	pid_t		    ppid;
 	kuid_t		    uid, euid, suid, fsuid;
 	kgid_t		    gid, egid, sgid, fsgid;

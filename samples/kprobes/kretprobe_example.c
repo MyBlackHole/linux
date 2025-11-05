@@ -102,7 +102,7 @@ static void __exit kretprobe_exit(void)
 		my_kretprobe.nmissed, my_kretprobe.kp.symbol_name);
 }
 
-module_init(kretprobe_init)
-module_exit(kretprobe_exit)
+module_init(kretprobe_init);
+module_exit(kretprobe_exit);
 MODULE_DESCRIPTION("sample kernel module showing the use of return probes");
 MODULE_LICENSE("GPL");

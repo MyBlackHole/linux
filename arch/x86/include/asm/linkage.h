@@ -12,6 +12,9 @@
 /*
  * The generic version tends to create spurious ENDBR instructions under
  * certain conditions.
+ *
+ * 通用版本往往会在某些条件下创建虚假的 ENDBR 指令。
+ * 可打印当前进程的地址
  */
 #define _THIS_IP_ ({ unsigned long __here; asm ("lea 0(%%rip), %0" : "=r" (__here)); __here; })
 #endif

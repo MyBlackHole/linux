@@ -336,12 +336,24 @@ do {						\
 
 #endif
 
+/*在使用spin_lock时要明确知道该锁不会在中断处理程序中使用*/
+/*
+ * 只禁止内核抢占，不会关闭本地中断
+ * 为何需要关闭内核抢占：假如进程A获得spin_lock->进程B抢占进程A->进程B尝试获取spin_lock->由于进程B优先级比进程A高，
+ * 先于A运行，而进程B又需要A unlock才得以运行，这样死锁。所以这里需要关闭抢占
+ *
+ * 在任何情况下使用spin_lock_irq都是安全的。因为它既禁止本地中断，又禁止内核抢占
+ * */
 static __always_inline void spin_lock(spinlock_t *lock)
 	__acquires(lock) __no_context_analysis
 {
 	raw_spin_lock(&lock->rlock);
 }
 
+/*
+ * 这种类型的变种是一种比 spin_lock_irq 更轻量的变种，只关闭中断底半部，
+ * 其实就是关闭了软中断、Taskset 以及 Timer 等的一个抢占能力
+ * */
 static __always_inline void spin_lock_bh(spinlock_t *lock)
 	__acquires(lock) __no_context_analysis
 {
@@ -366,12 +378,27 @@ do {									\
 	__release(spinlock_check(lock)); __acquire(lock);	\
 } while (0)
 
+/*在自旋的时候，不会保存当前的中断标志寄存器，只会在自旋结束后，将之前的中断打开*/
+/*
+ * 禁止内核抢占，且关闭本地中断
+ * 那么在spin_lock中关闭了内核抢占，不关闭中断会出现什么情况呢？假如中断中也想获得这个锁，会出现和spin_lock中举得例子相同。
+ * 所以这个时候，在进程A获取lock之后，使用spin_lock_irq将中断禁止，就不会出现死锁的情况
+ * */
 static __always_inline void spin_lock_irq(spinlock_t *lock)
 	__acquires(lock) __no_context_analysis
 {
 	raw_spin_lock_irq(&lock->rlock);
 }
 
+/*
+ * 但是spin_lock_irq则不管之前的开还是关，返回时都是开的。
+ *
+ * 禁止内核抢占，关闭中断，保存中断状态寄存器的标志位
+ *
+ * spin_lock_irqsave在锁返回时，之前开的中断，之后也是开的；
+ * 之前关，之后也是关。
+ * 但是spin_lock_irq则不管之前的开还是关，返回时都是开的。
+ * */
 #define spin_lock_irqsave(lock, flags)				\
 do {								\
 	raw_spin_lock_irqsave(spinlock_check(lock), flags);	\

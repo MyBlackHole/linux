@@ -140,12 +140,14 @@ enum closure_state {
 #define CLOSURE_REMAINING_MASK		(CLOSURE_BITS_START - 1)
 #define CLOSURE_REMAINING_INITIALIZER	(1|CLOSURE_RUNNING)
 
+/* 内核闭包实现 */
 struct closure {
 	union {
 		struct {
 			struct workqueue_struct *wq;
 			struct closure_syncer	*s;
 			struct llist_node	list;
+			/* 需要执行的目标函数 */
 			closure_fn		*fn;
 		};
 		struct work_struct	work;
@@ -169,6 +171,7 @@ struct closure {
 };
 
 void closure_sub(struct closure *cl, int v);
+/* 减少闭包引用次数 */
 void closure_put(struct closure *cl);
 void __closure_wake_up(struct closure_waitlist *list);
 bool closure_wait(struct closure_waitlist *list, struct closure *cl);
@@ -264,15 +267,18 @@ static inline void closure_queue(struct closure *cl)
 		     != offsetof(struct work_struct, func));
 
 	if (wq) {
+		/* 队列工作 */
 		INIT_WORK(&cl->work, cl->work.func);
 		BUG_ON(!queue_work(wq, &cl->work));
 	} else
+		/* 立即执行 */
 		cl->fn(&cl->work);
 }
 
 /**
  * closure_get - increment a closure's refcount
  */
+/* 增加闭包的引用计数 */
 static inline void closure_get(struct closure *cl)
 {
 	cl->closure_get_happened = true;
@@ -320,9 +326,11 @@ static inline void closure_init(struct closure *cl, struct closure *parent)
 	closure_set_ip(cl);
 }
 
+/* 初始化闭包栈 */
 static inline void closure_init_stack(struct closure *cl)
 {
 	memset(cl, 0, sizeof(struct closure));
+	/* 设置闭包的初始化状态 */
 	atomic_set(&cl->remaining, CLOSURE_REMAINING_INITIALIZER);
 #ifdef CONFIG_DEBUG_CLOSURES
 	cl->magic = CLOSURE_MAGIC_STACK;
@@ -424,6 +432,7 @@ do {									\
  * asynchronously out of a new closure - @parent will then wait for @cl to
  * finish.
  */
+/* 在新的、未初始化的闭包中执行 @fn */
 static inline void closure_call(struct closure *cl, closure_fn fn,
 				struct workqueue_struct *wq,
 				struct closure *parent)

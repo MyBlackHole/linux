@@ -27,6 +27,7 @@ int default_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int 
  */
 struct wait_queue_entry {
 	unsigned int		flags;
+	/* 常见都是 task_struct */
 	void			*private;
 	wait_queue_func_t	func;
 	struct list_head	entry;
@@ -218,15 +219,21 @@ void __wake_up_locked(struct wait_queue_head *wq_head, unsigned int mode, int nr
 void __wake_up_sync(struct wait_queue_head *wq_head, unsigned int mode);
 void __wake_up_pollfree(struct wait_queue_head *wq_head);
 
+/* 唤醒非中断的一个进程 */
 #define wake_up(x)			__wake_up(x, TASK_NORMAL, 1, NULL)
+/* 唤醒非中断的nr个进程 */
 #define wake_up_nr(x, nr)		__wake_up(x, TASK_NORMAL, nr, NULL)
+/* 唤醒非中断的所有进程 */
 #define wake_up_all(x)			__wake_up(x, TASK_NORMAL, 0, NULL)
 #define wake_up_locked(x)		__wake_up_locked((x), TASK_NORMAL, 1)
 #define wake_up_all_locked(x)		__wake_up_locked((x), TASK_NORMAL, 0)
 #define wake_up_sync(x)			__wake_up_sync(x, TASK_NORMAL)
 
+/* 唤醒可中断的一个进程 */
 #define wake_up_interruptible(x)	__wake_up(x, TASK_INTERRUPTIBLE, 1, NULL)
+/* 唤醒可中断的nr个进程 */
 #define wake_up_interruptible_nr(x, nr)	__wake_up(x, TASK_INTERRUPTIBLE, nr, NULL)
+/* 唤醒可中断的所有进程 */
 #define wake_up_interruptible_all(x)	__wake_up(x, TASK_INTERRUPTIBLE, 0, NULL)
 #define wake_up_interruptible_sync(x)	__wake_up_sync((x), TASK_INTERRUPTIBLE)
 

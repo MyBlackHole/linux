@@ -15,6 +15,10 @@ struct blk_mq_ctxs {
 
 /**
  * struct blk_mq_ctx - State for a software queue facing the submitting CPUs
+ *
+ * 面向 cpu
+ * 每个 cpu 都有独有软件队列
+ *
  */
 struct blk_mq_ctx {
 	struct {
@@ -436,6 +440,7 @@ static inline bool hctx_may_queue(struct blk_mq_hw_ctx *hctx,
 }
 
 /* run the code block in @dispatch_ops with rcu/srcu read lock held */
+/* 运行 @dispatch_ops 中的代码块并持有 rcu/srcu 读锁 */
 #define __blk_mq_run_dispatch_ops(q, check_sleep, dispatch_ops)	\
 do {								\
 	if ((q)->tag_set->flags & BLK_MQ_F_BLOCKING) {		\

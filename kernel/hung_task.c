@@ -246,6 +246,8 @@ static void hung_task_info(struct task_struct *t, unsigned long timeout,
 	 * The given task did not get scheduled for more than
 	 * CONFIG_DEFAULT_HUNG_TASK_TIMEOUT. Therefore, complain
 	 * accordingly
+	 *
+	 * 任务在 2 分钟内没有被调度，抱怨：
 	 */
 	if (sysctl_hung_task_warnings || hung_task_call_panic) {
 		if (sysctl_hung_task_warnings > 0)
@@ -297,6 +299,8 @@ static bool rcu_lock_break(struct task_struct *g, struct task_struct *t)
 /*
  * Check whether a TASK_UNINTERRUPTIBLE does not get woken up for
  * a really long time. If that happens, print out a warning.
+ *
+ * 检查 TASK_UNINTERRUPTIBLE 是否在很长一段时间内（120 秒）未被唤醒。如果发生这种情况，则打印出警告。
  */
 static void check_hung_uninterruptible_tasks(unsigned long timeout)
 {
@@ -353,6 +357,7 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
 	sys_info(si_mask);
 
 	if (hung_task_call_panic)
+		/* 任务被阻塞超过 2 分钟，触发 panic */
 		panic("hung_task: blocked tasks");
 }
 
@@ -539,6 +544,8 @@ static int hungtask_pm_notify(struct notifier_block *self,
 
 /*
  * kthread which checks for tasks stuck in D state
+ *
+ * kthread 检查卡在 D 状态的任务
  */
 static int watchdog(void *dummy)
 {
@@ -558,6 +565,7 @@ static int watchdog(void *dummy)
 		if (t <= 0) {
 			if (!atomic_xchg(&reset_hung_task, 0) &&
 			    !hung_detector_suspended)
+				/* 检查挂起的任务 */
 				check_hung_uninterruptible_tasks(timeout);
 			hung_last_checked = jiffies;
 			continue;
@@ -573,6 +581,7 @@ static int __init hung_task_init(void)
 	atomic_notifier_chain_register(&panic_notifier_list, &panic_block);
 
 	/* Disable hung task detector on suspend */
+	/* 禁用挂起任务检测器 */
 	pm_notifier(hungtask_pm_notify, 0);
 
 	watchdog_task = kthread_run(watchdog, NULL, "khungtaskd");

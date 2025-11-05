@@ -388,6 +388,7 @@ void oops_end(unsigned long flags, struct pt_regs *regs, int signr)
 	oops_exit();
 
 	/* Executive summary in case the oops scrolled away */
+	/* 执行摘要，以防出现错误 */
 	__show_regs(&exec_summary_regs, SHOW_REGS_ALL, KERN_DEFAULT);
 
 	if (!signr)
@@ -449,6 +450,8 @@ NOKPROBE_SYMBOL(__die);
 /*
  * This is gone through when something in the kernel has done something bad
  * and is about to be terminated:
+ *
+ * 当内核中的某些东西做了一些坏事并且即将被终止时，就会发生这种情况：
  */
 void die(const char *str, struct pt_regs *regs, long err)
 {

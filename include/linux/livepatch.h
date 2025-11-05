@@ -56,7 +56,9 @@
  */
 struct klp_func {
 	/* external */
+	/* 需要替换的旧函数名 */
 	const char *old_name;
+	/* 需要替换的新函数地址 */
 	void *new_func;
 	/*
 	 * The old_sympos field is optional and can be used to resolve
@@ -68,6 +70,7 @@ struct klp_func {
 	unsigned long old_sympos;
 
 	/* internal */
+	/* 根据old_name找到的旧函数地址 */
 	void *old_func;
 	struct kobject kobj;
 	struct list_head node;
@@ -94,6 +97,7 @@ struct klp_func {
 struct klp_object {
 	/* external */
 	const char *name;
+	/* 需要替换的函数列表 */
 	struct klp_func *funcs;
 	struct klp_callbacks callbacks;
 

@@ -41,6 +41,7 @@ typedef u64 freelist_full_t;
 struct freelist_counters {
 	union {
 		struct {
+			/* 第一个空闲对象 */
 			void *freelist;
 			union {
 				unsigned long counters;
@@ -200,6 +201,7 @@ struct kmem_cache {
 	/* Used for retrieving partial slabs, etc. */
 	slab_flags_t flags;
 	unsigned long min_partial;
+	/* cache 大小 */
 	unsigned int size;		/* Object size including metadata */
 	unsigned int object_size;	/* Object size without metadata */
 	struct reciprocal_value reciprocal_size;
@@ -216,6 +218,7 @@ struct kmem_cache {
 	unsigned int align;		/* Alignment */
 	unsigned int red_left_pad;	/* Left redzone padding size */
 	const char *name;		/* Name (only for display!) */
+	/* 关联到全局 slab_caches 上 */
 	struct list_head list;		/* List of slab caches */
 #ifdef CONFIG_SYSFS
 	struct kobject kobj;		/* For sysfs */

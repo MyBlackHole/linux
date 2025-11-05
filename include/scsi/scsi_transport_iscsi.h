@@ -73,51 +73,77 @@ struct iscsi_bus_flash_conn;
  */
 struct iscsi_transport {
 	struct module *owner;
+	/* 传输名 */
 	char *name;
 	unsigned int caps;
 
+	/* 创建会话
+	 * tcp: iscsi_sw_tcp_session_create */
 	struct iscsi_cls_session *(*create_session) (struct iscsi_endpoint *ep,
 					uint16_t cmds_max, uint16_t qdepth,
 					uint32_t sn);
+	/* 销毁会话
+	 * tcp: iscsi_sw_tcp_session_destroy */
 	void (*destroy_session) (struct iscsi_cls_session *session);
+	/* tcp: iscsi_sw_tcp_conn_create */
 	struct iscsi_cls_conn *(*create_conn) (struct iscsi_cls_session *sess,
 				uint32_t cid);
 	void (*unbind_conn) (struct iscsi_cls_conn *conn, bool is_active);
+	/* 连接会话
+	 * tcp: iscsi_sw_tcp_conn_bind */
 	int (*bind_conn) (struct iscsi_cls_session *session,
 			  struct iscsi_cls_conn *cls_conn,
 			  uint64_t transport_eph, int is_leading);
+	/* 设置连接
+	 * tcp: iscsi_conn_start */
 	int (*start_conn) (struct iscsi_cls_conn *conn);
+	/* tcp: iscsi_sw_tcp_conn_stop */
 	void (*stop_conn) (struct iscsi_cls_conn *conn, int flag);
+	/* tcp: iscsi_sw_tcp_conn_destroy */
 	void (*destroy_conn) (struct iscsi_cls_conn *conn);
+	/* tcp: iscsi_sw_tcp_conn_set_param */
 	int (*set_param) (struct iscsi_cls_conn *conn, enum iscsi_param param,
 			  char *buf, int buflen);
 	int (*get_ep_param) (struct iscsi_endpoint *ep, enum iscsi_param param,
 			     char *buf);
+	/* tcp: iscsi_sw_tcp_conn_get_param */
 	int (*get_conn_param) (struct iscsi_cls_conn *conn,
 			       enum iscsi_param param, char *buf);
+	/* tcp: iscsi_session_get_param */
 	int (*get_session_param) (struct iscsi_cls_session *session,
 				  enum iscsi_param param, char *buf);
+	/* tcp: iscsi_sw_tcp_host_get_param */
 	int (*get_host_param) (struct Scsi_Host *shost,
 				enum iscsi_host_param param, char *buf);
+	/* tcp: iscsi_host_set_param */
 	int (*set_host_param) (struct Scsi_Host *shost,
 			       enum iscsi_host_param param, char *buf,
 			       int buflen);
+	/* tcp: iscsi_conn_send_pdu */
 	int (*send_pdu) (struct iscsi_cls_conn *conn, struct iscsi_hdr *hdr,
 			 char *data, uint32_t data_size);
+	/* tcp: iscsi_sw_tcp_conn_get_stats */
 	void (*get_stats) (struct iscsi_cls_conn *conn,
 			   struct iscsi_stats *stats);
 
+	/* tcp: iscsi_tcp_task_init */
 	int (*init_task) (struct iscsi_task *task);
+	/* tcp: iscsi_tcp_task_xmit */
 	int (*xmit_task) (struct iscsi_task *task);
+	/* tcp: iscsi_tcp_cleanup_task */
 	void (*cleanup_task) (struct iscsi_task *task);
 
+	/* tcp: iscsi_sw_tcp_pdu_alloc */
 	int (*alloc_pdu) (struct iscsi_task *task, uint8_t opcode);
+	/* tcp: iscsi_sw_tcp_pdu_xmit */
 	int (*xmit_pdu) (struct iscsi_task *task);
+	/* tcp: iscsi_sw_tcp_pdu_init */
 	int (*init_pdu) (struct iscsi_task *task, unsigned int offset,
 			 unsigned int count);
 	void (*parse_pdu_itt) (struct iscsi_conn *conn, itt_t itt,
 			       int *index, int *age);
 
+	/* tcp: iscsi_session_recovery_timedout */
 	void (*session_recovery_timedout) (struct iscsi_cls_session *session);
 	struct iscsi_endpoint *(*ep_connect) (struct Scsi_Host *shost,
 					      struct sockaddr *dst_addr,
@@ -132,6 +158,7 @@ struct iscsi_transport {
 	int (*get_iface_param) (struct iscsi_iface *iface,
 				enum iscsi_param_type param_type,
 				int param, char *buf);
+	/* tcp: iscsi_sw_tcp_attr_is_visible */
 	umode_t (*attr_is_visible)(int param_type, int param);
 	int (*bsg_request)(struct bsg_job *job);
 	int (*send_ping) (struct Scsi_Host *shost, uint32_t iface_num,

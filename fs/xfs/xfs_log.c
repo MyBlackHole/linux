@@ -529,6 +529,8 @@ xlog_state_release_iclog(
  * num_bblocks	- Number of BBSIZE blocks in on-disk log
  *
  * Return error or zero.
+ *
+ * 挂载日志文件系统
  */
 int
 xfs_log_mount(
@@ -612,6 +614,8 @@ xfs_log_mount(
 	/*
 	 * skip log recovery on a norecovery mount.  pretend it all
 	 * just worked.
+     *
+     * 是否跳过 log 恢复
 	 */
 	if (!xfs_has_norecovery(mp)) {
 		error = xlog_recover(log);

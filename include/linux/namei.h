@@ -19,8 +19,11 @@ enum { MAX_NESTED_LINKS = 8 };
 enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT};
 
 /* pathwalk mode */
+/* 最后分量是符号连接 */
 #define LOOKUP_FOLLOW		BIT(0)	/* follow links at the end */
+/* 最后分量必须是目录 */
 #define LOOKUP_DIRECTORY	BIT(1)	/* require a directory */
+/* 强制终端自动挂载 */
 #define LOOKUP_AUTOMOUNT	BIT(2)  /* force terminal automount */
 #define LOOKUP_EMPTY		BIT(3)	/* accept empty path [user_... only] */
 #define LOOKUP_LINKAT_EMPTY	BIT(4) /* Linkat request with empty path. */
@@ -33,7 +36,9 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT};
 /* 5 spare bits for pathwalk */
 
 /* These tell filesystem methods that we are dealing with the final component... */
+/* 尝试打开文件 */
 #define LOOKUP_OPEN		BIT(16)	/* ... in open */
+/* 试图创建文件(文件不存在) */
 #define LOOKUP_CREATE		BIT(17)	/* ... in object creation */
 #define LOOKUP_EXCL		BIT(18)	/* ... in target must not exist */
 #define LOOKUP_RENAME_TARGET	BIT(19)	/* ... in destination of rename() */

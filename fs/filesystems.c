@@ -41,11 +41,15 @@ struct file_system_type *get_filesystem(struct file_system_type *fs)
 	return fs;
 }
 
+/* 引用次数减一(为0时卸载) */
 void put_filesystem(struct file_system_type *fs)
 {
 	module_put(fs->owner);
 }
 
+/*
+ * 查找 name 字符指针，长度 len 的 file_system_type
+ */
 static struct file_system_type **find_filesystem(const char *name, unsigned len)
 {
 	struct file_system_type **p;
@@ -81,8 +85,11 @@ int register_filesystem(struct file_system_type * fs)
 	BUG_ON(strchr(fs->name, '.'));
 	if (fs->next)
 		return -EBUSY;
+	/* 加文件系统锁 */
 	write_lock(&file_systems_lock);
+	/* 查找文件系统 */
 	p = find_filesystem(fs->name, strlen(fs->name));
+	/* 添加文件系统到全局 file_systems 链表上 */
 	if (*p)
 		res = -EBUSY;
 	else

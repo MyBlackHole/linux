@@ -4,9 +4,11 @@
 #include <linux/module.h>
 #include <target/iscsi/iscsi_transport.h>
 
+/* iscsi 传输操作集全局链表 */
 static LIST_HEAD(g_transport_list);
 static DEFINE_MUTEX(transport_mutex);
 
+/* 获取 type 传输结构 */
 struct iscsit_transport *iscsit_get_transport(int type)
 {
 	struct iscsit_transport *t;
@@ -31,6 +33,7 @@ void iscsit_put_transport(struct iscsit_transport *t)
 	module_put(t->owner);
 }
 
+/* 操作集注册函数 */
 void iscsit_register_transport(struct iscsit_transport *t)
 {
 	INIT_LIST_HEAD(&t->t_node);

@@ -189,6 +189,7 @@ extern bool atomic_notifier_call_chain_is_empty(struct atomic_notifier_head *nh)
 						/* Bad/Veto action */
 /*
  * Clean way to return from the notifier and stop further calls.
+ * 从通知程序返回并停止进一步调用的干净方法。
  */
 #define NOTIFY_STOP		(NOTIFY_OK|NOTIFY_STOP_MASK)
 

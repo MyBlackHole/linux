@@ -135,6 +135,7 @@ static struct shrinker *acl_shrinker;
 
 /*
  * Register the NFS filesystems
+ * 注册 nfs 文件系统
  */
 int __init register_nfs_fs(void)
 {
@@ -144,6 +145,7 @@ int __init register_nfs_fs(void)
 	if (ret < 0)
 		goto error_0;
 
+       /* 注册 nfs v4 */
 	ret = register_nfs4_fs();
 	if (ret < 0)
 		goto error_1;
@@ -871,6 +873,8 @@ static int nfs_request_mount(struct fs_context *fc,
 	/*
 	 * Now ask the mount server to map our export path
 	 * to a file handle.
+     *
+     * 挂载映射导出路径
 	 */
 	if ((request.protocol == XPRT_TRANSPORT_UDP) ==
 	    !(ctx->flags & NFS_MOUNT_TCP))
@@ -911,6 +915,8 @@ static struct nfs_server *nfs_try_mount_request(struct fs_context *fc)
 			ctx->flags &= ~(NFS_MOUNT_LOCAL_FLOCK | NFS_MOUNT_LOCAL_FCNTL);
 		}
 	}
+
+	/* 执行挂载请求 */
 	status = nfs_request_mount(fc, ctx->mntfh, authlist, &authlist_len);
 	if (status)
 		return ERR_PTR(status);
@@ -952,6 +958,7 @@ static struct nfs_server *nfs_try_mount_request(struct fs_context *fc)
 		}
 		dfprintk(MOUNT, "NFS: attempting to use auth flavor %u\n", flavor);
 		ctx->selected_flavor = flavor;
+        /* nfs4_create_server */
 		server = ctx->nfs_mod->rpc_ops->create_server(fc);
 		if (!IS_ERR(server))
 			return server;
@@ -973,6 +980,8 @@ static struct nfs_server *nfs_try_mount_request(struct fs_context *fc)
 
 int nfs_try_get_tree(struct fs_context *fc)
 {
+    /* 获取 fs 私有数据 */
+    /* nfs fs 上下文 */
 	struct nfs_fs_context *ctx = nfs_fc2context(fc);
 
 	if (ctx->need_mount)
@@ -1360,6 +1369,7 @@ error_splat_super:
 
 /*
  * Destroy an NFS superblock
+ * 释放 nfs 超级块处理函数
  */
 void nfs_kill_super(struct super_block *s)
 {

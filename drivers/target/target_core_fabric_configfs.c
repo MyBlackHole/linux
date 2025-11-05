@@ -478,6 +478,7 @@ static struct config_group *target_fabric_make_np(
 		return ERR_PTR(-ENOSYS);
 	}
 
+    /* 执行对应目标构造操作集 fabric_make_np, 例如 iSCSI 是 lio_target_call_addnptotpg */
 	se_tpg_np = tf->tf_ops->fabric_make_np(se_tpg, group, name);
 	if (!se_tpg_np || IS_ERR(se_tpg_np))
 		return ERR_PTR(-EINVAL);
@@ -936,10 +937,13 @@ static struct config_group *target_fabric_make_tpg(
 		return ERR_PTR(-ENOSYS);
 	}
 
+    /* iscsi: lio_target_tiqn_addtpg
+     * 构建 tgp_x /sys/kernel/config/target/iscsi/%iqn/tpg_x/ */
 	se_tpg = tf->tf_ops->fabric_make_tpg(wwn, name);
 	if (!se_tpg || IS_ERR(se_tpg))
 		return ERR_PTR(-EINVAL);
 
+    /* 构建 tgp_x /sys/kernel/config/target/iscsi/%iqn/tpg_x/**** */
 	config_group_init_type_name(&se_tpg->tpg_group, name,
 			&tf->tf_tpg_base_cit);
 
@@ -1176,6 +1180,7 @@ static const struct configfs_group_operations target_fabric_wwn_group_ops = {
 TF_CIT_SETUP_DRV(wwn, NULL, &target_fabric_wwn_group_ops);
 TF_CIT_SETUP_DRV(discovery, NULL, NULL);
 
+/* 初始化所有构造器 target_fabric_configfs 信息 */
 int target_fabric_setup_cits(struct target_fabric_configfs *tf)
 {
 	int ret;

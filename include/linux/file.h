@@ -116,6 +116,7 @@ DEFINE_FREE(fput, struct file *, if (!IS_ERR_OR_NULL(_T)) fput(_T))
  */
 #define take_fd(fd) __get_and_null(fd, -EBADF)
 
+/* 将打开的文件描述符fd文件file存到该进程的打开文件表中 */
 extern void fd_install(unsigned int fd, struct file *file);
 
 int receive_fd(struct file *file, int __user *ufd, unsigned int o_flags);

@@ -143,15 +143,23 @@ typedef unsigned int __bitwise blk_mode_t;
 /* return partition scanning errors */
 #define BLK_OPEN_STRICT_SCAN	((__force blk_mode_t)(1 << 6))
 
+/*
+ * 内核表示:
+ * 通用磁盘
+ * 分区
+ */
 struct gendisk {
 	/*
 	 * major/first_minor/minors should not be set by any new driver, the
 	 * block core will take care of allocating them automatically.
 	 */
+	/* 主设备号 */
 	int major;
 	int first_minor;
+	/* 最大的次设备号数量，如果设备不能分区值为 1 */
 	int minors;
 
+	/* 主设备名 */
 	char disk_name[DISK_NAME_LEN];	/* name of major driver */
 
 	unsigned short events;		/* supported events */
@@ -160,7 +168,10 @@ struct gendisk {
 	struct xarray part_tbl;
 	struct block_device *part0;
 
+	/* 设备操作 */
 	const struct block_device_operations *fops;
+
+	/* 请求队列 */
 	struct request_queue *queue;
 	void *private_data;
 
@@ -334,7 +345,8 @@ typedef unsigned int __bitwise blk_features_t;
 /* supports DAX */
 #define BLK_FEAT_DAX			((__force blk_features_t)(1u << 8))
 
-/* supports I/O polling */
+/* supports I/O polling
+ * 支持 I/O 轮询 */
 #define BLK_FEAT_POLL			((__force blk_features_t)(1u << 9))
 
 /* is a zoned device */
@@ -481,6 +493,12 @@ struct blk_independent_access_ranges {
 	struct blk_independent_access_range	ia_range[];
 };
 
+/*
+ * 系统对块设备读写
+ * 通过块设备通用的读写操作函数将请求保存该设备的请求队列 request_queue
+ *
+ * 此结构描述了块设备的请求队列
+ */
 struct request_queue {
 	/*
 	 * The queue owner gets to use this for whatever they like.
@@ -498,6 +516,7 @@ struct request_queue {
 	/*
 	 * various queue flags, see QUEUE_* below
 	 */
+	/* 各种队列标识 */
 	unsigned long		queue_flags;
 
 	unsigned int __data_racy rq_timeout;
@@ -510,6 +529,7 @@ struct request_queue {
 	unsigned int		nr_hw_queues;
 	struct blk_mq_hw_ctx * __rcu *queue_hw_ctx __counted_by_ptr(nr_hw_queues);
 
+	/* 队列引用计数器 */
 	struct percpu_ref	q_usage_counter;
 	struct lock_class_key	io_lock_cls_key;
 	struct lockdep_map	io_lockdep_map;
@@ -519,6 +539,7 @@ struct request_queue {
 
 	struct request		*last_merge;
 
+	/* 队列保护 lock */
 	spinlock_t		queue_lock;
 
 	int			quiesce_depth;
@@ -666,6 +687,7 @@ enum {
 	QUEUE_FLAG_INIT_DONE,		/* queue is initialized */
 	QUEUE_FLAG_STATS,		/* track IO start and completion times */
 	QUEUE_FLAG_REGISTERED,		/* queue has been registered to a disk */
+	/* 队列停止状态 */
 	QUEUE_FLAG_QUIESCED,		/* queue has been quiesced */
 	QUEUE_FLAG_RQ_ALLOC_TIME,	/* record rq->alloc_time_ns */
 	QUEUE_FLAG_HCTX_ACTIVE,		/* at least one blk-mq hctx is active */
@@ -704,6 +726,7 @@ void blk_queue_flag_clear(unsigned int flag, struct request_queue *q);
 #define blk_noretry_request(rq) \
 	((rq)->cmd_flags & (REQ_FAILFAST_DEV|REQ_FAILFAST_TRANSPORT| \
 			     REQ_FAILFAST_DRIVER))
+/* 队列是否处于停止状态 */
 #define blk_queue_quiesced(q)	test_bit(QUEUE_FLAG_QUIESCED, &(q)->queue_flags)
 #define blk_queue_pm_only(q)	atomic_read(&(q)->pm_only)
 #define blk_queue_registered(q)	test_bit(QUEUE_FLAG_REGISTERED, &(q)->queue_flags)
@@ -789,6 +812,8 @@ int __must_check add_disk_fwnode(struct device *parent, struct gendisk *disk,
 				 struct fwnode_handle *fwnode);
 int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 				 const struct attribute_group **groups);
+
+/* 添加磁盘 */
 static inline int __must_check add_disk(struct gendisk *disk)
 {
 	return device_add_disk(NULL, disk, NULL);
@@ -1048,6 +1073,7 @@ int bio_poll(struct bio *bio, struct io_comp_batch *iob, unsigned int flags);
 int iocb_bio_iopoll(struct kiocb *kiocb, struct io_comp_batch *iob,
 			unsigned int flags);
 
+/* 获取设备请求队列 */
 static inline struct request_queue *bdev_get_queue(struct block_device *bdev)
 {
 	return bdev->bd_queue;	/* this is never NULL */
@@ -1178,6 +1204,14 @@ struct rq_list {
  * or when attempting a merge. For details, please see schedule() where
  * blk_flush_plug() is called.
  */
+/* blk_plug 允许通过短时间保存 I/O 片段来构建相关请求的队列。
+ * 这允许将顺序请求合并为单个更大的请求。
+ * 由于请求批量从每个任务列表移至设备的 request_queue，因此可提高可扩展性
+ * 因为 request_queue 锁的锁争用减少了。
+ *
+ * 将请求添加到插件列表或尝试合并时，可以不禁用抢占。
+ * 详细信息请参见schedule()，其中调用了blk_flush_plug()。
+ */
 struct blk_plug {
 	struct rq_list mq_list; /* blk-mq requests */
 
@@ -1191,6 +1225,7 @@ struct blk_plug {
 	bool multiple_queues;
 	bool has_elevator;
 
+	/* 回调函数的链表，下发请求时会调用到 */
 	struct list_head cb_list; /* md requires an unplug callback */
 };
 
@@ -1208,6 +1243,8 @@ extern void blk_start_plug_nr_ios(struct blk_plug *, unsigned short);
 extern void blk_finish_plug(struct blk_plug *);
 
 void __blk_flush_plug(struct blk_plug *plug, bool from_schedule);
+
+/* 刷新 io */
 static inline void blk_flush_plug(struct blk_plug *plug, bool async)
 {
 	if (plug)
@@ -1389,11 +1426,13 @@ static inline unsigned short bdev_max_write_streams(struct block_device *bdev)
 	return bdev_limits(bdev)->max_write_streams;
 }
 
+/* 队列逻辑块大小 */
 static inline unsigned queue_logical_block_size(const struct request_queue *q)
 {
 	return q->limits.logical_block_size;
 }
 
+/* 块逻辑块大小 */
 static inline unsigned int bdev_logical_block_size(struct block_device *bdev)
 {
 	return queue_logical_block_size(bdev_get_queue(bdev));
@@ -1654,7 +1693,9 @@ enum blk_unique_id {
 };
 
 struct block_device_operations {
+	/* 块设备提交 bio 处理函数 */
 	void (*submit_bio)(struct bio *bio);
+	/* dm: dm_poll_bio */
 	int (*poll_bio)(struct bio *bio, struct io_comp_batch *iob,
 			unsigned int flags);
 	int (*open)(struct gendisk *disk, blk_mode_t mode);
@@ -1663,6 +1704,7 @@ struct block_device_operations {
 			unsigned cmd, unsigned long arg);
 	int (*compat_ioctl)(struct block_device *bdev, blk_mode_t mode,
 			unsigned cmd, unsigned long arg);
+	/* 检查磁盘是否有修改 */
 	unsigned int (*check_events) (struct gendisk *disk,
 				      unsigned int clearing);
 	void (*unlock_native_capacity) (struct gendisk *);
@@ -1678,6 +1720,7 @@ struct block_device_operations {
 	/* returns the length of the identifier or a negative errno: */
 	int (*get_unique_id)(struct gendisk *disk, u8 id[16],
 			enum blk_unique_id id_type);
+	/* 指向拥有这个结构的模块，常取值为THIS_MODULE */
 	struct module *owner;
 	const struct pr_ops *pr_ops;
 
@@ -1731,6 +1774,7 @@ static inline void bio_end_io_acct(struct bio *bio, unsigned long start_time)
 int bdev_validate_blocksize(struct block_device *bdev, int block_size);
 int set_blocksize(struct file *file, int size);
 
+/* 通过路径获取内核 dev_t */
 int lookup_bdev(const char *pathname, dev_t *dev);
 
 void blkdev_show(struct seq_file *seqf, off_t offset);

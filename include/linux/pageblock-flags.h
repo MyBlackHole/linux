@@ -14,6 +14,7 @@
 #include <linux/types.h>
 
 /* Bit indices that affect a whole block of pages */
+/* 影响整个页面块的位索引 */
 enum pageblock_bits {
 	PB_migrate_0,
 	PB_migrate_1,

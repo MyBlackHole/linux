@@ -905,6 +905,8 @@ static bool xprt_needs_memalloc(struct rpc_xprt *xprt, struct rpc_task *tk)
 
 /*
  * This is the RPC `scheduler' (or rather, the finite state machine).
+ * RPC 调度程序
+ * 状态机
  */
 static void __rpc_execute(struct rpc_task *task)
 {
@@ -1011,6 +1013,12 @@ out:
  * NOTE: Upon exit of this function the task is guaranteed to be
  *	 released. In particular note that tk_release() will have
  *	 been called, so your task memory may have been freed.
+ *
+ * 这可能会被递归调用，例如 异步 NFS 任务更新
+ * 属性并发现必须刷新脏页。
+ * 注意：退出此功能后，任务保证是
+ * 发布。 特别注意 tk_release() 将有
+ * 已被调用，因此您的任务内存可能已被释放。
  */
 void rpc_execute(struct rpc_task *task)
 {
@@ -1019,6 +1027,7 @@ void rpc_execute(struct rpc_task *task)
 	rpc_set_active(task);
 	rpc_make_runnable(rpciod_workqueue, task);
 	if (!is_async) {
+		/* 不是异步执行 */
 		unsigned int pflags = memalloc_nofs_save();
 		__rpc_execute(task);
 		memalloc_nofs_restore(pflags);

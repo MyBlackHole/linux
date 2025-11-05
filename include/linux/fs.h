@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-#ifndef _LINUX_FS_H
+#ifndef _LINUX_FS_H 
 #define _LINUX_FS_H
 
 #include <linux/fs/super.h>
@@ -89,11 +89,16 @@ typedef int (get_block_t)(struct inode *inode, sector_t iblock,
 typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 			ssize_t bytes, void *private);
 
+/* inode是否可执行 */
 #define MAY_EXEC		0x00000001
+/* inode是否可写 */
 #define MAY_WRITE		0x00000002
+/* inode是否可读 */
 #define MAY_READ		0x00000004
+/* inode是否可追加 */
 #define MAY_APPEND		0x00000008
 #define MAY_ACCESS		0x00000010
+/* inode是否可打开 */
 #define MAY_OPEN		0x00000020
 #define MAY_CHDIR		0x00000040
 /* called from RCU mode, don't block */
@@ -105,6 +110,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
  */
 
 /* file is open for reading */
+/* 文件已打开并可供读取 */
 #define FMODE_READ		((__force fmode_t)(1 << 0))
 /* file is open for writing */
 #define FMODE_WRITE		((__force fmode_t)(1 << 1))
@@ -150,6 +156,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 /* Write access to underlying fs */
 #define FMODE_WRITER		((__force fmode_t)(1 << 16))
 /* Has read method(s) */
+/* 有读取方法 */
 #define FMODE_CAN_READ          ((__force fmode_t)(1 << 17))
 /* Has write method(s) */
 #define FMODE_CAN_WRITE         ((__force fmode_t)(1 << 18))
@@ -158,6 +165,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 #define FMODE_CREATED		((__force fmode_t)(1 << 20))
 
 /* File is stream-like */
+/* 文件是类似流的 */
 #define FMODE_STREAM		((__force fmode_t)(1 << 21))
 
 /* File supports DIRECT IO */
@@ -181,6 +189,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 #define FMODE_NONOTIFY_PERM	((__force fmode_t)(1 << 26))
 
 /* File is capable of returning -EAGAIN if I/O will block */
+/* 如果 I/O 阻塞，文件能够返回 -EAGAIN */
 #define FMODE_NOWAIT		((__force fmode_t)(1 << 27))
 
 /* File represents mount that needs unmounting */
@@ -296,7 +305,7 @@ struct iattr {
  */
 #define FILESYSTEM_MAX_STACK_DEPTH 2
 
-/** 
+/**
  * enum positive_aop_returns - aop return codes with specific semantics
  *
  * @AOP_WRITEPAGE_ACTIVATE: Informs the caller that page writeback has
@@ -306,7 +315,7 @@ struct iattr {
  * 			    be a candidate for writeback again in the near
  * 			    future.  Other callers must be careful to unlock
  * 			    the page if they get this return.  Returned by
- * 			    writepage(); 
+ * 			    writepage();
  *
  * @AOP_TRUNCATED_PAGE: The AOP method that was handed a locked page has
  *  			unlocked it and the page might have been truncated.
@@ -347,6 +356,7 @@ struct readahead_control;
 
 /* non-RWF related bits - start at 16 */
 #define IOCB_EVENTFD		(1 << 16)
+/* 直接 IO 调用 */
 #define IOCB_DIRECT		(1 << 17)
 #define IOCB_WRITE		(1 << 18)
 /* iocb->ki_waitq is valid */
@@ -376,12 +386,20 @@ struct readahead_control;
 	{ IOCB_AIO_RW,		"AIO_RW" }, \
 	{ IOCB_HAS_METADATA,	"AIO_HAS_METADATA" }
 
+/* 描述文件 IO 文件侧
+ * 一般与 iov_iter 一起出现
+ * 内核里描述文件数据结构体 */
 struct kiocb {
 	struct file		*ki_filp;
+	/* 文件偏移 */
 	loff_t			ki_pos;
+	/* IO 成功回调(为 NULL 则为同步) */
 	void (*ki_complete)(struct kiocb *iocb, long ret);
+	/* 私有数据 */
 	void			*private;
+	/* IO 属性 */
 	int			ki_flags;
+	/* io 优先级 */
 	u16			ki_ioprio; /* See linux/ioprio.h */
 	u8			ki_write_stream;
 
@@ -390,6 +408,7 @@ struct kiocb {
 	 * waitqueue associated with completing the read.
 	 * Valid IFF IOCB_WAITQ is set.
 	 */
+	/* 用于异步缓冲 IO 等待队列 */
 	struct wait_page_queue	*ki_waitq;
 };
 
@@ -398,33 +417,67 @@ static inline bool is_sync_kiocb(struct kiocb *kiocb)
 	return kiocb->ki_complete == NULL;
 }
 
+/* 地址空间操作 */
 struct address_space_operations {
+	/*
+	 * 页面读操作 (file -> page)
+	 * VM调用，用于从后端存储读取数据
+	 * 调用时，page处于lock状态，并且在读取结束时需要设置为unlock状态，并设置uptodate
+	 * 如果 readpage 处理过程中需要 unlock page，则 unlcok 之后需要返回 AOP_TRUNCATED_PAGE，
+	 * 调用者将重新定位page并重新lock，成功之后会再次调用readpage
+	 * 接口已有改变
+	 */
 	int (*read_folio)(struct file *, struct folio *);
 
 	/* Write back some dirty pages from this mapping. */
+
+	/*
+	 * 回写脏页
+	 * VM调用，将 address space 里所有 Dirty 的 pages 写入后端存储
+	 * 如果 wbc->sync_mode 是 WBC_SYNC_ALL，则 writeback_control 会选取一个范围的pages必须写入
+	 * 如果是 WBC_SYNC_NONE，则根据参数 nr_to_write 尽可能写入这么多pages
+	 * 如果没有设置，则默认调用 mpage_writepages()
+	 */
 	int (*writepages)(struct address_space *, struct writeback_control *);
 
 	/* Mark a folio dirty.  Return true if this dirtied it */
+	/* 标记为脏页 */
 	bool (*dirty_folio)(struct address_space *, struct folio *);
 
 	void (*readahead)(struct readahead_control *);
 
+	/* 写开始准备 */
 	int (*write_begin)(const struct kiocb *, struct address_space *mapping,
 				loff_t pos, unsigned len,
 				struct folio **foliop, void **fsdata);
+	/* 写完成处理 */
 	int (*write_end)(const struct kiocb *, struct address_space *mapping,
 				loff_t pos, unsigned len, unsigned copied,
 				struct folio *folio, void *fsdata);
 
 	/* Unfortunately this kludge is needed for FIBMAP. Don't use it */
+	/*
+	 * 不幸的是，FIBMAP 需要这个拼凑。 不要使用它
+	 * VFS调用用于映射逻辑块的偏移和物理块编号
+	 * 该方法由FIBMAP ioctl使用，并且是swap文件
+	 * swap系统不直接进入文件系统，而是通过BMAP方式建立内存地址和文件的块映射，然后直接使用内存地址
+	 */
 	sector_t (*bmap)(struct address_space *, sector_t);
+	/*
+	 * 如果设置了 PagePrivate，则当Page部分或者全部从address space里删除时调用该方法
+	 * 通常是因为 address space 里执行了一个截断或者是失效所有数据
+	 * 关联的私有信息需要更新，或者直接被释放 (如果失效的 offset 为 0 的话，整个 page 将被释放)
+	 */
 	void (*invalidate_folio) (struct folio *, size_t offset, size_t len);
 	bool (*release_folio)(struct folio *, gfp_t);
 	void (*free_folio)(struct folio *folio);
+	/* 直接 io，不缓存 */
 	ssize_t (*direct_IO)(struct kiocb *, struct iov_iter *iter);
 	/*
 	 * migrate the contents of a folio to the specified target. If
 	 * migrate_mode is MIGRATE_ASYNC, it must not block.
+	 *
+	 * 将作品集的内容迁移到指定的目标。 如果 migrate_mode 是 MIGRATE_ASYNC，它不能阻塞。
 	 */
 	int (*migrate_folio)(struct address_space *, struct folio *dst,
 			struct folio *src, enum migrate_mode);
@@ -435,6 +488,7 @@ struct address_space_operations {
 	int (*error_remove_folio)(struct address_space *, struct folio *);
 
 	/* swapfile support */
+	/* 交换文件支持 */
 	int (*swap_activate)(struct swap_info_struct *sis, struct file *file,
 				sector_t *span);
 	void (*swap_deactivate)(struct file *file);
@@ -469,24 +523,41 @@ struct mapping_metadata_bhs {
  * @flags: Error bits and flags (AS_*).
  * @wb_err: The most recent error which has occurred.
  * @i_private_lock: For use by the owner of the address_space.
+ *
+ * 用于管理文件 inode 映射到内存数据页 (struct page)
+ *
+ * 文件打开后，内核会在内存中分配一个 inode 结构，
+ * inode 内就有 i_mapping 域指向一个 address_space
+ *
  */
 struct address_space {
+	/* 反向指向拥有它的 inode 指针 */
 	struct inode		*host;
 	struct xarray		i_pages;
 	struct rw_semaphore	invalidate_lock;
 	gfp_t			gfp_mask;
+	/* 内存映射树节点计数 */
 	atomic_t		i_mmap_writable;
 #ifdef CONFIG_READ_ONLY_THP_FOR_FS
 	/* number of thp, only for non-shmem files */
 	atomic_t		nr_thps;
 #endif
+	/*
+	 * 内存映射树
+	 * 优先搜索树的树根
+	 */
 	struct rb_root_cached	i_mmap;
+	/* 已缓存页数量 */
 	unsigned long		nrpages;
+	/* 回写起始偏移 */
 	pgoff_t			writeback_index;
+	/* 地址空间操作 */
 	const struct address_space_operations *a_ops;
+	/* 掩码与标识 */
 	unsigned long		flags;
 	errseq_t		wb_err;
 	spinlock_t		i_private_lock;
+	/* 读写信号量 */
 	struct rw_semaphore	i_mmap_rwsem;
 } __attribute__((aligned(sizeof(long)))) __randomize_layout;
 	/*
@@ -765,6 +836,7 @@ struct inode_state_flags {
  * of the 'struct inode'
  */
 struct inode {
+	/* 文件访问权限、所有权、文件类型 */
 	umode_t			i_mode;
 	unsigned short		i_opflags;
 	unsigned int		i_flags;
@@ -777,6 +849,7 @@ struct inode {
 
 	const struct inode_operations	*i_op;
 	struct super_block	*i_sb;
+	/* 文件对应 page 空间 */
 	struct address_space	*i_mapping;
 
 #ifdef CONFIG_SECURITY
@@ -793,22 +866,31 @@ struct inode {
 	 *    inode_(inc|dec)_link_count
 	 */
 	union {
+		/* 硬连接总数 */
 		const unsigned int i_nlink;
 		unsigned int __i_nlink;
 	};
+	/* 设备号 */ 
 	dev_t			i_rdev;
+	/* 文件长度 */
 	loff_t			i_size;
+	/* 最后访问时间 */
 	time64_t		i_atime_sec;
+	/* 最后修改时间 */
 	time64_t		i_mtime_sec;
+	/* 最后修改 inode 时间 */
 	time64_t		i_ctime_sec;
 	u32			i_atime_nsec;
 	u32			i_mtime_nsec;
 	u32			i_ctime_nsec;
+	/* 索引节点版本号 */
 	u32			i_generation;
 	spinlock_t		i_lock;	/* i_blocks, i_bytes, maybe i_size */
 	unsigned short          i_bytes;
+	/* 以位为单位块大小 */
 	u8			i_blkbits;
 	enum rw_hint		i_write_hint;
+	/* 块计数长度 */
 	blkcnt_t		i_blocks;
 
 #ifdef __NEED_I_SIZE_ORDERED
@@ -840,31 +922,38 @@ struct inode {
 		struct hlist_head	i_dentry;
 		struct rcu_head		i_rcu;
 	};
+	/* 版本号 */
 	atomic64_t		i_version;
 	atomic64_t		i_sequence; /* see futex */
+	/* 文件引用计数器 */
 	atomic_t		i_count;
+	/* 直接 io 计数 */
 	atomic_t		i_dio_count;
 	atomic_t		i_writecount;
 #if defined(CONFIG_IMA) || defined(CONFIG_FILE_LOCKING)
 	atomic_t		i_readcount; /* struct files open RO */
 #endif
 	union {
+		/* 文件操作集合 */
 		const struct file_operations	*i_fop;	/* former ->i_op->default_file_ops */
 		void (*free_inode)(struct inode *);
 	};
 	struct file_lock_context	*i_flctx;
+	/* 设备地址映射 */
 	struct address_space	i_data;
 	union {
+		/* 块设备链表 */
 		struct list_head	i_devices;
 		int			i_linklen;
 	};
 	union {
+		/* 管道信息 */
 		struct pipe_inode_info	*i_pipe;
+		/* 块设备驱动 */
 		struct cdev		*i_cdev;
 		char			*i_link;
 		unsigned		i_dir_seq;
 	};
-
 
 #ifdef CONFIG_FSNOTIFY
 	__u32			i_fsnotify_mask; /* all events this inode cares about */
@@ -872,6 +961,7 @@ struct inode {
 	struct fsnotify_mark_connector __rcu	*i_fsnotify_marks;
 #endif
 
+	/* 指向文件系统的私有数据 */
 	void			*i_private; /* fs or device private pointer */
 } __randomize_layout;
 
@@ -1259,7 +1349,9 @@ static inline int ra_has_index(struct file_ra_state *ra, pgoff_t index)
  */
 struct file {
 	spinlock_t			f_lock;
+	/* 读写模式 */
 	fmode_t				f_mode;
+	/* 关联的操作 */
 	const struct file_operations	*f_op;
 	struct address_space		*f_mapping;
 	void				*private_data;
@@ -1267,6 +1359,7 @@ struct file {
 	unsigned int			f_flags;
 	unsigned int			f_iocb_flags;
 	const struct cred		*f_cred;
+	/* 用于信号通知 */
 	struct fown_struct		*f_owner;
 	/* --- cacheline 1 boundary (64 bytes) --- */
 	union {
@@ -1295,6 +1388,7 @@ struct file {
 		struct file_ra_state	f_ra;
 		freeptr_t		f_freeptr;
 	};
+	/* 文件引用次数 */
 	file_ref_t			f_ref;
 	/* --- cacheline 3 boundary (192 bytes) --- */
 } __randomize_layout
@@ -1320,8 +1414,8 @@ struct file *get_file_active(struct file **f);
 
 #define	MAX_NON_LFS	((1UL<<31) - 1)
 
-/* Page cache limit. The filesystems should put that into their s_maxbytes 
-   limits, otherwise bad things can happen in VM. */ 
+/* Page cache limit. The filesystems should put that into their s_maxbytes
+   limits, otherwise bad things can happen in VM. */
 #if BITS_PER_LONG==32
 #define MAX_LFS_FILESIZE	((loff_t)ULONG_MAX << PAGE_SHIFT)
 #elif BITS_PER_LONG==64
@@ -1348,6 +1442,7 @@ static inline struct fown_struct *file_f_owner(const struct file *file)
 
 extern void send_sigio(struct fown_struct *fown, int fd, int band);
 
+/* 获取文件的索引 inode */
 static inline struct inode *file_inode(const struct file *f)
 {
 	return f->f_inode;
@@ -1400,6 +1495,7 @@ extern int send_sigurg(struct file *file);
  *	Umount options
  */
 
+/* 尝试强制卸载 */
 #define MNT_FORCE	0x00000001	/* Attempt to forcibily umount */
 #define MNT_DETACH	0x00000002	/* Just detach from the tree */
 #define MNT_EXPIRE	0x00000004	/* Mark for expiry */
@@ -1924,39 +2020,66 @@ struct offset_ctx;
 typedef unsigned int __bitwise fop_flags_t;
 
 struct file_operations {
+	/* 反向引用指针 */
 	struct module *owner;
 	fop_flags_t fop_flags;
+	/* 改变文件读写位置，并返回新位置 */
 	loff_t (*llseek) (struct file *, loff_t, int);
+	/* 读取数据, 非负代表成功读取数 */
 	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
+	/* 写入数据, 非负代表成功写取数 */
 	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
+	/* 初始化一个异步读, 不存在使用 read 替换 */
 	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *);
+	/* 初始化一个异步写, 不存在使用 write 替换 */
 	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *);
+	/* 等待异步读完成
+	 * iocb_bio_iopoll */
 	int (*iopoll)(struct kiocb *kiocb, struct io_comp_batch *,
 			unsigned int flags);
+	/* 共享迭代*/
 	int (*iterate_shared) (struct file *, struct dir_context *);
+	/* poll|epoll|select 后端调用，查询读写是否堵塞 */
 	__poll_t (*poll) (struct file *, struct poll_table_struct *);
 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+	/* 兼容 ioctl 系统调用，用于兼容旧的 ioctl 接口 */
 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+	/* 用来将设备内存映射到进程地址空间 */
 	int (*mmap) (struct file *, struct vm_area_struct *);
 	int (*open) (struct inode *, struct file *);
+	/* 保证数据落盘 */
 	int (*flush) (struct file *, fl_owner_t id);
+	/* 文件结构释放 */
 	int (*release) (struct inode *, struct file *);
+	/* fsync 系统调用、用来刷新挂着的数据 */
 	int (*fsync) (struct file *, loff_t, loff_t, int datasync);
+	/* 通知设备标志变化 */
 	int (*fasync) (int, struct file *, int);
+	/* 实现文件加锁 */
 	int (*lock) (struct file *, int, struct file_lock *);
+	/* 映射设备内存段 */
 	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+	/* fnctl 传参检查 */
 	int (*check_flags)(int);
+	/* 文件锁 */
 	int (*flock) (struct file *, int, struct file_lock *);
+	/* 零拷贝、用于两个文件移动数据 */
 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *, loff_t *, size_t, unsigned int);
+	/* 零拷贝、用于两个文件移动数据 */
 	ssize_t (*splice_read)(struct file *, loff_t *, struct pipe_inode_info *, size_t, unsigned int);
 	void (*splice_eof)(struct file *file);
+	/* 设置租约 */
 	int (*setlease)(struct file *, int, struct file_lease **, void **);
+	/* 快速创建文件 */
 	long (*fallocate)(struct file *file, int mode, loff_t offset,
 			  loff_t len);
+	/* 展示 fd 文件描述符信息 */
 	void (*show_fdinfo)(struct seq_file *m, struct file *f);
 #ifndef CONFIG_MMU
+	/* mmap 权限限制信息 */
 	unsigned (*mmap_capabilities)(struct file *);
 #endif
+	/* 将一个文件的数据复制到另一个文件 */
 	ssize_t (*copy_file_range)(struct file *, loff_t, struct file *,
 			loff_t, size_t, unsigned int);
 	loff_t (*remap_file_range)(struct file *file_in, loff_t pos_in,
@@ -2001,33 +2124,57 @@ enum fs_update_time {
 struct inode_operations {
 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
 	const char * (*get_link) (struct dentry *, struct inode *, struct delayed_call *);
+	/* 确认是否允许对 inode 索引节点所指的文件进行指定模式的访问 */
 	int (*permission) (struct mnt_idmap *, struct inode *, int);
 	struct posix_acl * (*get_inode_acl)(struct inode *, int, bool);
 
 	int (*readlink) (struct dentry *, char __user *,int);
 
+	/* 由open和create系统调用使用
+	 * 入参inode为父目录的inode，入参dentry为新创建的，没有对应的inode（negative dentry）
+	 * 底层文件系统需要调用d_instantiate()将dentry和新创建的inode进行关联
+	 * 只有目录类型的inode才会调用该函数指针 */
 	int (*create) (struct mnt_idmap *, struct inode *,struct dentry *,
 		       umode_t, bool);
+	/* link系统调用使用，用于创建硬链接
+	 * 同样需要调用d_instantiate()来关联dentry和inode */
 	int (*link) (struct dentry *,struct inode *,struct dentry *);
+	/* unlink系统调用使用，用于删除一个inode关联的文件或目录 */
 	int (*unlink) (struct inode *,struct dentry *);
+	/* symlink系统调用使用，用于创建一个软链接 */
 	int (*symlink) (struct mnt_idmap *, struct inode *,struct dentry *,
 			const char *);
+	/* mkdir系统调用使用，用于创建一个子目录 */
 	struct dentry *(*mkdir) (struct mnt_idmap *, struct inode *,
 				 struct dentry *, umode_t);
+	/* rmdir系统调用使用，用于删除一个子目录 */
 	int (*rmdir) (struct inode *,struct dentry *);
+	/* mknod系统调用使用，用于创建一个设备inode(char,block)或者一个named pipe (FIFO)或者一个 socket inode */
 	int (*mknod) (struct mnt_idmap *, struct inode *,struct dentry *,
 		      umode_t,dev_t);
+	/* rename系统调用使用，用于改名 */
 	int (*rename) (struct mnt_idmap *, struct inode *, struct dentry *,
 			struct inode *, struct dentry *, unsigned int);
+	/* VFS 调用，用于设置文件的 attr 属性。它将被 chmod 等相关系统调用使用 */
 	int (*setattr) (struct mnt_idmap *, struct dentry *, struct iattr *);
+	/* VFS调用，用于获取文件的 attr 属性。它将被 stat 等相关系统调用使用 */
+	/* xfs: xfs_vn_getattr */
 	int (*getattr) (struct mnt_idmap *, const struct path *,
 			struct kstat *, u32, unsigned int);
+	/* VFS调用，用于列出给定文件的所有扩展属性。
+	 * 它将被listxattr系统调用使用 */
 	ssize_t (*listxattr) (struct dentry *, char *, size_t);
 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
 		      u64 len);
+	/* VFS调用，用于更新inode的时间（如atime）或者i_version字段。
+	 * 如果该函数没有指定，则VFS将自己更新inode并调用mark_inode_dirty_sync 来同步inode到磁盘 */
 	int (*update_time)(struct inode *inode, enum fs_update_time type,
 			   unsigned int flags);
 	void (*sync_lazytime)(struct inode *inode);
+	/* 该可选的函数，用于性能优化
+	 * 它将lookup、可能的create操作以及open操作在一个接口里完成
+	 * 只有negative dentry才会调用该函数
+	 * 在dentry cache里的positive dentry直接通过f_op->open()函数来打开文件即可 */
 	int (*atomic_open)(struct inode *, struct dentry *,
 			   struct file *, unsigned open_flag,
 			   umode_t create_mode);
@@ -2108,7 +2255,9 @@ extern loff_t vfs_dedupe_file_range_one(struct file *src_file, loff_t src_pos,
 #define S_NOQUOTA	(1 << 5)  /* Inode is not counted to quota */
 #define S_DIRSYNC	(1 << 6)  /* Directory modifications are synchronous */
 #define S_NOCMTIME	(1 << 7)  /* Do not update file c/mtime */
+/* 交换文件，不能删除截断 */
 #define S_SWAPFILE	(1 << 8)  /* Do not truncate: swapon got its bmaps */
+/* inode 是内部的 */
 #define S_PRIVATE	(1 << 9)  /* Inode is fs-internal */
 #define S_IMA		(1 << 10) /* Inode has an associated IMA struct */
 #define S_AUTOMOUNT	(1 << 11) /* Automount/referral quasi-directory */
@@ -2187,6 +2336,7 @@ static inline bool HAS_UNMAPPED_ID(struct mnt_idmap *idmap,
 	       !vfsgid_valid(i_gid_into_vfsgid(idmap, inode));
 }
 
+/* 通过文件初始化出 kiocb */
 static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
 {
 	*kiocb = (struct kiocb) {
@@ -2258,6 +2408,8 @@ static inline void inode_dec_link_count(struct inode *inode)
 extern bool atime_needs_update(const struct path *, struct inode *);
 extern void touch_atime(const struct path *);
 
+/* 文件被访问
+ * 修改访问时间 */
 static inline void file_accessed(struct file *file)
 {
 	if (!(file->f_flags & O_NOATIME))
@@ -2269,10 +2421,12 @@ int kiocb_modified(struct kiocb *iocb);
 
 int sync_inode_metadata(struct inode *inode, int wait);
 
+/* 文件系统类型描述结构 */
 struct file_system_type {
+	/* 名 如:xfs */
 	const char *name;
 	int fs_flags;
-#define FS_REQUIRES_DEV		1 
+#define FS_REQUIRES_DEV		1
 #define FS_BINARY_MOUNTDATA	2
 #define FS_HAS_SUBTYPE		4
 #define FS_USERNS_MOUNT		8	/* Can be mounted by userns root */
@@ -2284,9 +2438,13 @@ struct file_system_type {
 #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
 	int (*init_fs_context)(struct fs_context *);
 	const struct fs_parameter_spec *parameters;
+	/* 释放函数 */
 	void (*kill_sb) (struct super_block *);
 	struct module *owner;
+	/* 通过 next 挂载在全局文件系统列表上 */
 	struct file_system_type * next;
+	/* 此文件系统类型锁包含的超级块对象
+	 * 保证所有关联超级块 umount 后 */
 	struct hlist_head fs_supers;
 
 	struct lock_class_key s_lock_key;
@@ -2716,6 +2874,8 @@ static inline bool inode_wrong_type(const struct inode *inode, umode_t mode)
  *
  * This is a variant of sb_start_write() which is a noop on non-regular file.
  * Should be matched with a call to file_end_write().
+ *
+ * 获取对常规文件 io 的超级块的写访问权限
  */
 static inline void file_start_write(struct file *file)
 {
@@ -2878,7 +3038,7 @@ ssize_t __kernel_read(struct file *file, void *buf, size_t count, loff_t *pos);
 extern ssize_t kernel_write(struct file *, const void *, size_t, loff_t *);
 extern ssize_t __kernel_write(struct file *, const void *, size_t, loff_t *);
 extern struct file * open_exec(const char *);
- 
+
 /* fs/dcache.c -- generic fs support functions */
 extern bool is_subdir(struct dentry *, struct dentry *);
 extern bool path_is_under(const struct path *, const struct path *);
@@ -3139,6 +3299,9 @@ void inode_dio_wait_interruptible(struct inode *inode);
  * This is called once we've finished processing a direct I/O request,
  * and is used to wake up callers waiting for direct I/O to be quiesced.
  */
+/* 发出直接 I/O 请求开始的信号
+ * 一旦我们处理完直接 I/O 请求，就会调用此函数，
+ * 用于唤醒等待直接 I/O 停顿的调用者。 */
 static inline void inode_dio_begin(struct inode *inode)
 {
 	atomic_inc(&inode->i_dio_count);
@@ -3150,6 +3313,8 @@ static inline void inode_dio_begin(struct inode *inode)
  *
  * This is called once we've finished processing a direct I/O request,
  * and is used to wake up callers waiting for direct I/O to be quiesced.
+ *
+ * 直接 I/O 请求的信号完成
  */
 static inline void inode_dio_end(struct inode *inode)
 {

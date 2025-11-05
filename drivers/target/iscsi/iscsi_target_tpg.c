@@ -445,6 +445,7 @@ static bool iscsit_tpg_check_network_portal(
 	return match;
 }
 
+/* target 网络添加入口 */
 struct iscsi_tpg_np *iscsit_tpg_add_network_portal(
 	struct iscsi_portal_group *tpg,
 	struct sockaddr_storage *sockaddr,
@@ -471,6 +472,7 @@ struct iscsi_tpg_np *iscsit_tpg_add_network_portal(
 		return ERR_PTR(-ENOMEM);
 	}
 
+	/* 开启网络监听与启动登陆处理内核线程 */
 	np = iscsit_add_np(sockaddr, network_transport);
 	if (IS_ERR(np)) {
 		kfree(tpg_np);

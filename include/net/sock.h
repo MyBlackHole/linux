@@ -450,6 +450,8 @@ struct sock {
 		/* public: */
 	};
 
+	/* 接收到数据时调用
+	 * sock_def_readable */
 	void			(*sk_data_ready)(struct sock *sk);
 	long			sk_rcvtimeo;
 	int			sk_rcvlowat;
@@ -577,11 +579,19 @@ struct sock {
 	void			*sk_security;
 #endif
 	struct sock_cgroup_data	sk_cgrp_data;
+	/* 状态变化时调用
+	 * sock_def_wakeup */
 	void			(*sk_state_change)(struct sock *sk);
+	/* 可写时调用
+	 * sock_def_write_space */
 	void			(*sk_write_space)(struct sock *sk);
+	/* 错误时调用 (收到 rst)
+	 * sock_def_error_report */
 	void			(*sk_error_report)(struct sock *sk);
 	int			(*sk_backlog_rcv)(struct sock *sk,
 						  struct sk_buff *skb);
+	/* 释放时调用
+	 * sock_def_destruct */
 	void                    (*sk_destruct)(struct sock *sk);
 	struct sock_reuseport __rcu	*sk_reuseport_cb;
 #ifdef CONFIG_BPF_SYSCALL

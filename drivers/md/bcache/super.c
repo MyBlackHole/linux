@@ -29,44 +29,57 @@
 unsigned int bch_cutoff_writeback;
 unsigned int bch_cutoff_writeback_sync;
 
+/* 超级块的魔数 */
 static const char bcache_magic[] = {
 	0xc6, 0x85, 0x73, 0xf6, 0x4e, 0x1a, 0x45, 0xca,
 	0x82, 0x65, 0xf5, 0x7f, 0x48, 0xba, 0x6d, 0x81
 };
 
+/* 无效的UUID */
 static const char invalid_uuid[] = {
 	0xa0, 0x3e, 0xf8, 0xed, 0x3e, 0xe1, 0xb8, 0x78,
 	0xc8, 0x50, 0xfc, 0x5e, 0xcb, 0x16, 0xcd, 0x99
 };
 
+/* 全局 kobject */
 static struct kobject *bcache_kobj;
+/* 全局注册锁 */
 struct mutex bch_register_lock;
+/* 如果系统正在重启，则不允许用户空间访问 */
 bool bcache_is_reboot;
+/* 全局缓存集合 */
 LIST_HEAD(bch_cache_sets);
 static LIST_HEAD(uncached_devices);
 
 static int bcache_major;
 static DEFINE_IDA(bcache_device_idx);
 static wait_queue_head_t unregister_wait;
+
+/* 工作队列 */
 struct workqueue_struct *bcache_wq;
 struct workqueue_struct *bch_flush_wq;
 struct workqueue_struct *bch_journal_wq;
 
 
+/* B树最大页面数 */
 #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
 /* limitation of partitions number on single bcache device */
+/* 单个 bcache 设备上的分区数限制 */
 #define BCACHE_MINORS		128
 /* limitation of bcache devices number on single system */
+/* 单个系统上的 bcache 设备数限制 */
 #define BCACHE_DEVICE_IDX_MAX	((1U << MINORBITS)/BCACHE_MINORS)
 
 /* Superblock */
 
+/* 获取桶大小 */
 static unsigned int get_bucket_size(struct cache_sb *sb, struct cache_sb_disk *s)
 {
 	unsigned int bucket_size = le16_to_cpu(s->bucket_size);
 
 	if (sb->version >= BCACHE_SB_VERSION_CDEV_WITH_FEATURES) {
 		if (bch_has_feature_large_bucket(sb)) {
+			/* 大桶特性: 桶大小为 2 的 order 次方 */
 			unsigned int max, order;
 
 			max = sizeof(unsigned int) * BITS_PER_BYTE - 1;
@@ -80,6 +93,7 @@ static unsigned int get_bucket_size(struct cache_sb *sb, struct cache_sb_disk *s
 					order);
 			bucket_size = 1 << order;
 		} else if (bch_has_feature_obso_large_bucket(sb)) {
+			/* 过时的大桶布局: 使用两个 16 位字段组成 32 位桶大小 */
 			bucket_size +=
 				le16_to_cpu(s->obso_bucket_size_hi) << 16;
 		}
@@ -88,12 +102,14 @@ static unsigned int get_bucket_size(struct cache_sb *sb, struct cache_sb_disk *s
 	return bucket_size;
 }
 
+/* 读取超级块通用部分进行校验 */
 static const char *read_super_common(struct cache_sb *sb,  struct block_device *bdev,
 				     struct cache_sb_disk *s)
 {
 	const char *err;
 	unsigned int i;
 
+	/* 从磁盘格式转换到内存格式 */
 	sb->first_bucket= le16_to_cpu(s->first_bucket);
 	sb->nbuckets	= le64_to_cpu(s->nbuckets);
 	sb->bucket_size	= get_bucket_size(sb, s);
@@ -101,6 +117,7 @@ static const char *read_super_common(struct cache_sb *sb,  struct block_device *
 	sb->nr_in_set	= le16_to_cpu(s->nr_in_set);
 	sb->nr_this_dev	= le16_to_cpu(s->nr_this_dev);
 
+	/* 验证各种参数 */
 	err = "Too many journal buckets";
 	if (sb->keys > SB_JOURNAL_BUCKETS)
 		goto err;
@@ -163,6 +180,7 @@ err:
 }
 
 
+/* 读取超级块的主函数 */
 static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 			      struct cache_sb_disk **res)
 {
@@ -171,12 +189,14 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 	struct folio *folio;
 	unsigned int i;
 
+	/* 读取包含超级块的页面 */
 	folio = mapping_read_folio_gfp(bdev->bd_mapping,
 			SB_OFFSET >> PAGE_SHIFT, GFP_KERNEL);
 	if (IS_ERR(folio))
 		return "IO error";
 	s = folio_address(folio) + offset_in_folio(folio, SB_OFFSET);
 
+	/* 转换字段到主机字节序 */
 	sb->offset		= le64_to_cpu(s->offset);
 	sb->version		= le64_to_cpu(s->version);
 
@@ -196,6 +216,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 	pr_debug("read sb version %llu, flags %llu, seq %llu, journal size %u\n",
 		 sb->version, sb->flags, sb->seq, sb->keys);
 
+	/* 验证超级块 */
 	err = "Not a bcache superblock (bad offset)";
 	if (sb->offset != SB_SECTOR)
 		goto err;
@@ -218,6 +239,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 	if (sb->block_size << 9 < bdev_logical_block_size(bdev))
 		goto err;
 
+	/* 根据不同版本处理 */
 	switch (sb->version) {
 	case BCACHE_SB_VERSION_BDEV:
 		sb->data_offset	= BDEV_DATA_START_DEFAULT;
@@ -242,11 +264,13 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 		 * Feature bits are needed in read_super_common(),
 		 * convert them firstly.
 		 */
+		/* 转换特性位 */
 		sb->feature_compat = le64_to_cpu(s->feature_compat);
 		sb->feature_incompat = le64_to_cpu(s->feature_incompat);
 		sb->feature_ro_compat = le64_to_cpu(s->feature_ro_compat);
 
 		/* Check incompatible features */
+		/* 检查不支持的特性 */
 		err = "Unsupported compatible feature found";
 		if (bch_has_unknown_compat_features(sb))
 			goto err;
@@ -268,6 +292,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 		goto err;
 	}
 
+	/* 更新最后挂载时间 */
 	sb->last_mount = (u32)ktime_get_real_seconds();
 	*res = s;
 	return NULL;
@@ -276,25 +301,30 @@ err:
 	return err;
 }
 
+/* 后端设备超级块写回结束处理 */
 static void write_bdev_super_endio(struct bio *bio)
 {
 	struct cached_dev *dc = bio->bi_private;
 
+	/* 统计 IO 异常 */
 	if (bio->bi_status)
 		bch_count_backing_io_errors(dc, bio);
 
 	closure_put(&dc->sb_write);
 }
 
+/* 通用写超级块函数 */
 static void __write_super(struct cache_sb *sb, struct cache_sb_disk *out,
 		struct bio *bio)
 {
 	unsigned int i;
 
+	/* 设置 bio 参数: 写操作|同步|元数据 */
 	bio->bi_opf = REQ_OP_WRITE | REQ_SYNC | REQ_META;
 	bio->bi_iter.bi_sector	= SB_SECTOR;
 	bio_add_virt_nofail(bio, out, SB_SIZE);
 
+	/* 转换字段到磁盘格式 */
 	out->offset		= cpu_to_le64(sb->offset);
 
 	memcpy(out->uuid,	sb->uuid, 16);
@@ -318,14 +348,17 @@ static void __write_super(struct cache_sb *sb, struct cache_sb_disk *out,
 	}
 
 	out->version		= cpu_to_le64(sb->version);
+	/* 计算校验和 */
 	out->csum = csum_set(out);
 
 	pr_debug("ver %llu, flags %llu, seq %llu\n",
 		 sb->version, sb->flags, sb->seq);
 
+	/* 提交 bio */
 	submit_bio(bio);
 }
 
+/* 解锁后端设备超级块写信号量 */
 static CLOSURE_CALLBACK(bch_write_bdev_super_unlock)
 {
 	closure_type(dc, struct cached_dev, sb_write);
@@ -333,11 +366,13 @@ static CLOSURE_CALLBACK(bch_write_bdev_super_unlock)
 	up(&dc->sb_write_mutex);
 }
 
+/* 写后端设备超级块 */
 void bch_write_bdev_super(struct cached_dev *dc, struct closure *parent)
 {
 	struct closure *cl = &dc->sb_write;
 	struct bio *bio = &dc->sb_bio;
 
+	/* 获取互斥锁 */
 	down(&dc->sb_write_mutex);
 	closure_init(cl, parent);
 
@@ -1287,6 +1322,8 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
 	/*
 	 * dc->c must be set before dc->count != 0 - paired with the mb in
 	 * cached_dev_get()
+	 *
+	 * 必须在 dc->count != 0 之前设置 dc->c - 与 cached_dev_get() 中的 mb 配对
 	 */
 	smp_wmb();
 	refcount_set(&dc->count, 1);
@@ -1332,6 +1369,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
 	}
 
 	/* Allow the writeback thread to proceed */
+	/* 允许回写线程继续执行 */
 	up_write(&dc->writeback_lock);
 
 	pr_info("Caching %pg as %s on set %pU\n",
@@ -2769,10 +2807,14 @@ static int bcache_reboot(struct notifier_block *n, unsigned long code, void *x)
 			goto out;
 
 		/* New registration is rejected since now */
+		/* 新注册已被拒绝 */
 		bcache_is_reboot = true;
 		/*
 		 * Make registering caller (if there is) on other CPU
 		 * core know bcache_is_reboot set to true earlier
+		 *
+		 * 确保在其他 CPU 核心上注册调用者（如果存在）时，
+		 * bcache_is_reboot 已提前设置为 true。
 		 */
 		smp_mb();
 
@@ -2808,6 +2850,8 @@ static int bcache_reboot(struct notifier_block *n, unsigned long code, void *x)
 		/*
 		 * Give an early chance for other kthreads and
 		 * kworkers to stop themselves
+		 *
+		 * 给其他 kthread 和 kworker 一个尽早停止自身进程的机会
 		 */
 		schedule();
 
@@ -2842,8 +2886,10 @@ out:
 	return NOTIFY_DONE;
 }
 
+/* 注册系统重启通知 */
 static struct notifier_block reboot = {
 	.notifier_call	= bcache_reboot,
+	/* 优先级:在任何实际设备之前 */
 	.priority	= INT_MAX, /* before any real devices */
 };
 

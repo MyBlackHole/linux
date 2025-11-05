@@ -723,6 +723,9 @@ static noinline void __ref __noreturn rest_init(void)
 	 * We need to spawn init first so that it obtains pid 1, however
 	 * the init task will end up wanting to create kthreads, which, if
 	 * we schedule it before we create kthreadd, will OOPS.
+	 *
+	 * 创建用户线程, 运行 kernel_init
+	 *
 	 */
 	pid = user_mode_thread(kernel_init, NULL, CLONE_FS);
 	/*
@@ -737,8 +740,10 @@ static noinline void __ref __noreturn rest_init(void)
 	rcu_read_unlock();
 
 	numa_default_policy();
+	/* 创建 kthreadd 线程 */
 	pid = kernel_thread(kthreadd, NULL, NULL, CLONE_FS | CLONE_FILES);
 	rcu_read_lock();
+	/* 通过 pid 找到 kthreadd 线程 */
 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
 	rcu_read_unlock();
 
@@ -756,9 +761,13 @@ static noinline void __ref __noreturn rest_init(void)
 	/*
 	 * The boot idle thread must execute schedule()
 	 * at least once to get things moving:
+	 *
+	 * 开机空闲线程必须调用一次
+	 * schedule
 	 */
 	schedule_preempt_disabled();
 	/* Call into cpu_idle with preempt disabled */
+	/* 给所有 cpu 个空闲任务 */
 	cpu_startup_entry(CPUHP_ONLINE);
 }
 
@@ -1013,6 +1022,7 @@ static void __init print_kernel_cmdline(const char *cmdline)
 		pr_notice("%s%s\n", KERNEL_CMDLINE_PREFIX, cmdline);
 }
 
+/* 一切苦难的开始 */
 asmlinkage __visible __init __no_sanitize_address __noreturn __no_stack_protector
 void start_kernel(void)
 {
@@ -1036,6 +1046,10 @@ void start_kernel(void)
 	boot_cpu_init();
 	page_address_init();
 	pr_notice("%s", linux_banner);
+	/* 架构相关初始化
+	 * x86_init:
+	 * iommu
+	 * pagetable*/
 	setup_arch(&command_line);
 	mm_core_init_early();
 	/* Static keys and static calls are needed by LSMs */
@@ -1076,6 +1090,7 @@ void start_kernel(void)
 	vfs_caches_init_early();
 	sort_main_extable();
 	trap_init();
+	/* 内存管理初始化 */
 	mm_core_init();
 	maple_tree_init();
 	poking_init();
@@ -1106,6 +1121,8 @@ void start_kernel(void)
 	 * Allow workqueue creation and work item queueing/cancelling
 	 * early.  Work item execution depends on kthreads and starts after
 	 * workqueue_init().
+	 *
+	 * 工作队列初始化
 	 */
 	workqueue_init_early();
 
@@ -1192,6 +1209,7 @@ void start_kernel(void)
 	thread_stack_cache_init();
 	cred_init();
 	fork_init();
+	/* task_struct 相关缓存分配 */
 	proc_caches_init();
 	uts_ns_init();
 	time_ns_init();
@@ -1199,10 +1217,13 @@ void start_kernel(void)
 	security_init();
 	dbg_late_init();
 	net_ns_init();
+	/* bdev 等初始化
+	 * 与各类缓存初始化 */
 	vfs_caches_init();
 	pagecache_init();
 	signals_init();
 	seq_file_init();
+	/* proc 文件系统 初始化开始 */
 	proc_root_init();
 	nsfs_init();
 	pidfs_init();
@@ -1613,6 +1634,7 @@ static int __ref kernel_init(void *unused)
 
 	rcu_end_inkernel_boot();
 
+	/* 执行 proc 文件系统挂载等 */
 	do_sysctl_args();
 
 	if (ramdisk_execute_command) {
@@ -1685,6 +1707,7 @@ static noinline void __init kernel_init_freeable(void)
 
 	smp_prepare_cpus(setup_max_cpus);
 
+	/* 初始化 worker 队列 */
 	workqueue_init();
 
 	init_mm_internals();
@@ -1710,6 +1733,9 @@ static noinline void __init kernel_init_freeable(void)
 	/*
 	 * check if there is an early userspace init.  If yes, let it do all
 	 * the work
+	 *
+	 * 检查是否存在早期用户空间初始化。
+	 * 如果是，则让它完成所有工作
 	 */
 	int ramdisk_command_access;
 	ramdisk_command_access = init_eaccess(ramdisk_execute_command);

@@ -94,7 +94,7 @@ u64 nfs_compat_user_ino64(u64 fileid)
 {
 #ifdef CONFIG_COMPAT
 	compat_ulong_t ino;
-#else	
+#else
 	unsigned long ino;
 #endif
 
@@ -1361,6 +1361,9 @@ int nfs_open(struct inode *inode, struct file *filp)
 /*
  * This function is called whenever some part of NFS notices that
  * the cached attributes have to be refreshed.
+ *
+ * 刷新缓存属性
+ *
  */
 int
 __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
@@ -1372,14 +1375,20 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 	dfprintk(PAGECACHE, "NFS: revalidating (%s/%Lu)\n",
 		inode->i_sb->s_id, (unsigned long long)NFS_FILEID(inode));
 
+    /* 开始注册跟踪 nfs 重新验证 inode */
 	trace_nfs_revalidate_inode_enter(inode);
 
 	if (is_bad_inode(inode))
+        /* 是坏的 */
+        /* 不用刷新 */
 		goto out;
 	if (NFS_STALE(inode))
+        /* 是旧的 */
+        /* 不用刷新 */
 		goto out;
 
 	/* pNFS: Attributes aren't updated until we layoutcommit */
+    /* 提交前不会更新属性 */
 	if (S_ISREG(inode->i_mode)) {
 		status = pnfs_sync_inode(inode, false);
 		if (status)
@@ -1396,6 +1405,7 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 
 	nfs_inc_stats(inode, NFSIOS_INODEREVALIDATE);
 
+    /* getattr to nfs4_proc_getattr */
 	status = NFS_PROTO(inode)->getattr(server, NFS_FH(inode), fattr, inode);
 	if (status != 0) {
 		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Lu) getattr failed, error=%d\n",
@@ -1416,6 +1426,7 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 		goto out;
 	}
 
+    /* 刷新索引 */
 	status = nfs_refresh_inode(inode, fattr);
 	if (status) {
 		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Lu) refresh failed, error=%d\n",
@@ -1767,6 +1778,7 @@ void nfs_fattr_set_barrier(struct nfs_fattr *fattr)
 	fattr->gencount = nfs_inc_attr_generation_counter();
 }
 
+/* 分配初始化 fattr */
 struct nfs_fattr *nfs_alloc_fattr(void)
 {
 	struct nfs_fattr *fattr;
@@ -1912,6 +1924,7 @@ static int nfs_inode_attrs_cmp_generic(const struct nfs_fattr *fattr,
 static int nfs_inode_attrs_cmp_monotonic(const struct nfs_fattr *fattr,
 					 const struct inode *inode)
 {
+    /* TODO 修改属性减版本 ？ */
 	s64 diff = fattr->change_attr - inode_peek_iversion_raw(inode);
 	if (diff > 0)
 		return 1;
@@ -1948,6 +1961,9 @@ static int nfs_inode_attrs_cmp_strict_monotonic(const struct nfs_fattr *fattr,
  * more recent than the ones cached in @inode. It returns '-1' if
  * the attributes in @inode are more recent than the ones in @fattr,
  * and it returns 0 if not sure.
+ *
+ * 比较属性 inode 是不是比 fattr 新
+ * 不确定返回 0
  */
 static int nfs_inode_attrs_cmp(const struct nfs_fattr *fattr,
 			       const struct inode *inode)
@@ -2089,6 +2105,9 @@ static int nfs_refresh_inode_locked(struct inode *inode,
  * other recent updates of the inode metadata, then decide whether it is
  * safe to do a full update of the inode attributes, or whether just to
  * call nfs_check_inode_attributes.
+ *
+ * 验证 fattr 是否要进行下一步
+ * 尝试通过 fattr 更新索引缓存
  */
 int nfs_refresh_inode(struct inode *inode, struct nfs_fattr *fattr)
 {
@@ -2096,8 +2115,10 @@ int nfs_refresh_inode(struct inode *inode, struct nfs_fattr *fattr)
 
 	if ((fattr->valid & NFS_ATTR_FATTR) == 0)
 		return 0;
+    /* 自旋获取索引锁 */
 	spin_lock(&inode->i_lock);
 	status = nfs_refresh_inode_locked(inode, fattr);
+    /* 释放索引锁 */
 	spin_unlock(&inode->i_lock);
 
 	return status;
@@ -2614,6 +2635,7 @@ static void nfsiod_stop(void)
 static int nfsiod_start(void)
 {
 	dprintk("RPC:       creating workqueue nfsiod\n");
+	/* 分配创建 worker 队列 */
 	nfsiod_workqueue = alloc_workqueue("nfsiod", WQ_MEM_RECLAIM | WQ_UNBOUND, 0);
 	if (nfsiod_workqueue == NULL)
 		return -ENOMEM;
@@ -2624,6 +2646,7 @@ static int nfsiod_start(void)
 	 * a non-memreclaim work queue, which causes a priority inversion problem.
 	 */
 	dprintk("RPC:       creating workqueue nfslocaliod\n");
+	/* 设置全局变量 */
 	nfslocaliod_workqueue = alloc_workqueue("nfslocaliod", WQ_UNBOUND, 0);
 	if (unlikely(nfslocaliod_workqueue == NULL)) {
 		nfsiod_stop();
@@ -2668,6 +2691,7 @@ static void nfs_net_exit(struct net *net)
 	nfs_clients_exit(net);
 }
 
+/* 网络函数集 */
 static struct pernet_operations nfs_net_ops = {
 	.init = nfs_net_init,
 	.exit = nfs_net_exit,
@@ -2715,10 +2739,12 @@ static int __init init_nfs_fs(void)
 	if (err)
 		return err;
 
+	/* 初始化 nfs 的 /sys/fs/nfs 下内容 */
 	err = nfs_sysfs_init();
 	if (err < 0)
 		goto out10;
 
+	/* 注册网络子系统到 pernet_list */
 	err = register_pernet_subsys(&nfs_net_ops);
 	if (err < 0)
 		goto out9;
@@ -2751,6 +2777,7 @@ static int __init init_nfs_fs(void)
 	if (err)
 		goto out1;
 
+	/* nfs 所有文件系统注册入口 */
 	err = register_nfs_fs();
 	if (err)
 		goto out0;
@@ -2800,5 +2827,6 @@ MODULE_DESCRIPTION("NFS client support");
 MODULE_LICENSE("GPL");
 module_param(enable_ino64, bool, 0644);
 
+/* nfs 一切入口 */
 module_init(init_nfs_fs)
 module_exit(exit_nfs_fs)

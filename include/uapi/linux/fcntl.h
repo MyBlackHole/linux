@@ -103,6 +103,7 @@ struct delegation {
 #define DN_MULTISHOT	0x80000000	/* Don't remove notifier */
 
 /* Reserved kernel ranges [-100], [-10000, -40000]. */
+/* 特殊值，代表使用当前工作目录 */
 #define AT_FDCWD		-100    /* Special value for dirfd used to
 					   indicate openat should use the
 					   current working directory. */
@@ -143,6 +144,7 @@ struct delegation {
  * in the future and so they should not be used for other per-syscall flags.
  */
 #define AT_STATX_SYNC_TYPE		0x6000	/* Type of synchronisation required from statx() */
+/* - 执行 stat() 函数的所有功能 */
 #define AT_STATX_SYNC_AS_STAT		0x0000	/* - Do whatever stat() does */
 #define AT_STATX_FORCE_SYNC		0x2000	/* - Force the attributes to be sync'd with the server */
 #define AT_STATX_DONT_SYNC		0x4000	/* - Don't sync attributes with the server */

@@ -41,7 +41,9 @@ struct bio_crypt_ctx;
 struct block_device {
 	sector_t		bd_start_sect;
 	sector_t		bd_nr_sectors;
+	/* 指向设备结构 */
 	struct gendisk *	bd_disk;
+	/* 请求队列 */
 	struct request_queue *	bd_queue;
 	struct disk_stats __percpu *bd_stats;
 	unsigned long		bd_stamp;
@@ -207,12 +209,21 @@ typedef unsigned int blk_qc_t;
  * main unit of I/O for the block layer and lower layers (ie drivers and
  * stacking drivers)
  */
+/* 块层和下层I/O的主要单元（即驱动程序和堆栈驱动程序） */
 struct bio {
+	/*
+	 * 若一个req中包含多个bio，
+	 * 这些bio通过bi_next组成单向链表，
+	 * 链表以NULL结尾。
+	 * (bio merge导致一个req中存在多个bio，如果没有merge，一个bio对应一个req)
+	 */
 	struct bio		*bi_next;	/* request queue link */
+	/* bio 待操作的存储设备 */
 	struct block_device	*bi_bdev;
 	blk_opf_t		bi_opf;		/* bottom bits REQ_OP, top bits
 						 * req_flags.
 						 */
+	/* 状态和命令标志 */
 	unsigned short		bi_flags;	/* BIO_* below */
 	unsigned short		bi_ioprio;
 	enum rw_hint		bi_write_hint;
@@ -233,6 +244,7 @@ struct bio {
 	atomic_t		__bi_remaining;
 
 	/* The actual vec list, preserved by bio_reset() */
+	/* 实际的向量列表 */
 	struct bio_vec		*bi_io_vec;
 	struct bvec_iter	bi_iter;
 
@@ -242,7 +254,9 @@ struct bio {
 		/* for plugged zoned writes only: */
 		unsigned int		__bi_nr_segments;
 	};
+	/* io 结束回调 */
 	bio_end_io_t		*bi_end_io;
+	/* 用户私有数据 */
 	void			*bi_private;
 #ifdef CONFIG_BLK_CGROUP
 	/*
@@ -346,32 +360,44 @@ typedef __u32 __bitwise blk_mq_req_flags_t;
  */
 enum req_op {
 	/** @REQ_OP_READ: read sectors from the device */
+	/* 读取设备扇区 */
 	REQ_OP_READ		= (__force blk_opf_t)0,
 	/** @REQ_OP_WRITE: write sectors to the device */
+	/* 写设备扇区 */
 	REQ_OP_WRITE		= (__force blk_opf_t)1,
 	/** @REQ_OP_FLUSH: flush the volatile write cache */
+	/* 刷新易失性写缓存 */
 	REQ_OP_FLUSH		= (__force blk_opf_t)2,
 	/** @REQ_OP_DISCARD: discard sectors */
+	/* 丢弃扇区 */
 	REQ_OP_DISCARD		= (__force blk_opf_t)3,
 	/** @REQ_OP_SECURE_ERASE: securely erase sectors */
+	/* 安全的擦除扇区 */
 	REQ_OP_SECURE_ERASE	= (__force blk_opf_t)5,
 	/** @REQ_OP_ZONE_APPEND: write data at the current zone write pointer */
+	/* 在当前区域写指针处写入数据 */
 	REQ_OP_ZONE_APPEND	= (__force blk_opf_t)7,
 	/** @REQ_OP_WRITE_ZEROES: write the zero filled sector many times */
+	/* 写入 0 填充扇区 */
 	REQ_OP_WRITE_ZEROES	= (__force blk_opf_t)9,
 	/** @REQ_OP_ZONE_OPEN: Open a zone */
+	/* 打开一个区域 */
 	REQ_OP_ZONE_OPEN	= (__force blk_opf_t)11,
 	/** @REQ_OP_ZONE_CLOSE: Close a zone */
+	/* 创建一个区域 */
 	REQ_OP_ZONE_CLOSE	= (__force blk_opf_t)13,
 	/** @REQ_OP_ZONE_FINISH: Transition a zone to full */
+	/* 将区域转换完成 */
 	REQ_OP_ZONE_FINISH	= (__force blk_opf_t)15,
 	/** @REQ_OP_ZONE_RESET: reset a zone write pointer */
+	/* 重置区域写指针 */
 	REQ_OP_ZONE_RESET	= (__force blk_opf_t)17,
 	/** @REQ_OP_ZONE_RESET_ALL: reset all the zone present on the device */
+	/* 重置设备上存在的所有区域 */
 	REQ_OP_ZONE_RESET_ALL	= (__force blk_opf_t)19,
-
 	/* Driver private requests */
 	/* private: */
+	/* 驱动程序私有请求 */
 	REQ_OP_DRV_IN		= (__force blk_opf_t)34,
 	REQ_OP_DRV_OUT		= (__force blk_opf_t)35,
 
@@ -416,8 +442,11 @@ enum req_flag_bits {
 			(__force blk_opf_t)(1ULL << __REQ_FAILFAST_TRANSPORT)
 #define REQ_FAILFAST_DRIVER	\
 			(__force blk_opf_t)(1ULL << __REQ_FAILFAST_DRIVER)
+/* 同步请求 */
 #define REQ_SYNC	(__force blk_opf_t)(1ULL << __REQ_SYNC)
+/* 元数据请求 */
 #define REQ_META	(__force blk_opf_t)(1ULL << __REQ_META)
+/* 优先级请求 */
 #define REQ_PRIO	(__force blk_opf_t)(1ULL << __REQ_PRIO)
 #define REQ_NOMERGE	(__force blk_opf_t)(1ULL << __REQ_NOMERGE)
 #define REQ_IDLE	(__force blk_opf_t)(1ULL << __REQ_IDLE)
@@ -426,6 +455,7 @@ enum req_flag_bits {
 #define REQ_PREFLUSH	(__force blk_opf_t)(1ULL << __REQ_PREFLUSH)
 #define REQ_RAHEAD	(__force blk_opf_t)(1ULL << __REQ_RAHEAD)
 #define REQ_BACKGROUND	(__force blk_opf_t)(1ULL << __REQ_BACKGROUND)
+/* 非堵塞? */
 #define REQ_NOWAIT	(__force blk_opf_t)(1ULL << __REQ_NOWAIT)
 #define REQ_POLLED	(__force blk_opf_t)(1ULL << __REQ_POLLED)
 #define REQ_ALLOC_CACHE	(__force blk_opf_t)(1ULL << __REQ_ALLOC_CACHE)

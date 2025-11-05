@@ -4,7 +4,16 @@
 
 #define KERN_SOH	"\001"		/* ASCII Start Of Header */
 #define KERN_SOH_ASCII	'\001'
-
+/*
+ * /proc/sys/kernel/printk
+ * 
+ * 1. 控制台日志级别：优先级高于该值的消息将被打印至控制台。
+ * 2. 缺省的消息日志级别：将用该值来打印没有优先级的消息。
+ * 3. 最低的控制台日志级别：控制台日志级别可能被设置的最小值。
+ * 4. 缺省的控制台：控制台日志级别的缺省值。
+ *
+ * echo 8 > /proc/sys/kernel/printk: 所有消息都打印到控制台
+ */
 #define KERN_EMERG	KERN_SOH "0"	/* system is unusable */
 #define KERN_ALERT	KERN_SOH "1"	/* action must be taken immediately */
 #define KERN_CRIT	KERN_SOH "2"	/* critical conditions */

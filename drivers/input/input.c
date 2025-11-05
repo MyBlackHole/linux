@@ -1008,6 +1008,7 @@ static int input_attach_handler(struct input_dev *dev, struct input_handler *han
 	if (!id)
 		return -ENODEV;
 
+    /* 连接看看 */
 	error = handler->connect(handler, dev, id);
 	if (error && error != -ENODEV)
 		pr_err("failed to attach handler %s to device %s, error: %d\n",
@@ -2465,6 +2466,8 @@ static int input_handler_check_methods(const struct input_handler *handler)
  * This function registers a new input handler (interface) for input
  * devices in the system and attaches it to all input devices that
  * are compatible with the handler.
+ *
+ * 注册新的输入处理程序
  */
 int input_register_handler(struct input_handler *handler)
 {
@@ -2476,13 +2479,17 @@ int input_register_handler(struct input_handler *handler)
 		return error;
 
 	scoped_cond_guard(mutex_intr, return -EINTR, &input_mutex) {
+		/* 初始化自身链表 */
 		INIT_LIST_HEAD(&handler->h_list);
 
+		/* 放入全局处理器链表中 */
 		list_add_tail(&handler->node, &input_handler_list);
 
+		/* 把节点设备放入全局 input 设备链表中 */
 		list_for_each_entry(dev, &input_dev_list, node)
 			input_attach_handler(dev, handler);
 
+		/* 更新 /proc/ */
 		input_wakeup_procfs_readers();
 	}
 

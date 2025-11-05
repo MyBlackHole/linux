@@ -397,6 +397,7 @@ struct sysfs_ops {
 #ifdef CONFIG_SYSFS
 
 int __must_check sysfs_create_dir_ns(struct kobject *kobj, const struct ns_common *ns);
+/* 删除目录 */
 void sysfs_remove_dir(struct kobject *kobj);
 int __must_check sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
 				     const struct ns_common *new_ns);
@@ -433,6 +434,7 @@ int __must_check sysfs_create_link(struct kobject *kobj, struct kobject *target,
 int __must_check sysfs_create_link_nowarn(struct kobject *kobj,
 					  struct kobject *target,
 					  const char *name);
+/* 删除 kobj 下 name 软链 */
 void sysfs_remove_link(struct kobject *kobj, const char *name);
 
 int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *target,
@@ -442,6 +444,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *target,
 void sysfs_delete_link(struct kobject *dir, struct kobject *targ,
 			const char *name);
 
+/* kobj 目录下创建一个属性集合 */
 int __must_check sysfs_create_group(struct kobject *kobj,
 				    const struct attribute_group *grp);
 int __must_check sysfs_create_groups(struct kobject *kobj,

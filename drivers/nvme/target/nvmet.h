@@ -487,6 +487,8 @@ struct nvmet_req {
 
 	struct nvmet_port	*port;
 
+	/* nvmet_file_execute_rw
+	 * nvmet_bdev_execute_rw */
 	void (*execute)(struct nvmet_req *req);
 	const struct nvmet_fabrics_ops *ops;
 

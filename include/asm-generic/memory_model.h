@@ -66,6 +66,8 @@ static inline int pfn_valid(unsigned long pfn)
 
 /*
  * Convert a physical address to a Page Frame Number and back
+ *
+ * 将物理地址转换为页框号并转回
  */
 #define	__phys_to_pfn(paddr)	PHYS_PFN(paddr)
 #define	__pfn_to_phys(pfn)	PFN_PHYS(pfn)

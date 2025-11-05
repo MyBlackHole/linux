@@ -34,6 +34,7 @@ struct mem_cgroup *mem_cgroup_private_id_get_online(struct mem_cgroup *memcg,
 #ifdef CONFIG_MEMCG_V1
 
 /* Whether legacy memory+swap accounting is active */
+/* 旧式内存+交换核算是否处于活动状态 */
 static inline bool do_memsw_account(void)
 {
 	return !cgroup_subsys_on_dfl(memory_cgrp_subsys);

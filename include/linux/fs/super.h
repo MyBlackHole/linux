@@ -71,6 +71,8 @@ static inline bool sb_write_not_started(const struct super_block *sb)
  *
  * Decrement number of writers to the filesystem. Wake up possible waiters
  * wanting to freeze the filesystem.
+ *
+ * 删除对超级块写访问
  */
 static inline void sb_end_write(struct super_block *sb)
 {
@@ -119,6 +121,12 @@ static inline void sb_end_intwrite(struct super_block *sb)
  * sb_start_write
  *   -> i_rwsem			(write path, truncate, directory ops, ...)
  *   -> s_umount		(freeze_super, thaw_super)
+ *
+ * 获取超级块写入访问权限
+ * 当进程想要将数据写入文件系统时应该
+ * sb_start_write
+ * sb_end_write
+ * 防止文件系统冻结
  */
 static inline void sb_start_write(struct super_block *sb)
 {

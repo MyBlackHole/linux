@@ -70,6 +70,7 @@ out_err:
 
 /*
  * This is the NFSv4 callback kernel thread.
+ * 这是 NFSv4 回调内核线程。
  */
 static int
 nfs4_callback_svc(void *vrqstp)

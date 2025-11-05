@@ -244,6 +244,8 @@ struct iomap_ops {
  * @flags: Zero or more of the iomap_begin flags above.
  * @iomap: Map describing the I/O iteration
  * @srcmap: Source map for COW operations
+ *
+ * 遍历文件的范围
  */
 struct iomap_iter {
 	struct inode *inode;

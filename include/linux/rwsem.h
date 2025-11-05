@@ -46,22 +46,28 @@
  * cacheline bouncing problem.
  */
 context_lock_struct(rw_semaphore) {
+	/* 记录锁的状态 */
 	atomic_long_t count;
 	/*
 	 * Write owner or one of the read owners as well flags regarding
 	 * the current state of the rwsem. Can be used as a speculative
 	 * check to see if the write owner is running on the cpu.
 	 */
+	/* 记录当前持有读锁的任务 */
 	atomic_long_t owner;
 #ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+	/* 用于自旋锁的优化 */
 	struct optimistic_spin_queue osq; /* spinner MCS lock */
 #endif
+	/* 保护 wait_list 的自旋锁 */
 	raw_spinlock_t wait_lock;
 	struct rwsem_waiter *first_waiter __guarded_by(&wait_lock);
 #ifdef CONFIG_DEBUG_RWSEMS
+	/* 魔法值 */
 	void *magic;
 #endif
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
+	/* 死锁检测 */
 	struct lockdep_map	dep_map;
 #endif
 };
@@ -225,6 +231,7 @@ static inline void rwsem_assert_held_write(const struct rw_semaphore *sem)
 
 /*
  * lock for reading
+ * 获取读锁
  */
 extern void down_read(struct rw_semaphore *sem) __acquires_shared(sem);
 extern int __must_check down_read_interruptible(struct rw_semaphore *sem) __cond_acquires_shared(0, sem);
@@ -237,6 +244,7 @@ extern int down_read_trylock(struct rw_semaphore *sem) __cond_acquires_shared(tr
 
 /*
  * lock for writing
+ * 获取写锁
  */
 extern void down_write(struct rw_semaphore *sem) __acquires(sem);
 extern int __must_check down_write_killable(struct rw_semaphore *sem) __cond_acquires(0, sem);
@@ -248,11 +256,13 @@ extern int down_write_trylock(struct rw_semaphore *sem) __cond_acquires(true, se
 
 /*
  * release a read lock
+ * 释放读锁
  */
 extern void up_read(struct rw_semaphore *sem) __releases_shared(sem);
 
 /*
  * release a write lock
+ * 释放写锁
  */
 extern void up_write(struct rw_semaphore *sem) __releases(sem);
 

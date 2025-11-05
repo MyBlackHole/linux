@@ -132,6 +132,10 @@ DEFINE_PERCPU_RWSEM(cgroup_threadgroup_rwsem);
  * 5. net_prio root destruction blocks waiting for perf_event CSS A offline,
  *    which can never complete as it's behind in the same queue and
  *    workqueue's max_active is 1.
+ *
+ * cgroup 销毁大量使用工作项，并发销毁数量可能很多。
+ * 因此，使用单独的工作队列，以避免 cgroup 销毁工作项堆积到系统工作队列的 max_active，
+ * max_active = 1
  */
 static struct workqueue_struct *cgroup_offline_wq;
 static struct workqueue_struct *cgroup_release_wq;
@@ -5627,6 +5631,7 @@ static void css_release_work_fn(struct work_struct *work)
 
 		cgroup_idr_replace(&ss->css_idr, NULL, css->id);
 		if (ss->css_released)
+			/* mem: mem_cgroup_css_released */
 			ss->css_released(css);
 
 		cgrp->nr_dying_subsys[ss->id]--;
@@ -5671,6 +5676,7 @@ static void css_release_work_fn(struct work_struct *work)
 
 	cgroup_unlock();
 
+	/* 设置 rcu 延迟删除, 等宽限期后再删除 */
 	INIT_RCU_WORK(&css->destroy_rwork, css_free_rwork_fn);
 	queue_rcu_work(cgroup_free_wq, &css->destroy_rwork);
 }
@@ -5681,6 +5687,9 @@ static void css_release(struct percpu_ref *ref)
 		container_of(ref, struct cgroup_subsys_state, refcnt);
 
 	INIT_WORK(&css->destroy_work, css_release_work_fn);
+	/*
+	 * 把销毁工作放到一个单独的wq中，
+	 */
 	queue_work(cgroup_release_wq, &css->destroy_work);
 }
 
@@ -5770,6 +5779,7 @@ static struct cgroup_subsys_state *css_create(struct cgroup *cgrp,
 
 	lockdep_assert_held(&cgroup_mutex);
 
+	/* mem: mem_cgroup_css_alloc */
 	css = ss->css_alloc(parent_css);
 	if (!css)
 		css = ERR_PTR(-ENOMEM);
@@ -5792,6 +5802,7 @@ static struct cgroup_subsys_state *css_create(struct cgroup *cgrp,
 		goto err_free_css;
 
 	/* @css is ready to be brought online now, make it visible */
+	/*@css 现已准备好上线，使其可见*/
 	list_add_tail_rcu(&css->sibling, &parent_css->children);
 	cgroup_idr_replace(&ss->css_idr, css, css->id);
 
@@ -5911,6 +5922,7 @@ static struct cgroup *cgroup_create(struct cgroup *parent, const char *name,
 	}
 	spin_unlock_irq(&css_set_lock);
 
+	/* 分配完成，提交创建 */
 	list_add_tail_rcu(&cgrp->self.sibling, &cgroup_parent(cgrp)->self.children);
 	atomic_inc(&root->nr_cgrps);
 	cgroup_get_live(parent);
@@ -6487,6 +6499,8 @@ static int __init cgroup_wq_init(void)
 	 *
 	 * We would prefer to do this in cgroup_init() above, but that
 	 * is called before init_workqueues(): so leave this until after.
+	 *
+	 * 不设置并行
 	 */
 	cgroup_offline_wq = alloc_workqueue("cgroup_offline", WQ_PERCPU, 1);
 	BUG_ON(!cgroup_offline_wq);

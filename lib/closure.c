@@ -99,6 +99,8 @@ EXPORT_SYMBOL(__closure_wake_up);
  * closure_wake_up() is called on @waitlist.
  * @cl: closure pointer.
  *
+ * 添加一个闭包到一个等待列表中，
+ *
  */
 bool closure_wait(struct closure_waitlist *waitlist, struct closure *cl)
 {
@@ -128,6 +130,7 @@ static CLOSURE_CALLBACK(closure_sync_fn)
 	rcu_read_lock();
 	p = READ_ONCE(s->task);
 	s->done = 1;
+	/* 唤醒休眠进程 */
 	wake_up_process(p);
 	rcu_read_unlock();
 }
@@ -137,12 +140,16 @@ void __sched __closure_sync(struct closure *cl)
 	struct closure_syncer s = { .task = current };
 
 	cl->s = &s;
+	/* 设置唤醒自己的回调函数 */
 	continue_at(cl, closure_sync_fn, NULL);
 
 	while (1) {
+		/* 设置为待唤醒 */
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		if (s.done)
 			break;
+
+		/* 释放 cpu 持有 */
 		schedule();
 	}
 

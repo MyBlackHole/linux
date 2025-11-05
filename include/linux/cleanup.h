@@ -275,7 +275,7 @@ const volatile void * __must_check_fn(const volatile void *val)
  *
  *	// use 'f' without concern
  */
-
+/* 定义类的初始化和析构函数 */
 #define DEFINE_CLASS(_name, _type, _exit, _init, _init_args...)		\
 typedef _type class_##_name##_t;					\
 typedef _type lock_##_name##_t;						\
@@ -298,6 +298,8 @@ static __always_inline class_##_name##_t class_##_name##ext##_constructor(_init_
 #define EXTEND_CLASS(_name, ext, _init, _init_args...)			\
 	EXTEND_CLASS_COND(_name, ext, 0, _init, _init_args)
 
+/* 自动释放资源的宏
+ * __cleanup 会在变量作用域结束时调用相应的析构函数*/
 #define CLASS(_name, var)						\
 	class_##_name##_t var __cleanup(class_##_name##_destructor) =	\
 		class_##_name##_constructor

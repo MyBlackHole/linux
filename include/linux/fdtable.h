@@ -24,6 +24,7 @@
 #define NR_OPEN_DEFAULT BITS_PER_LONG
 
 struct fdtable {
+	/* 当前文件对象最大数 */
 	unsigned int max_fds;
 	struct file __rcu **fd;      /* current fd array */
 	unsigned long *close_on_exec;
@@ -34,20 +35,23 @@ struct fdtable {
 
 /*
  * Open file table structure
+ *
+ * 打开的文件表结构
  */
 struct files_struct {
-  /*
-   * read mostly part
-   */
+	/*
+	 * read mostly part
+	 */
+	/* 进程引用次数 */
 	atomic_t count;
 	bool resize_in_progress;
 	wait_queue_head_t resize_wait;
 
 	struct fdtable __rcu *fdt;
 	struct fdtable fdtab;
-  /*
-   * written part on a separate cache line in SMP
-   */
+	  /*
+	   * written part on a separate cache line in SMP
+	   */
 	spinlock_t file_lock ____cacheline_aligned_in_smp;
 	unsigned int next_fd;
 	unsigned long close_on_exec_init[1];

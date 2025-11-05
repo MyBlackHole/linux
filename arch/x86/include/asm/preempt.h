@@ -21,6 +21,12 @@ DECLARE_PER_CPU_CACHE_HOT(int, __preempt_count);
 /*
  * We mask the PREEMPT_NEED_RESCHED bit so as not to confuse all current users
  * that think a non-zero value indicates we cannot preempt.
+ *
+ * 抢占计数器的位掩码
+ * NMI:
+ * hardirq:
+ * softirq:
+ * preempt:
  */
 static __always_inline int preempt_count(void)
 {

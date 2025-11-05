@@ -1399,6 +1399,8 @@ xfs_fs_warn_deprecated(
  * Set mount state from a mount option.
  *
  * NOTE: mp->m_super is NULL here!
+ *
+ * 自定义参数设置
  */
 static int
 xfs_fs_parse_param(
@@ -1653,6 +1655,7 @@ xfs_fs_fill_super(
 	struct super_block	*sb,
 	struct fs_context	*fc)
 {
+	/* 取出 xfs 私有数据 */
 	struct xfs_mount	*mp = sb->s_fs_info;
 	struct inode		*root;
 	int			flags = 0, error;
@@ -1935,6 +1938,7 @@ xfs_fs_fill_super(
 		xfs_set_resuming_quotaon(mp);
 	mp->m_qflags &= ~XFS_QFLAGS_MNTOPTS;
 
+	/* 进入挂载逻辑 */
 	error = xfs_mountfs(mp);
 	if (error)
 		goto out_filestream_unmount;
@@ -2216,6 +2220,7 @@ xfs_fs_free(
 		xfs_mount_free(mp);
 }
 
+/* 文件系统上下文操作 */
 static const struct fs_context_operations xfs_context_ops = {
 	.parse_param = xfs_fs_parse_param,
 	.get_tree    = xfs_fs_get_tree,
@@ -2228,6 +2233,7 @@ static const struct fs_context_operations xfs_context_ops = {
  * mount option parsing having already been performed as this can be called from
  * fsopen() before any parameters have been set.
  */
+/* 初始化文件系统上下文 */
 static int
 xfs_init_fs_context(
 	struct fs_context	*fc)
@@ -2246,6 +2252,7 @@ xfs_init_fs_context(
 	}
 #endif
 
+	/* 一系列初始化操作 */
 	spin_lock_init(&mp->m_sb_lock);
 	for (i = 0; i < XG_TYPE_MAX; i++)
 		xa_init(&mp->m_groups[i].xa);
@@ -2271,6 +2278,7 @@ xfs_init_fs_context(
 
 	xfs_hooks_init(&mp->m_dir_update_hooks);
 
+	/* 填充私有内容 */
 	fc->s_fs_info = mp;
 	fc->ops = &xfs_context_ops;
 
@@ -2658,6 +2666,7 @@ init_xfs_fs(void)
 	if (error)
 		goto out_remove_dbg_kobj;
 
+	/* 注册 xfs 文件系统 */
 	error = register_filesystem(&xfs_fs_type);
 	if (error)
 		goto out_qm_exit;

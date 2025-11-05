@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  *
- * Definitions for mount interface. This describes the in the kernel build 
+ * Definitions for mount interface. This describes the in the kernel build
  * linkedlist with mounted filesystems.
  *
  * Author:  Marco van Wieringen <mvw@planets.elm.net>
@@ -29,6 +29,7 @@ enum mount_flags {
 	MNT_NOATIME	= 0x08,
 	MNT_NODIRATIME	= 0x10,
 	MNT_RELATIME	= 0x20,
+	/* 只读挂载 */
 	MNT_READONLY	= 0x40, /* does the user want this to be r/o? */
 	MNT_NOSYMFOLLOW	= 0x80,
 
@@ -55,9 +56,13 @@ enum mount_flags {
 			     MNT_SYNC_UMOUNT | MNT_LOCKED
 };
 
+/* 描述一个独立文件系统的挂在信息 */
 struct vfsmount {
+	/* 被 mount 的文件系统根目录项 */
 	struct dentry *mnt_root;	/* root of the mounted tree */
+	/* 指向被 mount 的文件系统 superblock */
 	struct super_block *mnt_sb;	/* pointer to superblock */
+	/* 此文件系统的挂载标志 */
 	int mnt_flags;
 	struct mnt_idmap *mnt_idmap;
 } __randomize_layout;

@@ -5156,6 +5156,10 @@ static void skb_extensions_init(void) {}
 
 void __init skb_init(void)
 {
+	/*
+	* 创建 skbuff_head_cache 高速缓存
+	* 用于 skb 分配使用
+	*/
 	net_hotdata.skbuff_cache = kmem_cache_create_usercopy("skbuff_head_cache",
 					      sizeof(struct sk_buff),
 					      0,
@@ -5166,6 +5170,10 @@ void __init skb_init(void)
 					      NULL);
 	skbuff_cache_size = kmem_cache_size(net_hotdata.skbuff_cache);
 
+	/*
+	* 创建 skbuff_fclone_cache 高速缓存
+	* 用于 skb 分配使用
+	*/
 	net_hotdata.skbuff_fclone_cache = kmem_cache_create("skbuff_fclone_cache",
 						sizeof(struct sk_buff_fclones),
 						0,
@@ -5175,6 +5183,10 @@ void __init skb_init(void)
 	 * struct skb_shared_info is located at the end of skb->head,
 	 * and should not be copied to/from user.
 	 */
+	/*
+	* 创建 skbuff_small_head 高速缓存
+	* 用于 skb 分配使用
+	*/
 	net_hotdata.skb_small_head_cache = kmem_cache_create_usercopy("skbuff_small_head",
 						SKB_SMALL_HEAD_CACHE_SIZE,
 						0,

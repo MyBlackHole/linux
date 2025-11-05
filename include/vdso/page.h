@@ -10,8 +10,10 @@
  * Note: This definition is required because PAGE_SHIFT is used
  * in several places throughout the codebase.
  */
+/* 换页定义 */
 #define PAGE_SHIFT      CONFIG_PAGE_SHIFT
 
+/* 页面大小 */
 #define PAGE_SIZE	(_AC(1,UL) << CONFIG_PAGE_SHIFT)
 
 #if !defined(CONFIG_64BIT)

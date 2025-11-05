@@ -7,6 +7,7 @@
 #include "internal.h"
 #include "nfs.h"
 
+/* vfs v2 版本 */
 static struct nfs_subversion nfs_v2 = {
 	.owner = THIS_MODULE,
 	.nfs_fs   = &nfs_fs_type,
@@ -17,6 +18,7 @@ static struct nfs_subversion nfs_v2 = {
 
 static int __init init_nfs_v2(void)
 {
+    /* 注册 nfs v2 */
 	register_nfs_version(&nfs_v2);
 	return 0;
 }

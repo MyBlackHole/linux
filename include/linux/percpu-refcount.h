@@ -57,15 +57,15 @@
 #include <linux/gfp.h>
 
 struct percpu_ref;
-typedef void (percpu_ref_func_t)(struct percpu_ref *);
+typedef void(percpu_ref_func_t)(struct percpu_ref *);
 
 /* flags set in the lower bits of percpu_ref->percpu_count_ptr */
 enum {
-	__PERCPU_REF_ATOMIC	= 1LU << 0,	/* operating in atomic mode */
-	__PERCPU_REF_DEAD	= 1LU << 1,	/* (being) killed */
+	__PERCPU_REF_ATOMIC = 1LU << 0, /* operating in atomic mode */
+	__PERCPU_REF_DEAD = 1LU << 1, /* (being) killed */
 	__PERCPU_REF_ATOMIC_DEAD = __PERCPU_REF_ATOMIC | __PERCPU_REF_DEAD,
 
-	__PERCPU_REF_FLAG_BITS	= 2,
+	__PERCPU_REF_FLAG_BITS = 2,
 };
 
 /* @flags for percpu_ref_init() */
@@ -77,37 +77,41 @@ enum {
 	 * percpu_ref_switch_to_percpu() is invoked on it.
 	 * Implies ALLOW_REINIT.
 	 */
-	PERCPU_REF_INIT_ATOMIC	= 1 << 0,
+	PERCPU_REF_INIT_ATOMIC = 1 << 0,
 
 	/*
 	 * Start dead w/ ref == 0 in atomic mode.  Must be revived with
 	 * percpu_ref_reinit() before used.  Implies INIT_ATOMIC and
 	 * ALLOW_REINIT.
 	 */
-	PERCPU_REF_INIT_DEAD	= 1 << 1,
+	PERCPU_REF_INIT_DEAD = 1 << 1,
 
 	/*
 	 * Allow switching from atomic mode to percpu mode.
 	 */
-	PERCPU_REF_ALLOW_REINIT	= 1 << 2,
+	PERCPU_REF_ALLOW_REINIT = 1 << 2,
 };
 
 struct percpu_ref_data {
-	atomic_long_t		count;
-	percpu_ref_func_t	*release;
-	percpu_ref_func_t	*confirm_switch;
-	bool			force_atomic:1;
-	bool			allow_reinit:1;
-	struct rcu_head		rcu;
-	struct percpu_ref	*ref;
+	atomic_long_t count;
+	/* 引用计数器为零时调用 */
+	percpu_ref_func_t *release;
+	percpu_ref_func_t *confirm_switch;
+	bool force_atomic : 1;
+	bool allow_reinit : 1;
+	struct rcu_head rcu;
+	struct percpu_ref *ref;
 };
 
 struct percpu_ref {
 	/*
 	 * The low bit of the pointer indicates whether the ref is in percpu
 	 * mode; if set, then get/put will manipulate the atomic_t.
+	 *
+	 * 指针的低位表示ref是否处于percpu模式；
+	 * 如果设置，则 get/put 将操作atomic_t。
 	 */
-	unsigned long		percpu_count_ptr;
+	unsigned long percpu_count_ptr;
 
 	/*
 	 * 'percpu_ref' is often embedded into user structure, and only
@@ -115,7 +119,7 @@ struct percpu_ref {
 	 * into 'percpu_ref_data', so we can reduce memory footprint in
 	 * fast path.
 	 */
-	struct percpu_ref_data  *data;
+	struct percpu_ref_data *data;
 };
 
 int __must_check percpu_ref_init(struct percpu_ref *ref,
@@ -156,7 +160,7 @@ static inline void percpu_ref_kill(struct percpu_ref *ref)
  * branches as it can't assume that @ref->percpu_count is not NULL.
  */
 static inline bool __ref_is_percpu(struct percpu_ref *ref,
-					  unsigned long __percpu **percpu_countp)
+				   unsigned long __percpu **percpu_countp)
 {
 	unsigned long percpu_ptr;
 
@@ -216,6 +220,8 @@ static inline void percpu_ref_get_many(struct percpu_ref *ref, unsigned long nr)
  * Analogous to atomic_long_inc().
  *
  * This function is safe to call as long as @ref is between init and exit.
+ *
+ * 增加 percpu 引用计数
  */
 static inline void percpu_ref_get(struct percpu_ref *ref)
 {
@@ -323,6 +329,9 @@ static inline bool percpu_ref_tryget_live(struct percpu_ref *ref)
  *
  * This function is safe to call as long as @ref is between init and exit.
  */
+/*
+ * 减少 percpu 引用计数
+ */
 static inline void percpu_ref_put_many(struct percpu_ref *ref, unsigned long nr)
 {
 	unsigned long __percpu *percpu_count;
@@ -332,6 +341,10 @@ static inline void percpu_ref_put_many(struct percpu_ref *ref, unsigned long nr)
 	if (__ref_is_percpu(ref, &percpu_count))
 		this_cpu_sub(*percpu_count, nr);
 	else if (unlikely(atomic_long_sub_and_test(nr, &ref->data->count)))
+		/*
+		 * 如果引用计数为 0，
+		 * 则调用 release 函数（传递给 percpu_ref_init() 的函数)
+		 * css: css_release*/
 		ref->data->release(ref);
 
 	rcu_read_unlock();
@@ -345,6 +358,11 @@ static inline void percpu_ref_put_many(struct percpu_ref *ref, unsigned long nr)
  * to percpu_ref_init())
  *
  * This function is safe to call as long as @ref is between init and exit.
+ */
+/*
+ * 减少 percpu 引用计数
+ *
+ * 如果引用计数为 0，则调用 release 函数（传递给 percpu_ref_init() 的函数）
  */
 static inline void percpu_ref_put(struct percpu_ref *ref)
 {

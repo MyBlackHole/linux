@@ -3649,6 +3649,7 @@ static void cpuset_fork(struct task_struct *task)
 	mutex_unlock(&cpuset_mutex);
 }
 
+/* cpu 控制组子系统初始化 */
 struct cgroup_subsys cpuset_cgrp_subsys = {
 	.css_alloc	= cpuset_css_alloc,
 	.css_online	= cpuset_css_online,

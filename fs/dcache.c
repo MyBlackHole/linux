@@ -3401,10 +3401,12 @@ void __init vfs_caches_init_early(void)
 void __init vfs_caches_init(void)
 {
 	filename_init();
+	/* 初始化目录项缓存 */
 	dcache_init();
 	inode_init();
 	files_init();
 	files_maxfiles_init();
+	/* 初始化挂载系统 */
 	mnt_init();
 	bdev_cache_init();
 	chrdev_init();

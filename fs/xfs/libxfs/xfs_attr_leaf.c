@@ -1442,6 +1442,9 @@ xfs_attr3_leaf_init(
  *
  * Returns 0 if the entry was added, 1 if a further split is needed or a
  * negative error number otherwise.
+ *
+ * 分裂叶子节点、重新平衡
+ * 添加新条目
  */
 int
 xfs_attr3_leaf_split(

@@ -234,7 +234,9 @@ extern void warn_bogus_irq_restore(void);
 
 #else /* !CONFIG_TRACE_IRQFLAGS */
 
+/* 打开中断 */
 #define local_irq_enable()	do { raw_local_irq_enable(); } while (0)
+/* 禁止中断 */
 #define local_irq_disable()	do { raw_local_irq_disable(); } while (0)
 #define local_irq_save(flags)	do { raw_local_irq_save(flags); } while (0)
 #define local_irq_restore(flags) do { raw_local_irq_restore(flags); } while (0)
@@ -250,6 +252,9 @@ extern void warn_bogus_irq_restore(void);
  * to avoid build issues.
  */
 #ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
+/*
+ * 关闭中断
+ */
 #define irqs_disabled()					\
 	({						\
 		unsigned long _flags;			\

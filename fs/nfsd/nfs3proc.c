@@ -489,6 +489,7 @@ nfsd3_proc_remove(struct svc_rqst *rqstp)
 	struct nfsd3_attrstat *resp = rqstp->rq_resp;
 
 	/* Unlink. -S_IFDIR means file must not be a directory */
+    /* 取消链接。 -S_IFDIR 表示文件不能是目录 */
 	fh_copy(&resp->fh, &argp->fh);
 	resp->status = nfsd_unlink(rqstp, &resp->fh, -S_IFDIR,
 				   argp->name, argp->len);
@@ -1047,6 +1048,8 @@ static const struct svc_procedure nfsd_procedures3[22] = {
 
 static DEFINE_PER_CPU_ALIGNED(unsigned long,
 			      nfsd_count3[ARRAY_SIZE(nfsd_procedures3)]);
+
+/* nfs 3 rpc 服务服务 */
 const struct svc_version nfsd_version3 = {
 	.vs_vers	= 3,
 	.vs_nproc	= ARRAY_SIZE(nfsd_procedures3),

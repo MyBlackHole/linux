@@ -188,6 +188,8 @@ unsigned int stack_trace_save_regs(struct pt_regs *regs, unsigned long *store,
  *		reliable and returns the number of entries stored.
  *
  * If the task is not 'current', the caller *must* ensure the task is inactive.
+ *
+ * 保存任务堆栈并进行验证
  */
 int stack_trace_save_tsk_reliable(struct task_struct *tsk, unsigned long *store,
 				  unsigned int size)

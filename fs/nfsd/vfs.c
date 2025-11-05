@@ -361,6 +361,7 @@ commit_reset_write_verifier(struct nfsd_net *nn, struct svc_rqst *rqstp,
 
 /*
  * Commit metadata changes to stable storage.
+ * 将元数据更改提交到稳定存储。
  */
 static int
 commit_inode_metadata(struct inode *inode)
@@ -372,6 +373,7 @@ commit_inode_metadata(struct inode *inode)
 	return sync_inode_metadata(inode, 1);
 }
 
+/* 提交元数据 */
 static int
 commit_metadata(struct svc_fh *fhp)
 {
@@ -1571,6 +1573,9 @@ bool nfsd_read_splice_ok(struct svc_rqst *rqstp)
  *
  * Returns nfs_ok on success, otherwise an nfserr stat value is
  * returned.
+ *
+ * 读取文件数据
+ * 返回实际读取字节数
  */
 __be32 nfsd_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
 		 loff_t offset, unsigned long *count, u32 *eof)
@@ -2265,6 +2270,9 @@ out:
  * After this call fhp needs an fh_put.
  *
  * Returns a generic NFS status code in network byte-order.
+ *
+ * 取消文件或目录的链接
+ * 注意： 在此调用之后 fhp 需要一个 fh_put
  */
 __be32
 nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
@@ -2285,6 +2293,7 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 	if (err)
 		goto out;
 
+	/* 想写 */
 	host_err = fh_want_write(fhp);
 	if (host_err)
 		goto out_nfserr;
@@ -2298,12 +2307,15 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 	if (IS_ERR(rdentry))
 		goto out_drop_write;
 
+	/* 属性前置处理 */
 	err = fh_fill_pre_attrs(fhp);
 	if (err != nfs_ok)
 		goto out_unlock;
 
+	/* 申请 inode */
 	rinode = d_inode(rdentry);
 	/* Prevent truncation until after locks dropped */
+	/* 持有此 inode */
 	ihold(rinode);
 
 	if (!type)
@@ -2318,6 +2330,7 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 		for (retries = 1;;) {
 			host_err = vfs_unlink(&nop_mnt_idmap, dirp, rdentry, NULL);
 			if (host_err != -EAGAIN || !retries--)
+				/* 不等于重试或 retries = 0 */
 				break;
 			if (!nfsd_wait_for_delegreturn(rqstp, rinode))
 				break;
@@ -2325,15 +2338,18 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 	} else {
 		host_err = vfs_rmdir(&nop_mnt_idmap, dirp, rdentry, NULL);
 	}
+	/* 属性后置处理 */
 	fh_fill_post_attrs(fhp);
 
 out_unlock:
 	end_removing(rdentry);
 	if (!err && !host_err)
 		host_err = commit_metadata(fhp);
+	/* 释放 inode */
 	iput(rinode);    /* truncate the inode here */
 
 out_drop_write:
+	/* 不想写了 */
 	fh_drop_write(fhp);
 out_nfserr:
 	if (host_err == -EBUSY) {
@@ -2484,6 +2500,9 @@ static __be32 nfsd_buffered_readdir(struct file *file, struct svc_fh *fhp,
  *
  * Returns nfs_ok on success, otherwise an nfsstat code is
  * returned.
+ *
+ * 从目录中读取条目。
+ * 我们暂时忽略 NFSv3/4 验证器。
  */
 __be32
 nfsd_readdir(struct svc_rqst *rqstp, struct svc_fh *fhp, loff_t *offsetp, 

@@ -299,6 +299,7 @@ enum stop_on_failure {
 	BCH_CACHED_DEV_STOP_MODE_MAX,
 };
 
+/* 后端设备描述结构 */
 struct cached_dev {
 	struct list_head	list;
 	struct bcache_device	disk;
@@ -310,21 +311,28 @@ struct cached_dev {
 	struct bio		sb_bio;
 	struct bio_vec		sb_bv[1];
 	struct closure		sb_write;
+	/* 写信号量 */
 	struct semaphore	sb_write_mutex;
 
 	/* Refcount on the cache set. Always nonzero when we're caching. */
+	/* 缓存集的引用计数。缓存时始终非零。 */
 	refcount_t		count;
 	struct work_struct	detach;
 
 	/*
 	 * Device might not be running if it's dirty and the cache set hasn't
 	 * showed up yet.
+	 *
+	 * 如果设备文件过大且缓存尚未生效，则设备可能无法运行。
 	 */
 	atomic_t		running;
 
 	/*
 	 * Writes take a shared lock from start to finish; scanning for dirty
 	 * data to refill the rb tree requires an exclusive lock.
+	 *
+	 * 写入操作从开始到结束都需要共享锁；
+	 * 扫描脏数据以重新填充 rb 树需要独占锁。
 	 */
 	struct rw_semaphore	writeback_lock;
 
@@ -342,6 +350,7 @@ struct cached_dev {
 	struct delayed_work	writeback_rate_update;
 
 	/* Limit number of writeback bios in flight */
+	/* 限制正在运行的回写式 BIOS 数量 */
 	struct semaphore	in_flight;
 	struct task_struct	*writeback_thread;
 	struct workqueue_struct	*writeback_write_wq;

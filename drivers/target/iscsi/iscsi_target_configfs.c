@@ -91,6 +91,7 @@ static ssize_t lio_target_np_driver_store(struct config_item *item,
 			}
 		}
 
+		/* tpg 网络添加入口 */
 		tpg_np_new = iscsit_tpg_add_network_portal(tpg,
 					&np->np_sockaddr, tpg_np, type);
 		if (IS_ERR(tpg_np_new)) {
@@ -137,8 +138,11 @@ static ssize_t lio_target_np_cxgbit_store(struct config_item *item,
 	return lio_target_np_driver_store(item, page, count,
 					  ISCSI_CXGBIT, "cxgbit");
 }
+/* 会把 lio_target_np_cxgbit_store, lio_target_np_cxgbit_show 创建 configfs_attribute 设置到 show 与 store 函数 */
 CONFIGFS_ATTR(lio_target_np_, cxgbit);
 
+/* /sys/kernel/config/target/iscsi/%iqn/%tpgt_X/np 
+ * 组合 cxgbit\isert 到一个属性组上 */
 static struct configfs_attribute *lio_target_portal_attrs[] = {
 	&lio_target_np_attr_iser,
 	&lio_target_np_attr_cxgbit,
@@ -230,6 +234,8 @@ static struct se_tpg_np *lio_target_call_addnptotpg(
 	 *
 	 * can be enabled with attributes under
 	 * sys/kernel/config/iscsi/$IQN/$TPG/np/$IP:$PORT/
+	 *
+	 * 处理生成 sys/kernel/config/iscsi/$IQN/$TPG/np/$IP:$PORT/
 	 *
 	 */
 	tpg_np = iscsit_tpg_add_network_portal(tpg, &sockaddr, NULL,
@@ -1177,7 +1183,9 @@ out:
 CONFIGFS_ATTR(lio_target_wwn_, cpus_allowed_list);
 
 static struct configfs_attribute *lio_target_wwn_attrs[] = {
+	/* configfs 上表现( /sys/kernel/config/target/iscsi/lio_version) */
 	&lio_target_wwn_attr_lio_version,
+	/* configfs 上表现( /sys/kernel/config/target/iscsi/cpus_allowed_list) */
 	&lio_target_wwn_attr_cpus_allowed_list,
 	NULL,
 };
@@ -1343,7 +1351,10 @@ static ssize_t iscsi_disc_enforce_discovery_auth_store(struct config_item *item,
 CONFIGFS_ATTR(iscsi_disc_, enforce_discovery_auth);
 
 static struct configfs_attribute *lio_target_discovery_auth_attrs[] = {
+	/* 使用了 DEF_DISC_AUTH_STR 宏拼接
+	 * configfs 属性(对应到 /sys/kernel/config/target/iscsi/discovery_auth/userid 下目录与文件) */
 	&iscsi_disc_attr_userid,
+	/* configfs 属性(对应到 /sys/kernel/config/target/iscsi/discovery_auth/password 下目录与文件) */
 	&iscsi_disc_attr_password,
 	&iscsi_disc_attr_authenticate_target,
 	&iscsi_disc_attr_userid_mutual,
@@ -1539,6 +1550,7 @@ static void lio_release_cmd(struct se_cmd *se_cmd)
 	iscsit_release_cmd(cmd);
 }
 
+/* target 构造操作集配置 */
 const struct target_core_fabric_ops iscsi_ops = {
 	.module				= THIS_MODULE,
 	.fabric_alias			= "iscsi",
@@ -1573,10 +1585,13 @@ const struct target_core_fabric_ops iscsi_ops = {
 	.fabric_make_tpg		= lio_target_tiqn_addtpg,
 	.fabric_enable_tpg		= lio_target_tiqn_enabletpg,
 	.fabric_drop_tpg		= lio_target_tiqn_deltpg,
+	/* 构造 */
 	.fabric_make_np			= lio_target_call_addnptotpg,
 	.fabric_drop_np			= lio_target_call_delnpfromtpg,
 	.fabric_init_nodeacl		= lio_target_init_nodeacl,
 
+	/* configfs 属性(对应到 /sys/kernel/config/target/iscsi 下目录与文件)
+	 * configfs 属性(对应到 /sys/kernel/config/target/iscsi/discovery_auth/ 下目录与文件) */
 	.tfc_discovery_attrs		= lio_target_discovery_auth_attrs,
 	.tfc_wwn_attrs			= lio_target_wwn_attrs,
 	.tfc_tpg_base_attrs		= lio_target_tpg_attrs,

@@ -61,6 +61,8 @@
  * Scheduler clock - returns current time in nanosec units.
  * This is default implementation.
  * Architectures and sub-architectures can override this.
+ *
+ * 调度程序时钟-以纳秒为单位返回当前时间
  */
 notrace unsigned long long __weak sched_clock(void)
 {

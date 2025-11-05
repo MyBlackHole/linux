@@ -942,8 +942,11 @@ static int do_dentry_open(struct file *f,
 	/* normally all 3 are set; ->open() can clear them if needed */
 	f->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
 	if (!open)
+		/* 设置对应的文件系统设置的 open 操作函数 */
 		open = f->f_op->open;
 	if (open) {
+		/* 执行对应文件系统 open 操作函数
+		 * 例如 xfs_file_open */
 		error = open(inode, f);
 		if (error)
 			goto cleanup_all;
@@ -1070,6 +1073,9 @@ EXPORT_SYMBOL(file_path);
  * vfs_open - open the file at the given path
  * @path: path to open
  * @file: newly allocated file with f_flag initialized
+ * @cred: credentials to use
+ *
+ * 打开给定路径文件
  */
 int vfs_open(const struct path *path, struct file *file)
 {
@@ -1360,10 +1366,12 @@ static int do_sys_openat2(int dfd, const char __user *filename,
 	if (unlikely(err))
 		return err;
 
+	/* 提取文件名 */
 	CLASS(filename, name)(filename);
 	return FD_ADD(how->flags, do_file_open(dfd, name, &op));
 }
 
+/* 所有打开操作苦难的开始 */
 int do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 {
 	struct open_how how = build_open_how(flags, mode);
@@ -1541,6 +1549,7 @@ SYSCALL_DEFINE0(vhangup)
 int generic_file_open(struct inode * inode, struct file * filp)
 {
 	if (!(filp->f_flags & O_LARGEFILE) && i_size_read(inode) > MAX_NON_LFS)
+		/* 超过大文件最大大小 */
 		return -EOVERFLOW;
 	return 0;
 }

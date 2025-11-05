@@ -160,6 +160,7 @@ static inline struct bkey *bkey_idx(const struct bkey *k, unsigned int nr_keys)
 
 #define BDEV_DATA_START_DEFAULT		16	/* sectors */
 
+/* cache_sb 的磁盘格式 */
 struct cache_sb_disk {
 	__le64			csum;
 	__le64			offset;	/* sector where this sb was written */
@@ -222,6 +223,11 @@ struct cache_sb_disk {
  * NOTE: cache_sb is NOT exactly mapping to cache_sb_disk, the member
  *       size, ordering and even whole struct size may be different
  *       from cache_sb_disk.
+ *
+ * 这是针对内存中的 bcache 超级块的。
+ * 注意：cache_sb 并不完全映射到 cache_sb_disk，成员
+ * 大小、顺序甚至整个结构体的大小都可能与 cache_sb_disk 不同。
+ *
  */
 struct cache_sb {
 	__u64			offset;	/* sector where this sb was written */

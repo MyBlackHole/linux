@@ -690,6 +690,9 @@ void blk_mark_disk_dead(struct gendisk *disk)
 }
 EXPORT_SYMBOL_GPL(blk_mark_disk_dead);
 
+/*
+ * 删除 gendisk
+ */
 static void __del_gendisk(struct gendisk *disk)
 {
 	struct request_queue *q = disk->queue;
@@ -1538,6 +1541,10 @@ EXPORT_SYMBOL(__blk_alloc_disk);
  *
  * Context: Any context, but the last reference must not be dropped from
  *          atomic context.
+ *
+ * 减少设备引用次数
+ * 为 0 时会调用 disk_release
+ *
  */
 void put_disk(struct gendisk *disk)
 {

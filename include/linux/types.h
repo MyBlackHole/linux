@@ -137,6 +137,7 @@ typedef u64 sector_t;
 typedef u64 blkcnt_t;
 
 /* generic data direction definitions */
+/* 通用数据方向定义 */
 #define READ			0
 #define WRITE			1
 

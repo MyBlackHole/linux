@@ -84,9 +84,11 @@ static ssize_t nvmet_file_submit_bvec(struct nvmet_req *req, loff_t pos,
 	if (req->cmd->rw.opcode == nvme_cmd_write) {
 		if (req->cmd->rw.control & cpu_to_le16(NVME_RW_FUA))
 			ki_flags |= IOCB_DSYNC;
+		/* blkdev_write_iter */
 		call_iter = req->ns->file->f_op->write_iter;
 		rw = ITER_SOURCE;
 	} else {
+		/* blkdev_read_iter */
 		call_iter = req->ns->file->f_op->read_iter;
 		rw = ITER_DEST;
 	}

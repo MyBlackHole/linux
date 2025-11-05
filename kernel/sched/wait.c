@@ -104,7 +104,9 @@ static int __wake_up_common(struct wait_queue_head *wq_head, unsigned int mode,
 	list_for_each_entry_safe_from(curr, next, &wq_head->head, entry) {
 		unsigned flags = curr->flags;
 		int ret;
-
+		/* 例如:
+		 * autoremove_wake_function
+		 * default_wake_function */
 		ret = curr->func(curr, mode, wake_flags, key);
 		if (ret < 0)
 			break;
@@ -139,6 +141,8 @@ static int __wake_up_common_lock(struct wait_queue_head *wq_head, unsigned int m
  * If this function wakes up a task, it executes a full memory barrier
  * before accessing the task state.  Returns the number of exclusive
  * tasks that were awaken.
+ *
+ * 唤醒在等待队列中阻塞的线程
  */
 int __wake_up(struct wait_queue_head *wq_head, unsigned int mode,
 	      int nr_exclusive, void *key)
@@ -259,6 +263,7 @@ prepare_to_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_ent
 EXPORT_SYMBOL(prepare_to_wait);
 
 /* Returns true if we are the first waiter in the queue, false otherwise. */
+/* 如果我们是队列中的第一个等待者，则返回 true，否则返回 false。 */
 bool
 prepare_to_wait_exclusive(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state)
 {
@@ -371,6 +376,13 @@ EXPORT_SYMBOL(do_wait_intr_irq);
  * Sets current thread back to running state and removes
  * the wait descriptor from the given waitqueue if still
  * queued.
+ *
+ * finish_wait - 在队列中等待后清理
+ * @wq_head：waitqueue 等待
+ * @wq_entry：等待描述符
+ *
+ * 将当前线程设置回运行状态，并从给定的等待队列中移除等待描述符（如果仍在排队）。
+ *
  */
 void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
 {
@@ -398,8 +410,10 @@ void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_en
 }
 EXPORT_SYMBOL(finish_wait);
 
+/* 自动删除已唤醒的等待队列项 */
 int autoremove_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync, void *key)
 {
+	/* 默认的唤醒函数 */
 	int ret = default_wake_function(wq_entry, mode, sync, key);
 
 	if (ret)

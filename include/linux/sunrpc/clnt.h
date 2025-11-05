@@ -40,20 +40,24 @@ struct rpc_sysfs_client {
 
 /*
  * The high-level client handle
+ * 高级客户端句柄
  */
 struct rpc_clnt {
+	/* 引用数量 */
 	refcount_t		cl_count;	/* Number of references */
+	/* 客户端 id */
 	unsigned int		cl_clid;	/* client id */
 	struct list_head	cl_clients;	/* Global list of clients */
 	struct list_head	cl_tasks;	/* List of tasks */
 	atomic_t		cl_pid;		/* task PID counter */
 	spinlock_t		cl_lock;	/* spinlock */
+	/* 代表一个 TCP 连接 */
 	struct rpc_xprt __rcu *	cl_xprt;	/* transport */
 	const struct rpc_procinfo *cl_procinfo;	/* procedure info */
 	u32			cl_prog,	/* RPC program number */
 				cl_vers,	/* RPC version number */
 				cl_maxproc;	/* max procedure number */
-
+	/* 验证 */
 	struct rpc_auth *	cl_auth;	/* authenticator */
 	struct rpc_stat *	cl_stats;	/* per-program statistics */
 	struct rpc_iostats *	cl_metrics;	/* per-client statistics */
@@ -70,6 +74,7 @@ struct rpc_clnt {
 	struct xprtsec_parms	cl_xprtsec;	/* transport security policy */
 
 	struct rpc_rtt *	cl_rtt;		/* RTO estimator data */
+	/* 超时策略 */
 	const struct rpc_timeout *cl_timeout;	/* Timeout strategy */
 
 	atomic_t		cl_swapper;	/* swapfile count */
@@ -100,12 +105,17 @@ struct rpc_clnt {
 
 /*
  * General RPC program info
+ * 一般 RPC 程序信息
  */
 #define RPC_MAXVERSION		4
 struct rpc_program {
+	/* 协议名 */
 	const char *		name;		/* protocol name */
+	/* 程序号 */
 	u32			number;		/* program number */
+	/* 版本号 */
 	unsigned int		nrvers;		/* number of versions */
+	/* 版本数组 */
 	const struct rpc_version **	version;	/* version array */
 	struct rpc_stat *	stats;		/* statistics */
 	const char *		pipe_dir_name;	/* path to rpc_pipefs dir */
@@ -120,15 +130,22 @@ struct rpc_version {
 
 /*
  * Procedure information
+ * 程序信息结构体
  */
 struct rpc_procinfo {
+	/* rpc 程序号 */
 	u32			p_proc;		/* RPC procedure number */
+	/* 加密 */
 	kxdreproc_t		p_encode;	/* XDR encode function */
+	/* 解密 */
 	kxdrdproc_t		p_decode;	/* XDR decode function */
+	/* 参数长度 */
 	unsigned int		p_arglen;	/* argument hdr length (u32) */
+	/* 回复长度 */
 	unsigned int		p_replen;	/* reply hdr length (u32) */
 	unsigned int		p_timer;	/* Which RTT timer to use */
 	u32			p_statidx;	/* Which procedure to account */
+	/* 程序名 */
 	const char *		p_name;		/* name of procedure */
 };
 

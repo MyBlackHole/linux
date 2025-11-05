@@ -347,6 +347,7 @@ static int alloc_thread_stack_node(struct task_struct *tsk, int node)
 		stack = kasan_reset_tag(vm_area->addr);
 
 		/* Clear stale pointers from reused stack. */
+		/* 从重用堆栈中清除陈旧的指针。 */
 		clear_pages(vm_area->addr, vm_area->nr_pages);
 
 		tsk->stack_vm_area = vm_area;
@@ -1632,6 +1633,7 @@ static int copy_files(u64 clone_flags, struct task_struct *tsk,
 	}
 
 	if (clone_flags & CLONE_FILES) {
+		/* 共享父进程文件结构 */
 		atomic_inc(&oldf->count);
 		return 0;
 	}
@@ -2087,6 +2089,7 @@ __latent_entropy struct task_struct *copy_process(
 		goto fork_out;
 
 	retval = -ENOMEM;
+	/* 拷贝一份当前进程结构体 */
 	p = dup_task_struct(current, node);
 	if (!p)
 		goto fork_out;
@@ -2277,6 +2280,7 @@ __latent_entropy struct task_struct *copy_process(
 	stackleak_task_init(p);
 
 	if (pid != &init_struct_pid) {
+		/* 新建时 pid 是 NULL */
 		pid = alloc_pid(p->nsproxy->pid_ns_for_children, args->set_tid,
 				args->set_tid_size);
 		if (IS_ERR(pid)) {
@@ -2618,6 +2622,7 @@ static int idle_dummy(void *dummy)
 	return 0;
 }
 
+/* 创建空闲进程 */
 struct task_struct * __init fork_idle(int cpu)
 {
 	struct task_struct *task;
@@ -2784,6 +2789,8 @@ pid_t kernel_thread(int (*fn)(void *), void *arg, const char *name,
 
 /*
  * Create a user mode thread.
+ *
+ * 用户线程创建
  */
 pid_t user_mode_thread(int (*fn)(void *), void *arg, unsigned long flags)
 {

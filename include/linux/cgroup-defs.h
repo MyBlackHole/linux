@@ -49,10 +49,15 @@ enum cgroup_subsys_id {
 
 /* bits in struct cgroup_subsys_state flags field */
 enum {
+	/* 此 CSS 没有引用计数 */
 	CSS_NO_REF	= (1 << 0), /* no reference counting for this css */
+	/* css 在线与离线之间 */
 	CSS_ONLINE	= (1 << 1), /* between ->css_online() and ->css_offline() */
+	/* refcnt 达到零，释放 */
 	CSS_RELEASED	= (1 << 2), /* refcnt reached zero, released */
+	/* css 对用户空间可见 */
 	CSS_VISIBLE	= (1 << 3), /* css is visible to userland */
+	/* css 正在消亡 */
 	CSS_DYING	= (1 << 4), /* css is dying */
 };
 
@@ -180,12 +185,15 @@ struct cgroup_file {
  */
 struct cgroup_subsys_state {
 	/* PI: the cgroup that this css is attached to */
+	/* 所属控制组 */
 	struct cgroup *cgroup;
 
 	/* PI: the cgroup subsystem that this css is attached to */
+	/* 所属控制组子系统 */
 	struct cgroup_subsys *ss;
 
 	/* reference count - access via css_[try]get() and css_put() */
+	/* 引用计数 */
 	struct percpu_ref refcnt;
 
 	/*
@@ -217,6 +225,7 @@ struct cgroup_subsys_state {
 	 * PI: Subsys-unique ID.  0 is unused and root is always 1.  The
 	 * matching css can be looked up using css_from_id().
 	 */
+	/* 控制组子系统唯一ID */
 	int id;
 
 	unsigned int flags;
@@ -233,9 +242,12 @@ struct cgroup_subsys_state {
 	 * Incremented by online self and children.  Used to guarantee that
 	 * parents are not offlined before their children.
 	 */
+	/* 自身和子孙已上线次数
+	 * 防止父级先于子孙释放 */
 	atomic_t online_cnt;
 
 	/* percpu_ref killing and RCU release */
+	/* css_release_work_fn */
 	struct work_struct destroy_work;
 	struct rcu_work destroy_rwork;
 
@@ -243,6 +255,7 @@ struct cgroup_subsys_state {
 	 * PI: the parent css.	Placed here for cache proximity to following
 	 * fields of the containing structure.
 	 */
+	/* 父级控制组子系统状态 */
 	struct cgroup_subsys_state *parent;
 
 	/*
@@ -773,11 +786,17 @@ struct cftype {
 /*
  * Control Group subsystem type.
  * See Documentation/admin-guide/cgroup-v1/cgroups.rst for details
+ *
+ * 定义控制组子系统类型与操作集。
  */
 struct cgroup_subsys {
+	/* 创建控制组子系统时调用
+	 * mem: mem_cgroup_css_alloc*/
 	struct cgroup_subsys_state *(*css_alloc)(struct cgroup_subsys_state *parent_css);
 	int (*css_online)(struct cgroup_subsys_state *css);
 	void (*css_offline)(struct cgroup_subsys_state *css);
+	/* 释放控制组子系统时调用
+	 * mem: mem_cgroup_css_released */
 	void (*css_released)(struct cgroup_subsys_state *css);
 	void (*css_free)(struct cgroup_subsys_state *css);
 	void (*css_reset)(struct cgroup_subsys_state *css);
@@ -788,6 +807,8 @@ struct cgroup_subsys {
 	int (*css_local_stat_show)(struct seq_file *seq,
 				   struct cgroup_subsys_state *css);
 
+	/* 迁移进程到新控制组时调用 
+	 * 会先检查 charge(记账) 到新控制组的资源(limit)是否足够*/
 	int (*can_attach)(struct cgroup_taskset *tset);
 	void (*cancel_attach)(struct cgroup_taskset *tset);
 	void (*attach)(struct cgroup_taskset *tset);

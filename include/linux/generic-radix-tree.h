@@ -82,6 +82,7 @@ static inline struct genradix_node *genradix_root_to_node(struct genradix_root *
 	return (void *) ((unsigned long) r & ~GENRADIX_DEPTH_MASK);
 }
 
+/* 基数树 */
 struct __genradix {
 	struct genradix_root		*root;
 };

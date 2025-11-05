@@ -21,6 +21,7 @@
 static int nfs4_write_inode(struct inode *inode, struct writeback_control *wbc);
 static void nfs4_evict_inode(struct inode *inode);
 
+/* nfs v4 版本函数集 */
 static const struct super_operations nfs4_sops = {
 	.alloc_inode	= nfs_alloc_inode,
 	.free_inode	= nfs_free_inode,
@@ -35,6 +36,7 @@ static const struct super_operations nfs4_sops = {
 	.show_stats	= nfs_show_stats,
 };
 
+/* nfs v4 版本描述 */
 struct nfs_subversion nfs_v4 = {
 	.owner		= THIS_MODULE,
 	.nfs_fs		= &nfs4_fs_type,
@@ -285,6 +287,7 @@ static int __init init_nfs_v4(void)
 #ifdef CONFIG_NFS_V4_2
 	nfs42_ssc_register_ops();
 #endif
+    /* 注册 nfs v4 到 nfs_version */
 	register_nfs_version(&nfs_v4);
 	return 0;
 out2:
@@ -300,6 +303,7 @@ static void __exit exit_nfs_v4(void)
 	/* Not called in the _init(), conditionally loaded */
 	nfs4_pnfs_v3_ds_connect_unload();
 
+    /* 注销 nfs v4 到 nfs_version */
 	unregister_nfs_version(&nfs_v4);
 #ifdef CONFIG_NFS_V4_2
 	nfs4_xattr_cache_exit();
@@ -313,5 +317,6 @@ static void __exit exit_nfs_v4(void)
 MODULE_DESCRIPTION("NFSv4 client support");
 MODULE_LICENSE("GPL");
 
+/* nfs v4 版本文件系统版本描述结构注册 */
 module_init(init_nfs_v4);
 module_exit(exit_nfs_v4);

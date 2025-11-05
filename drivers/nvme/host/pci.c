@@ -290,6 +290,10 @@ struct nvme_descriptor_pools {
 
 /*
  * Represents an NVM Express device.  Each nvme_dev is a PCI function.
+ *
+ * 代表 NVME Express 设备
+ * 每个 nvme_dev 都是一个 PCI 方法
+ *
  */
 struct nvme_dev {
 	struct nvme_queue *queues;
@@ -3710,6 +3714,7 @@ out_free_dev:
 	return ERR_PTR(ret);
 }
 
+/* 当插入一个 nvme 设备时执行此探测函数 */
 static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct nvme_dev *dev;
@@ -4259,7 +4264,9 @@ MODULE_DEVICE_TABLE(pci, nvme_id_table);
 
 static struct pci_driver nvme_driver = {
 	.name		= "nvme",
+	/* 支持的设备类型 */
 	.id_table	= nvme_id_table,
+	/* 是 id_table 内类型后执行探测设备 */
 	.probe		= nvme_probe,
 	.remove		= nvme_remove,
 	.shutdown	= nvme_shutdown,
@@ -4280,6 +4287,7 @@ static int __init nvme_init(void)
 	BUILD_BUG_ON(sizeof(struct nvme_delete_queue) != 64);
 	BUILD_BUG_ON(IRQ_AFFINITY_MAX_SETS < 2);
 
+	/* 注册驱动程序 */
 	return pci_register_driver(&nvme_driver);
 }
 

@@ -736,6 +736,8 @@ static const struct iomap_dio_ops xfs_dio_zoned_write_ops = {
 
 /*
  * Handle block aligned direct I/O writes.
+ *
+ * 处理对齐直接 IO 写
  */
 static noinline ssize_t
 xfs_file_dio_write_aligned(
@@ -890,6 +892,8 @@ out_unlock:
  * IOMAP_DIO_OVERWRITE_ONLY flag to tell the lower layers to return -EAGAIN
  * if block allocation or partial block zeroing would be required.  In that case
  * we try again with the exclusive lock.
+ *
+ * 处理没对齐直接 IO 写
  */
 static noinline ssize_t
 xfs_file_dio_write_unaligned(
@@ -974,6 +978,7 @@ xfs_file_dio_write(
 {
 	struct xfs_inode	*ip = XFS_I(file_inode(iocb->ki_filp));
 	struct xfs_buftarg      *target = xfs_inode_buftarg(ip);
+	/* 数据数量 */
 	size_t			count = iov_iter_count(from);
 
 	/* direct I/O must be aligned to device logical sector size */
@@ -1192,6 +1197,7 @@ xfs_file_write_iter(
 		return xfs_file_dax_write(iocb, from);
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
+		/* 直接落盘 (不写缓存) */
 		/*
 		 * Allow a directio write to fall back to a buffered
 		 * write *only* in the case that we're doing a reflink
@@ -1496,6 +1502,11 @@ __xfs_file_fallocate(
 	 * currently hold. We must do this first because AIO can update both
 	 * the on disk and in memory inode sizes, and the operations that follow
 	 * require the in-memory size to be fully up-to-date.
+	 */
+
+	/*
+	 * 等待所有 aio 完成
+	 * 应为 aio 会修改大小
 	 */
 	inode_dio_wait(inode);
 
@@ -2081,6 +2092,7 @@ xfs_file_mmap_prepare(
 	return 0;
 }
 
+/* 文件类型操作 */
 const struct file_operations xfs_file_operations = {
 	.llseek		= xfs_file_llseek,
 	.read_iter	= xfs_file_read_iter,
@@ -2106,6 +2118,7 @@ const struct file_operations xfs_file_operations = {
 	.setlease	= generic_setlease,
 };
 
+/* 目录类型操作 */
 const struct file_operations xfs_dir_file_operations = {
 	.open		= xfs_dir_open,
 	.read		= generic_read_dir,

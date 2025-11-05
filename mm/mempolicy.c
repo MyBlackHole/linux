@@ -2441,6 +2441,8 @@ static struct page *alloc_pages_preferred_many(gfp_t gfp, unsigned int order,
  * @nid: Preferred node (usually numa_node_id() but @mpol may override it).
  *
  * Return: The page on success or NULL if allocation fails.
+ *
+ * 根据NUMA内存策略分配页面
  */
 static struct page *alloc_pages_mpol(gfp_t gfp, unsigned int order,
 		struct mempolicy *pol, pgoff_t ilx, int nid)
@@ -2472,6 +2474,9 @@ static struct page *alloc_pages_mpol(gfp_t gfp, unsigned int order,
 			/*
 			 * First, try to allocate THP only on local node, but
 			 * don't reclaim unnecessarily, just compact.
+			 *
+			 * 首先，尝试仅在本地节点上分配 THP，
+			 * 但不要进行不必要的回收，只需压缩即可。
 			 */
 			page = __alloc_frozen_pages_noprof(
 				gfp | __GFP_THISNODE | __GFP_NORETRY, order,
@@ -2575,6 +2580,8 @@ struct page *alloc_frozen_pages_noprof(gfp_t gfp, unsigned order)
  * Context: Can be called from any context, providing the appropriate GFP
  * flags are used.
  * Return: The page on success or NULL if allocation fails.
+ *
+ * 分配内存页
  */
 struct page *alloc_pages_noprof(gfp_t gfp, unsigned int order)
 {

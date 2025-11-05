@@ -100,9 +100,15 @@ __init int net_sysctl_init(void)
 	 * registering "/proc/sys/net" as an empty directory not in a
 	 * network namespace.
 	 */
+	/*
+	 * 向内核注册一个内核参数表
+	 * 路径为 “/proc/sys/net”
+	 */
 	net_header = register_sysctl_sz("net", empty, 0);
 	if (!net_header)
 		goto out;
+	/* 注册网络内核操作 */
+	/* 成功返回参数表指针 */
 	ret = register_pernet_subsys(&sysctl_pernet_ops);
 	if (ret)
 		goto out1;

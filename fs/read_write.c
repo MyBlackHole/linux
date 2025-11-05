@@ -450,6 +450,7 @@ SYSCALL_DEFINE5(llseek, unsigned int, fd, unsigned long, offset_high,
 }
 #endif
 
+/* 读写区域验证 */
 int rw_verify_area(int read_write, struct file *file, const loff_t *ppos, size_t count)
 {
 	int mask = read_write == READ ? MAY_READ : MAY_WRITE;
@@ -486,10 +487,13 @@ static ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, lo
 	struct iov_iter iter;
 	ssize_t ret;
 
+	/* 初始化 kiocb */
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = (ppos ? *ppos : 0);
+	/* 初始化 iov_iter */
 	iov_iter_ubuf(&iter, ITER_DEST, buf, len);
 
+	/* 执行文件系统读操作 */
 	ret = filp->f_op->read_iter(&kiocb, &iter);
 	BUG_ON(ret == -EIOCBQUEUED);
 	if (ppos)
@@ -555,7 +559,9 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
 
+	/* 验证 */
 	if (!(file->f_mode & FMODE_READ))
+		/* 读未打开 */
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_READ))
 		return -EINVAL;
@@ -569,8 +575,11 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 		count =  MAX_RW_COUNT;
 
 	if (file->f_op->read)
+		/* 自定义读操作 */
 		ret = file->f_op->read(file, buf, count, pos);
 	else if (file->f_op->read_iter)
+		/* 读取 */
+		/* xfs: xfs_file_read_iter */
 		ret = new_sync_read(file, buf, count, pos);
 	else
 		ret = -EINVAL;
@@ -592,6 +601,7 @@ static ssize_t new_sync_write(struct file *filp, const char __user *buf, size_t 
 	kiocb.ki_pos = (ppos ? *ppos : 0);
 	iov_iter_ubuf(&iter, ITER_SOURCE, (void __user *)buf, len);
 
+	/* 调用用户实现写 */
 	ret = filp->f_op->write_iter(&kiocb, &iter);
 	BUG_ON(ret == -EIOCBQUEUED);
 	if (ret > 0 && ppos)
@@ -689,6 +699,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 	else
 		ret = -EINVAL;
 	if (ret > 0) {
+		/* 发送修改通知 */
 		fsnotify_modify(file);
 		add_wchar(current, ret);
 	}
@@ -709,6 +720,7 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	ssize_t ret = -EBADF;
 
 	if (!fd_empty(f)) {
+		/* 获取文件偏移量 */
 		loff_t pos, *ppos = file_ppos(fd_file(f));
 		if (ppos) {
 			pos = *ppos;
@@ -721,8 +733,10 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	return ret;
 }
 
+/* 读取苦难的开始 */
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
+	/* 系统调用读 */
 	return ksys_read(fd, buf, count);
 }
 
@@ -745,6 +759,7 @@ ssize_t ksys_write(unsigned int fd, const char __user *buf, size_t count)
 	return ret;
 }
 
+/* 写苦难的开始 */
 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 		size_t, count)
 {
@@ -1722,6 +1737,7 @@ int generic_write_check_limits(struct file *file, loff_t pos, loff_t *count)
 		*count = min(*count, limit - pos);
 	}
 
+	/* 限制最大写入长度 */
 	if (!(file->f_flags & O_LARGEFILE))
 		max_size = MAX_NON_LFS;
 
@@ -1735,6 +1751,7 @@ int generic_write_check_limits(struct file *file, loff_t pos, loff_t *count)
 EXPORT_SYMBOL_GPL(generic_write_check_limits);
 
 /* Like generic_write_checks(), but takes size of write instead of iter. */
+/* 与 generic_write_checks() 类似，但采用 write 大小而不是 iter。 */
 int generic_write_checks_count(struct kiocb *iocb, loff_t *count)
 {
 	struct file *file = iocb->ki_filp;
@@ -1764,6 +1781,10 @@ EXPORT_SYMBOL(generic_write_checks_count);
  * Can adjust writing position or amount of bytes to write.
  * Returns appropriate error code that caller should return or
  * zero in case that write should be allowed.
+ *
+ * 写入之前执行检查
+ * 例如处理最大写入长度限制
+ * 修正写入长度
  */
 ssize_t generic_write_checks(struct kiocb *iocb, struct iov_iter *from)
 {

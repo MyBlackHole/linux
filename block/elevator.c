@@ -2,6 +2,8 @@
 /*
  *  Block device elevator/IO-scheduler.
  *
+ *  块设备 电梯算法 io 调度
+ *
  *  Copyright (C) 2000 Andrea Arcangeli <andrea@suse.de> SuSE
  *
  * 30042000 Jens Axboe <axboe@kernel.dk> :

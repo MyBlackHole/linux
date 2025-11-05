@@ -13,6 +13,7 @@
 #include "internal.h"
 
 /* Context where printk messages are never suppressed */
+/* printk 消息永远不会被抑制的上下文 */
 static atomic_t force_con;
 
 void printk_force_console_enter(void)

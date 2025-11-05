@@ -1220,11 +1220,15 @@ static const struct rpc_call_ops rpc_default_ops = {
 /**
  * rpc_run_task - Allocate a new RPC task, then run rpc_execute against it
  * @task_setup_data: pointer to task initialisation data
+ *
+ * rpc_run_task - 分配一个新的 RPC 任务，然后对其运行 rpc_execute
+ * @task_setup_data: 指向任务初始化数据的指针
  */
 struct rpc_task *rpc_run_task(const struct rpc_task_setup *task_setup_data)
 {
 	struct rpc_task *task;
 
+	/* 根据 task_setup_data 生成一个新的 rpc_task (真正 rpc 执行结构) */
 	task = rpc_new_task(task_setup_data);
 	if (IS_ERR(task))
 		return task;
@@ -1238,7 +1242,9 @@ struct rpc_task *rpc_run_task(const struct rpc_task_setup *task_setup_data)
 	if (task->tk_action == NULL)
 		rpc_call_start(task);
 
+	/* 原子增加引用 */
 	atomic_inc(&task->tk_count);
+	/* 真正执行 rpc 函数 */
 	rpc_execute(task);
 	return task;
 }
@@ -1249,10 +1255,13 @@ EXPORT_SYMBOL_GPL(rpc_run_task);
  * @clnt: pointer to RPC client
  * @msg: RPC call parameters
  * @flags: RPC call flags
+ *
+ * 执行同步 rpc 调用
  */
 int rpc_call_sync(struct rpc_clnt *clnt, const struct rpc_message *msg, int flags)
 {
 	struct rpc_task	*task;
+	/* 设置 rpc task 设置结构体 */
 	struct rpc_task_setup task_setup_data = {
 		.rpc_client = clnt,
 		.rpc_message = msg,

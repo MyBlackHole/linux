@@ -10,6 +10,7 @@
  * callers of sys_mount() only.  Filesystems should be using the SB_*
  * equivalent instead.
  */
+/* 只读挂载 */
 #define MS_RDONLY	 1	/* Mount read-only */
 #define MS_NOSUID	 2	/* Ignore suid and sgid bits */
 #define MS_NODEV	 4	/* Disallow access to device special files */

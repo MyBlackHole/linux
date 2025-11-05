@@ -153,6 +153,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
  *
  * selects the appropriately-sized optimised version depending on sizeof(n)
  */
+/* 以 2 为底的 32 位或 64 位无符号值的对数 */
 #define ilog2(n) \
 ( \
 	__builtin_constant_p(n) ?	\
@@ -171,6 +172,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
  * - the result is undefined when n == 0
  * - this can be used to initialise global variables from constant data
  */
+/* 将给定值向上舍入到最接近的 2 的幂 */
 #define roundup_pow_of_two(n)			\
 (						\
 	__builtin_constant_p(n) ? (		\

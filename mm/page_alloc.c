@@ -785,6 +785,7 @@ static inline void account_freepages(struct zone *zone, int nr_pages,
 }
 
 /* Used for pages not on another list */
+/* 用于不在另一个列表中的页面 */
 static inline void __add_to_free_list(struct page *page, struct zone *zone,
 				      unsigned int order, int migratetype,
 				      bool tail)
@@ -800,6 +801,7 @@ static inline void __add_to_free_list(struct page *page, struct zone *zone,
 		list_add_tail(&page->buddy_list, &area->free_list[migratetype]);
 	else
 		list_add(&page->buddy_list, &area->free_list[migratetype]);
+	/* 增加空闲计数 */
 	area->nr_free++;
 
 	if (order >= pageblock_order && !is_migrate_isolate(migratetype))
@@ -835,6 +837,7 @@ static inline void move_to_free_list(struct page *page, struct zone *zone,
 	}
 }
 
+/* 删除空闲页面 */
 static inline void __del_page_from_free_list(struct page *page, struct zone *zone,
 					     unsigned int order, int migratetype)
 {
@@ -896,6 +899,7 @@ buddy_merge_likely(unsigned long pfn, unsigned long buddy_pfn,
 			NULL) != NULL;
 }
 
+/* 修改指定页块的迁移类型 */
 static void change_pageblock_range(struct page *pageblock_page,
 				   int start_order, int migratetype)
 {
@@ -929,8 +933,9 @@ static void change_pageblock_range(struct page *pageblock_page,
  * triggers coalescing into a block of larger size.
  *
  * -- nyc
+ * 释放页到伙伴分配器系统
+ *
  */
-
 static inline void __free_one_page(struct page *page,
 		unsigned long pfn,
 		struct zone *zone, unsigned int order,
@@ -959,6 +964,7 @@ static inline void __free_one_page(struct page *page,
 			return;
 		}
 
+		/* 找伙伴页 */
 		buddy = find_buddy_page_pfn(page, pfn, order, &buddy_pfn);
 		if (!buddy)
 			goto done_merging;
@@ -999,6 +1005,7 @@ static inline void __free_one_page(struct page *page,
 		combined_pfn = buddy_pfn & pfn;
 		page = page + (combined_pfn - pfn);
 		pfn = combined_pfn;
+		/* 阶数增加 */
 		order++;
 	}
 
@@ -1451,6 +1458,8 @@ bool free_pages_prepare(struct page *page, unsigned int order)
  * Frees a number of pages from the PCP lists
  * Assumes all pages on list are in same zone.
  * count is the number of pages to free.
+ *
+ * 释放 pcp 列表中的多个页面到伙伴系统中
  */
 static void free_pcppages_bulk(struct zone *zone, int count,
 					struct per_cpu_pages *pcp,
@@ -1476,6 +1485,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 		int nr_pages;
 
 		/* Remove pages from lists in a round-robin fashion. */
+		/* 以循环方式从列表中删除页面。 */
 		do {
 			if (++pindex > NR_PCP_LISTS - 1)
 				pindex = 0;
@@ -1484,6 +1494,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 
 		order = pindex_to_order(pindex);
 		nr_pages = 1 << order;
+		/* 从选定的列表中删除页面。 */
 		do {
 			unsigned long pfn;
 			int mt;
@@ -1493,10 +1504,12 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 			mt = get_pfnblock_migratetype(page, pfn);
 
 			/* must delete to avoid corrupting pcp list */
+			/* 必须删除以避免破坏 pcp 列表 */
 			list_del(&page->pcp_list);
 			count -= nr_pages;
 			pcp->count -= nr_pages;
 
+			/* 释放一个页面到伙伴系统中 */
 			__free_one_page(page, pfn, zone, order, mt, FPI_NONE);
 			trace_mm_page_pcpu_drain(page, order, mt);
 		} while (count > 0 && !list_empty(list));
@@ -1506,6 +1519,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 }
 
 /* Split a multi-block free page into its individual pageblocks. */
+/* 将多块空闲页面拆分成单独的页面块。 */
 static void split_large_buddy(struct zone *zone, struct page *page,
 			      unsigned long pfn, int order, fpi_t fpi)
 {
@@ -1513,6 +1527,7 @@ static void split_large_buddy(struct zone *zone, struct page *page,
 
 	VM_WARN_ON_ONCE(!IS_ALIGNED(pfn, 1 << order));
 	/* Caller removed page from freelist, buddy info cleared! */
+	/* 调用者从空闲列表中删除页面，好友信息已清除！ */
 	VM_WARN_ON_ONCE(PageBuddy(page));
 
 	if (order > pageblock_order)
@@ -1704,8 +1719,10 @@ static inline unsigned int expand(struct zone *zone, struct page *page, int low,
 	unsigned int size = 1 << high;
 	unsigned int nr_added = 0;
 
+	/* high 大于 low, 所以需要拆分高阶块 */
 	while (high > low) {
 		high--;
+		/* 拆分成低阶块两个 */
 		size >>= 1;
 		VM_BUG_ON_PAGE(bad_range(zone, &page[size]), &page[size]);
 
@@ -1719,6 +1736,7 @@ static inline unsigned int expand(struct zone *zone, struct page *page, int low,
 			continue;
 
 		__add_to_free_list(&page[size], zone, high, migratetype, false);
+		/* 设置阶层 */
 		set_buddy_order(&page[size], high);
 		nr_added += size;
 	}
@@ -1726,6 +1744,7 @@ static inline unsigned int expand(struct zone *zone, struct page *page, int low,
 	return nr_added;
 }
 
+/* 拆分 high 阶块页面为小阶块页面重新加入空闲链表 */
 static __always_inline void page_del_and_expand(struct zone *zone,
 						struct page *page, int low,
 						int high, int migratetype)
@@ -1893,10 +1912,17 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
 	struct page *page;
 
 	/* Find a page of the appropriate size in the preferred list */
+	/* 在首选列表中找到适当大小的页面 */
 	for (current_order = order; current_order < NR_PAGE_ORDERS; ++current_order) {
+		/* 取 order 阶的空闲区 */
 		area = &(zone->free_area[current_order]);
+		/* 取 migratetype 类型空闲页面 */
 		page = get_page_from_free_area(area, migratetype);
 		if (!page)
+			/*
+			 * 本阶空闲区没有 migratetype 类型页面
+			 * 继续查找下一阶
+			 */
 			continue;
 
 		page_del_and_expand(zone, page, order, current_order,
@@ -2287,6 +2313,8 @@ try_to_claim_block(struct zone *zone, struct page *page,
 
 	/* Take ownership for orders >= pageblock_order */
 	if (current_order >= pageblock_order) {
+		/* 修改迁移类型 */
+
 		unsigned int nr_added;
 
 		del_page_from_free_list(page, zone, current_order, block_type);
@@ -2374,6 +2402,8 @@ __rmqueue_claim(struct zone *zone, int order, int start_migratetype,
 	 * Find the largest available free page in the other list. This roughly
 	 * approximates finding the pageblock with the most free pages, which
 	 * would be too costly to do exactly.
+	 *
+	 * 找一个伙伴分配器中可用的最大空闲页面。
 	 */
 	for (current_order = MAX_PAGE_ORDER; current_order >= min_order;
 				--current_order) {
@@ -2442,6 +2472,10 @@ enum rmqueue_mode {
 /*
  * Do the hard work of removing an element from the buddy allocator.
  * Call me with the zone->lock already held.
+ *
+ * 完成从伙伴分配器中删除元素的艰苦工作。
+ * 在 zone->lock 已持有的情况下调用我。
+ *
  */
 static __always_inline struct page *
 __rmqueue(struct zone *zone, unsigned int order, int migratetype,
@@ -2926,12 +2960,15 @@ static bool free_frozen_page_commit(struct zone *zone,
 
 /*
  * Free a pcp page
+ *
+ * 释放一个pcp页面。
  */
 static void __free_frozen_pages(struct page *page, unsigned int order,
 				fpi_t fpi_flags)
 {
 	struct per_cpu_pages *pcp;
 	struct zone *zone;
+	/* 获取页面所对应的页帧号 */
 	unsigned long pfn = page_to_pfn(page);
 	int migratetype;
 
@@ -2940,6 +2977,7 @@ static void __free_frozen_pages(struct page *page, unsigned int order,
 		return;
 	}
 
+	/* 检查页面是否满足释放条件 */
 	if (!__free_pages_prepare(page, order, fpi_flags))
 		return;
 
@@ -2950,7 +2988,9 @@ static void __free_frozen_pages(struct page *page, unsigned int order,
 	 * get those areas back if necessary. Otherwise, we may have to free
 	 * excessively into the page allocator
 	 */
+	/* 获取页面所在的zone */
 	zone = page_zone(page);
+	/* 获取页面的迁移类型 */
 	migratetype = get_pfnblock_migratetype(page, pfn);
 	if (unlikely(migratetype >= MIGRATE_PCPTYPES)) {
 		if (unlikely(is_migrate_isolate(migratetype))) {
@@ -3303,6 +3343,7 @@ static int nr_pcp_alloc(struct per_cpu_pages *pcp, struct zone *zone, int order)
 }
 
 /* Remove page from the per-cpu list, caller must protect the list */
+/* 从 pcp 删除页面，调用者必须保护该列表 */
 static inline
 struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
 			int migratetype,
@@ -3331,6 +3372,10 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
 			if (alloc_flags & ALLOC_HIGHATOMIC)
 				return NULL;
 
+			/*
+			 * 链表为空，则从伙伴系统中分配一批页面
+			 * 放到 pcp->lists[migratetype] 链表中
+			 */
 			alloced = rmqueue_bulk(zone, order,
 					batch, list,
 					migratetype, alloc_flags);
@@ -3341,6 +3386,7 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
 		}
 
 		page = list_first_entry(list, struct page, pcp_list);
+		/* 从 pcp->lists[migratetype] 链表中删除页面 */
 		list_del(&page->pcp_list);
 		pcp->count -= 1 << order;
 	} while (check_new_pages(page, order));
@@ -3349,6 +3395,7 @@ struct page *__rmqueue_pcplist(struct zone *zone, unsigned int order,
 }
 
 /* Lock and remove page from the per-cpu list */
+/* 锁定并从每个 CPU 列表中删除页面 */
 static struct page *rmqueue_pcplist(struct zone *preferred_zone,
 			struct zone *zone, unsigned int order,
 			int migratetype, unsigned int alloc_flags)
@@ -3368,6 +3415,7 @@ static struct page *rmqueue_pcplist(struct zone *preferred_zone,
 	 * frees.
 	 */
 	pcp->free_count >>= 1;
+	/* 获取指定类型的列表 */
 	list = &pcp->lists[order_to_pindex(migratetype, order)];
 	page = __rmqueue_pcplist(zone, order, migratetype, alloc_flags, pcp, list);
 	pcp_spin_unlock(pcp);
@@ -3399,12 +3447,14 @@ struct page *rmqueue(struct zone *preferred_zone,
 	struct page *page;
 
 	if (likely(pcp_allowed_order(order))) {
+		/* 分配单个页面 */
 		page = rmqueue_pcplist(preferred_zone, zone, order,
 				       migratetype, alloc_flags);
 		if (likely(page))
 			goto out;
 	}
 
+	/* 分配多个页面 */
 	page = rmqueue_buddy(preferred_zone, zone, order, alloc_flags,
 							migratetype);
 
@@ -3807,11 +3857,13 @@ retry:
 	 */
 	no_fallback = alloc_flags & ALLOC_NOFRAGMENT;
 	z = ac->preferred_zoneref;
+	/* 遍历 zonelist 中所有小于等于 highest_zoneidx 的 zone */
 	for_next_zone_zonelist_nodemask(zone, z, ac->highest_zoneidx,
 					ac->nodemask) {
 		struct page *page;
 		unsigned long mark;
 
+		/* 是否允许当前 cpu 在当前 zone 分配内存 */
 		if (cpusets_enabled() &&
 			(alloc_flags & ALLOC_CPUSET) &&
 			!__cpuset_zone_allowed(zone, gfp_mask))
@@ -3841,6 +3893,7 @@ retry:
 				last_pgdat_dirty_ok = node_dirty_ok(zone->zone_pgdat);
 			}
 
+			/* 脏页超过限制跳过 */
 			if (!last_pgdat_dirty_ok)
 				continue;
 		}
@@ -3917,10 +3970,11 @@ check_alloc_wmark:
 			if (alloc_flags & ALLOC_NO_WATERMARKS)
 				goto try_this_zone;
 
+			/* 回收内存 */
 			if (!node_reclaim_enabled() ||
 			    !zone_allows_reclaim(zonelist_zone(ac->preferred_zoneref), zone))
 				continue;
-
+			/* 回收内存 */
 			ret = node_reclaim(zone->zone_pgdat, gfp_mask, order);
 			switch (ret) {
 			case NODE_RECLAIM_NOSCAN:
@@ -3931,6 +3985,7 @@ check_alloc_wmark:
 				continue;
 			default:
 				/* did we reclaim enough */
+				/* 我们回收了足够的资源吗 */
 				if (zone_watermark_ok(zone, order, mark,
 					ac->highest_zoneidx, alloc_flags))
 					goto try_this_zone;
@@ -3939,7 +3994,9 @@ check_alloc_wmark:
 			}
 		}
 
+/* 确认当前 zone 存在足够的空闲内存 */
 try_this_zone:
+		/* 尝试分配内存 */
 		page = rmqueue(zonelist_zone(ac->preferred_zoneref), zone, order,
 				gfp_mask, alloc_flags, ac->migratetype);
 		if (page) {
@@ -4138,6 +4195,7 @@ out:
 
 #ifdef CONFIG_COMPACTION
 /* Try memory compaction for high-order allocations before reclaim */
+/* 直接压缩然后分配 */
 static struct page *
 __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 		unsigned int alloc_flags, const struct alloc_context *ac,
@@ -4410,6 +4468,7 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order,
 }
 
 /* The really slow allocator path where we enter direct reclaim */
+/* 直接回收然后分配 */
 static inline struct page *
 __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
 		unsigned int alloc_flags, const struct alloc_context *ac,
@@ -4573,6 +4632,7 @@ bool gfp_pfmemalloc_allowed(gfp_t gfp_mask)
  *
  * Returns true if a retry is viable or false to enter the oom path.
  */
+/* 是否需要重新内存回收 */
 static inline bool
 should_reclaim_retry(gfp_t gfp_mask, unsigned order,
 		     struct alloc_context *ac, int alloc_flags,
@@ -4683,6 +4743,7 @@ check_retry_cpuset(int cpuset_mems_cookie, struct alloc_context *ac)
 	return false;
 }
 
+/* 慢速内存分配 */
 static inline struct page *
 __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 						struct alloc_context *ac)
@@ -4778,6 +4839,8 @@ retry:
 	/*
 	 * The adjusted alloc_flags might result in immediate success, so try
 	 * that first
+	 *
+	 * 调整 alloc_flags 可能会立即成功，因此请先尝试一下
 	 */
 	page = get_page_from_freelist(gfp_mask, order, alloc_flags, ac);
 	if (page)
@@ -4815,11 +4878,13 @@ retry:
 		goto nopage;
 
 	/* Avoid recursion of direct reclaim */
+	/* 当前进程已经是进行内存回收的进程，避免直接回收的递归 */
 	if (current->flags & PF_MEMALLOC)
 		goto nopage;
 
 	/* Try direct reclaim and then allocating */
 	if (!compact_first) {
+		/* 尝试直接回收然后分配 */
 		page = __alloc_pages_direct_reclaim(gfp_mask, order, alloc_flags,
 							ac, &did_some_progress);
 		if (page)
@@ -4827,6 +4892,7 @@ retry:
 	}
 
 	/* Try direct compaction and then allocating */
+	/* 尝试直接压缩然后分配 */
 	page = __alloc_pages_direct_compact(gfp_mask, order, alloc_flags, ac,
 					compact_priority, &compact_result);
 	if (page)
@@ -4860,6 +4926,7 @@ retry:
 	}
 
 	/* Do not loop if specifically requested */
+	/* 设置 __GFP_NORETRY 标志时，不进行循环 */
 	if (gfp_mask & __GFP_NORETRY)
 		goto nopage;
 
@@ -4880,6 +4947,7 @@ retry:
 	    check_retry_zonelist(zonelist_iter_cookie))
 		goto restart;
 
+	/* 检查是否需要重新内存回收 */
 	if (should_reclaim_retry(gfp_mask, order, ac, alloc_flags,
 				 did_some_progress > 0, &no_progress_loops))
 		goto retry;
@@ -4890,6 +4958,7 @@ retry:
 	 * implementation of the compaction depends on the sufficient amount
 	 * of free memory (see __compaction_suitable)
 	 */
+	/* 检查是否需要重新压缩 */
 	if (did_some_progress > 0 && can_compact &&
 			should_compact_retry(ac, order, alloc_flags,
 				compact_result, &compact_priority,
@@ -4911,6 +4980,7 @@ retry:
 		goto restart;
 
 	/* Reclaim has failed us, start killing things */
+	/* Reclaim 使我们失望了，开始杀戮 */
 	page = __alloc_pages_may_oom(gfp_mask, order, ac, &did_some_progress);
 	if (page)
 		goto got_pg;
@@ -5186,6 +5256,8 @@ EXPORT_SYMBOL_GPL(alloc_pages_bulk_noprof);
 
 /*
  * This is the 'heart' of the zoned buddy allocator.
+ *
+ * 区域伙伴分配器核心逻辑
  */
 struct page *__alloc_frozen_pages_noprof(gfp_t gfp, unsigned int order,
 		int preferred_nid, nodemask_t *nodemask)
@@ -5223,6 +5295,7 @@ struct page *__alloc_frozen_pages_noprof(gfp_t gfp, unsigned int order,
 	alloc_flags |= alloc_flags_nofragment(zonelist_zone(ac.preferred_zoneref), gfp);
 
 	/* First allocation attempt */
+	/* 第一次分配尝试 */
 	page = get_page_from_freelist(alloc_gfp, order, alloc_flags, &ac);
 	if (likely(page))
 		goto out;
@@ -5236,6 +5309,7 @@ struct page *__alloc_frozen_pages_noprof(gfp_t gfp, unsigned int order,
 	 */
 	ac.nodemask = nodemask;
 
+	/* 进行慢速内存分配 */
 	page = __alloc_pages_slowpath(alloc_gfp, order, &ac);
 
 out:
@@ -5299,6 +5373,7 @@ static void ___free_pages(struct page *page, unsigned int order,
 			  fpi_t fpi_flags)
 {
 	/* get PageHead before we drop reference */
+	/* 在删除引用之前获取 PageHead */
 	int head = PageHead(page);
 	/* get alloc tag in case the page is released by others */
 	struct alloc_tag *tag = pgalloc_tag_get(page);
@@ -5363,10 +5438,13 @@ void free_pages_nolock(struct page *page, unsigned int order)
  * This function behaves the same as __free_pages(). Use this function
  * to free pages when you only have a valid virtual address. If you have
  * the page, call __free_pages() instead.
+ *
+ * 释放内存地址
  */
 void free_pages(unsigned long addr, unsigned int order)
 {
 	if (addr != 0) {
+		/*地址检查*/
 		VM_BUG_ON(!virt_addr_valid((void *)addr));
 		__free_pages(virt_to_page((void *)addr), order);
 	}

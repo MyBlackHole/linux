@@ -105,9 +105,13 @@ enum {
  * without the underscores and use them consistently. The definitions here may
  * be used in bit comparisons.
  */
+/* 从 ZONE_DMA 区中分配内存 */
 #define __GFP_DMA	((__force gfp_t)___GFP_DMA)
+/* 从 ZONE_HIGHMEM 区中分配内存 */
 #define __GFP_HIGHMEM	((__force gfp_t)___GFP_HIGHMEM)
+/* 从 ZONE_DMA32 区中分配内存 */
 #define __GFP_DMA32	((__force gfp_t)___GFP_DMA32)
+/* 内存规整时可以迁移或回收页面 */
 #define __GFP_MOVABLE	((__force gfp_t)___GFP_MOVABLE)  /* ZONE_MOVABLE allowed */
 #define GFP_ZONEMASK	(__GFP_DMA|__GFP_HIGHMEM|__GFP_DMA32|__GFP_MOVABLE)
 
@@ -252,13 +256,21 @@ enum {
  * Allocating pages from the buddy with __GFP_NOFAIL and order > 1 is
  * not supported. Please consider using kvmalloc() instead.
  */
+/* 启动物理I/O传输 */
 #define __GFP_IO	((__force gfp_t)___GFP_IO)
+/* 允许调用底层FS文件系统。可避免分配器递归到可能已经持有锁的文件系统中， 避免死锁 */
 #define __GFP_FS	((__force gfp_t)___GFP_FS)
+/* 分配内存过程中可以使用直接内存回收 */
 #define __GFP_DIRECT_RECLAIM	((__force gfp_t)___GFP_DIRECT_RECLAIM) /* Caller can reclaim */
+/* 内存到达低水位时唤醒kswapd线程异步回收内存 */
 #define __GFP_KSWAPD_RECLAIM	((__force gfp_t)___GFP_KSWAPD_RECLAIM) /* kswapd can wake */
+/* 表示是否可以直接内存回收或者使用 kswapd 线程进行回收 */
 #define __GFP_RECLAIM ((__force gfp_t)(___GFP_DIRECT_RECLAIM|___GFP_KSWAPD_RECLAIM))
+/* 分配内存可以可能会失败，但是在申请过程中会回收一些不必要的内存，是整个系统受益 */
 #define __GFP_RETRY_MAYFAIL	((__force gfp_t)___GFP_RETRY_MAYFAIL)
+/* 内存分配失败后无限制的重复尝试，知道分配成功 */
 #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)
+/* 直接页面回收或者内存规整后还是无法分配内存时，不启用retry反复尝试分配内存，直接返回NULL */
 #define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY)
 
 /**
@@ -373,15 +385,24 @@ enum {
  * version does not attempt reclaim/compaction at all and is by default used
  * in page fault path, while the non-light is used by khugepaged.
  */
+/* 
+ * 用来从中断处理和进程上下文之外的其他代码中分配内存,
+ * 保证分配成功,
+ * 从不睡眠
+ */
 #define GFP_ATOMIC	(__GFP_HIGH|__GFP_KSWAPD_RECLAIM)
+/* 内核内存的正常分配. 可能睡眠. */
 #define GFP_KERNEL	(__GFP_RECLAIM | __GFP_IO | __GFP_FS)
 #define GFP_KERNEL_ACCOUNT (GFP_KERNEL | __GFP_ACCOUNT)
 #define GFP_NOWAIT	(__GFP_KSWAPD_RECLAIM | __GFP_NOWARN)
 #define GFP_NOIO	(__GFP_RECLAIM)
+/* 不会访问任何的文件系统的接口和操作 */
 #define GFP_NOFS	(__GFP_RECLAIM | __GFP_IO)
+/* 用来为用户空间页来分配内存; 它可能睡眠 */
 #define GFP_USER	(__GFP_RECLAIM | __GFP_IO | __GFP_FS | __GFP_HARDWALL)
 #define GFP_DMA		__GFP_DMA
 #define GFP_DMA32	__GFP_DMA32
+/* 如同 GFP_USER, 但是从高端内存分配, 如果有. 高端内存在下一个子节描述 */
 #define GFP_HIGHUSER	(GFP_USER | __GFP_HIGHMEM)
 #define GFP_HIGHUSER_MOVABLE	(GFP_HIGHUSER | __GFP_MOVABLE | __GFP_SKIP_KASAN)
 #define GFP_TRANSHUGE_LIGHT	((GFP_HIGHUSER_MOVABLE | __GFP_COMP | \

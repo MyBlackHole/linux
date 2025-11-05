@@ -598,7 +598,9 @@ void memcg1_commit_charge(struct folio *folio, struct mem_cgroup *memcg)
 	unsigned long flags;
 
 	local_irq_save(flags);
+	/* 统计memcg rss/cache内存使用*/
 	memcg1_charge_statistics(memcg, folio_nr_pages(folio));
+	/* 统计memcg事件*/
 	memcg1_check_events(memcg, folio_nid(folio));
 	local_irq_restore(flags);
 }

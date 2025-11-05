@@ -68,6 +68,8 @@ static int pid_max_max = PID_MAX_LIMIT;
  * first use and are never deallocated. This way a low pid_max
  * value does not cause lots of bitmaps to be allocated, but
  * the scheme scales to up to 4 million PIDs, runtime.
+ *
+ * pid 命名空间, 用于初始化
  */
 struct pid_namespace init_pid_ns = {
 	.ns = NS_COMMON_INIT(init_pid_ns),
@@ -107,6 +109,7 @@ static void delayed_put_pid(struct rcu_head *rhp)
 	put_pid(pid);
 }
 
+/* 回收 pid */
 void free_pid(struct pid *pid)
 {
 	int i;
@@ -185,6 +188,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *arg_set_tid,
 	 *
 	 * 1. allocate and fill in pid struct
 	 */
+	/* 从命名空间缓存分配一个 pid 结构体 */
 	pid = kmem_cache_alloc(ns->pid_cachep, GFP_KERNEL);
 	if (!pid)
 		return ERR_PTR(retval);
@@ -194,6 +198,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *arg_set_tid,
 	refcount_set(&pid->count, 1);
 	spin_lock_init(&pid->lock);
 	for (type = 0; type < PIDTYPE_MAX; ++type)
+		/* 初始化 PID 类型链表挂载域 */
 		INIT_HLIST_HEAD(&pid->tasks[type]);
 	init_waitqueue_head(&pid->wait_pidfd);
 	INIT_HLIST_HEAD(&pid->inodes);
@@ -205,6 +210,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *arg_set_tid,
 	 * This stores found pid_max to make sure the used value is the same should
 	 * later code need it.
 	 */
+	/* 初始化 level 到 0 层级命名空间 */
 	for (tmp = ns, i = ns->level; i >= 0; i--) {
 		pid_max[ns->level - i] = READ_ONCE(tmp->pid_max);
 
@@ -228,6 +234,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *arg_set_tid,
 	 */
 	retried_preload = false;
 	idr_preload(GFP_KERNEL);
+	/* 关闭抢占 */
 	spin_lock(&pidmap_lock);
 	/* For the case when the previous attempt to create init failed */
 	if (ns->pid_allocated == PIDNS_ADDING)
@@ -237,6 +244,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *arg_set_tid,
 		int tid = set_tid[ns->level - i];
 
 		if (tid) {
+			/* 分配局部 PID */
 			nr = idr_alloc(&tmp->idr, NULL, tid,
 				       tid + 1, GFP_ATOMIC);
 			/*
@@ -280,6 +288,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *arg_set_tid,
 			 * entire time only for performance reasons.
 			 */
 			if (nr == -ENOMEM && !retried_preload) {
+				/* 开启抢占 */
 				spin_unlock(&pidmap_lock);
 				idr_preload_end();
 				retried_preload = true;
@@ -328,6 +337,7 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *arg_set_tid,
 		goto out_free;
 	for (upid = pid->numbers + ns->level; upid >= pid->numbers; --upid) {
 		/* Make the PID visible to find_pid_ns. */
+		/* 使 PID 对查询 PID 命名空间可见 */
 		idr_replace(&upid->ns->idr, pid, upid->nr);
 		upid->ns->pid_allocated++;
 	}
@@ -365,12 +375,14 @@ void disable_pid_allocation(struct pid_namespace *ns)
 	spin_unlock(&pidmap_lock);
 }
 
+/* 根据 pid 获取对应的 pid */
 struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
 {
 	return idr_find(&ns->idr, nr);
 }
 EXPORT_SYMBOL_GPL(find_pid_ns);
 
+/* 根据局部 PID (thread_pid) 获取当前 pid  */
 struct pid *find_vpid(int nr)
 {
 	return find_pid_ns(nr, task_active_pid_ns(current));
@@ -461,6 +473,7 @@ void transfer_pid(struct task_struct *old, struct task_struct *new,
 	hlist_replace_rcu(&old->pid_links[type], &new->pid_links[type]);
 }
 
+/* 根据 pid 与 PID 类型获取 task_struct */
 struct task_struct *pid_task(struct pid *pid, enum pid_type type)
 {
 	struct task_struct *result = NULL;
@@ -572,6 +585,7 @@ pid_t __task_pid_nr_ns(struct task_struct *task, enum pid_type type,
 }
 EXPORT_SYMBOL(__task_pid_nr_ns);
 
+/* 获取 pid 命名空间 */
 struct pid_namespace *task_active_pid_ns(struct task_struct *tsk)
 {
 	return ns_of_pid(task_pid(tsk));

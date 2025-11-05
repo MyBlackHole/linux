@@ -123,9 +123,13 @@ static __always_inline unsigned char interrupt_context_level(void)
  * in_serving_softirq()	- We're in softirq context
  * in_task()		- We're in task context
  */
+/* 判断是否处于NMI上下文 */
 #define in_nmi()		(nmi_count())
+/* 判断是否处于硬中断上下文 */
 #define in_hardirq()		(hardirq_count())
+/* 判断是否处于软中断上下文 */
 #define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
+/* 判断是否处于任务上下文 */
 #ifdef CONFIG_PREEMPT_RT
 # define in_task()		(!((preempt_count() & (NMI_MASK | HARDIRQ_MASK)) | in_serving_softirq()))
 #else
@@ -137,7 +141,9 @@ static __always_inline unsigned char interrupt_context_level(void)
  * in_softirq()   - We have BH disabled, or are processing softirqs
  * in_interrupt() - We're in NMI,IRQ,SoftIRQ context or have BH disabled
  */
+/* 判断是否处于软中断上下文或位于BH临界区 */
 #define in_softirq()		(softirq_count())
+/* 判断是否位于NMI,IRQ,SoftIRQ上下文或处于BH临界区 */
 #define in_interrupt()		(irq_count())
 
 /*
@@ -208,6 +214,7 @@ extern void preempt_count_sub(int val);
 
 #ifdef CONFIG_PREEMPT_COUNT
 
+/* 关闭抢占 */
 #define preempt_disable() \
 do { \
 	preempt_count_inc(); \
@@ -225,6 +232,7 @@ do { \
 #define preemptible()	(preempt_count() == 0 && !irqs_disabled())
 
 #ifdef CONFIG_PREEMPTION
+/* 恢复抢占 */
 #define preempt_enable() \
 do { \
 	barrier(); \
@@ -261,6 +269,9 @@ do { \
 #define preempt_check_resched() do { } while (0)
 #endif /* CONFIG_PREEMPTION */
 
+/*
+ * 禁止用户强占和内核抢占
+ */
 #define preempt_disable_notrace() \
 do { \
 	__preempt_count_inc(); \

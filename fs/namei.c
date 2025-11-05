@@ -55,8 +55,8 @@
  * The new code replaces the old recursive symlink resolution with
  * an iterative one (in case of non-nested symlink chains).  It does
  * this with calls to <fs>_follow_link().
- * As a side effect, dir_namei(), _namei() and follow_link() are now 
- * replaced with a single function lookup_dentry() that can handle all 
+ * As a side effect, dir_namei(), _namei() and follow_link() are now
+ * replaced with a single function lookup_dentry() that can handle all
  * the special cases of the former code.
  *
  * With the new dcache, the pathname is stored at each inode, at least as
@@ -131,6 +131,8 @@ static struct kmem_cache *__names_cache __ro_after_init;
 
 void __init filename_init(void)
 {
+	/* 创建 name 缓存 */
+	/* 提供目录名路径等存放缓存 */
 	__names_cache = kmem_cache_create_usercopy("names_cache", sizeof(struct filename), 0,
 			 SLAB_HWCACHE_ALIGN|SLAB_PANIC, offsetof(struct filename, iname),
 			 EMBEDDED_NAME_MAX, NULL);
@@ -602,6 +604,7 @@ static int sb_permission(struct super_block *sb, struct inode *inode, int mask)
 		umode_t mode = inode->i_mode;
 
 		/* Nobody gets write access to a read-only fs. */
+		/* 没有人获得对只读 fs 的写访问权限。 */
 		if (sb_rdonly(sb) && (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
 			return -EROFS;
 	}
@@ -720,14 +723,21 @@ void path_put(const struct path *path)
 EXPORT_SYMBOL(path_put);
 
 #define EMBEDDED_LEVELS 2
+/* 路径查询辅助结构 */
 struct nameidata {
+	/* 查找到的路径 */
 	struct path	path;
+	/* 路径名的最后一个分量, (当 LOOKUP_PARENT 标志被设置时使用) */
 	struct qstr	last;
+	/* 进程根路径 */
 	struct path	root;
 	struct inode	*inode; /* path.dentry.d_inode */
+	/* 查找标志 */
 	unsigned int	flags, state;
 	unsigned	seq, next_seq, m_seq, r_seq;
+	/* 最后一个分量类型, (当 LOOKUP_PARENT 标志被设置时使用) */
 	int		last_type;
+	/* 符号连接嵌套的当前级别， 必须小于 6 */
 	unsigned	depth;
 	int		total_link_count;
 	struct saved {
@@ -2911,6 +2921,7 @@ static struct dentry *__start_dirop(struct dentry *parent, struct qstr *name,
 		if (ret)
 			return ERR_PTR(ret);
 	} else {
+		/* 上锁 */
 		inode_lock_nested(dir, I_MUTEX_PARENT);
 	}
 	dentry = lookup_one_qstr_excl(name, parent, lookup_flags);
@@ -2948,7 +2959,9 @@ struct dentry *start_dirop(struct dentry *parent, struct qstr *name,
 void end_dirop(struct dentry *de)
 {
 	if (!IS_ERR(de)) {
+		/* 解锁 */
 		inode_unlock(de->d_parent->d_inode);
+		/* 释放目录项 */
 		dput(de);
 	}
 }
@@ -3038,6 +3051,7 @@ struct dentry *start_removing_user_path_at(int dfd,
 }
 EXPORT_SYMBOL(start_removing_user_path_at);
 
+/* 获取输入路径的 path */
 int kern_path(const char *name, unsigned int flags, struct path *path)
 {
 	CLASS(filename_kernel, filename)(name);
@@ -4180,6 +4194,8 @@ static inline umode_t vfs_prepare_mode(struct mnt_idmap *idmap,
  * care to map the inode according to @idmap before checking permissions.
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
+ *
+ * 创建文件
  */
 int vfs_create(struct mnt_idmap *idmap, struct dentry *dentry, umode_t mode,
 	       struct delegated_inode *di)
@@ -4495,6 +4511,7 @@ static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 	}
 
 	/* Negative dentry, just create the file */
+	/* 创建文件 */
 	if (!dentry->d_inode && (open_flag & O_CREAT)) {
 		/* but break the directory lease first! */
 		error = try_break_deleg(dir_inode, delegated_inode);
@@ -4667,8 +4684,10 @@ static int do_open(struct nameidata *nd,
 			return error;
 	}
 	if (!(file->f_mode & FMODE_CREATED))
+		/* 审计 inode */
 		audit_inode(nd->name, nd->path.dentry, 0);
 	idmap = mnt_idmap(nd->path.mnt);
+	/* 处理打开方式 */
 	if (open_flag & O_CREAT) {
 		if ((open_flag & O_EXCL) && !(file->f_mode & FMODE_CREATED))
 			return -EEXIST;
@@ -4846,15 +4865,20 @@ static struct file *path_openat(struct nameidata *nd,
 		return file;
 
 	if (unlikely(file->f_flags & __O_TMPFILE)) {
+		/* tmpfile 文件处理 */
 		error = do_tmpfile(nd, flags, op, file);
 	} else if (unlikely(file->f_flags & O_PATH)) {
+		/* 不直接打开文件 */
 		error = do_o_path(nd, flags, file);
 	} else {
 		const char *s = path_init(nd, flags);
+		/* link_path_walk: 找路径的最后一个分量 */
+		/* open_last_lookups: 对最后一个分量进行处理，会查找文件是否存在，不存在则根据条件创建 */
 		while (!(error = link_path_walk(s, nd)) &&
 		       (s = open_last_lookups(nd, file, op)) != NULL)
 			;
 		if (!error)
+			/* 我们常识的打开文件开始了 */
 			error = do_open(nd, file, op);
 		terminate_walk(nd);
 	}
@@ -4864,6 +4888,8 @@ static struct file *path_openat(struct nameidata *nd,
 		WARN_ON(1);
 		error = -EINVAL;
 	}
+
+	/* 减少文件引用计数 */
 	fput_close(file);
 	if (error == -EOPENSTALE) {
 		if (flags & LOOKUP_RCU)
@@ -4883,6 +4909,7 @@ struct file *do_file_open(int dfd, struct filename *pathname,
 
 	if (IS_ERR(pathname))
 		return ERR_CAST(pathname);
+	/* 初始化 nameidata */
 	set_nameidata(&nd, dfd, pathname, NULL);
 	filp = path_openat(&nd, op, flags | LOOKUP_RCU);
 	if (unlikely(filp == ERR_PTR(-ECHILD)))
@@ -5086,6 +5113,8 @@ EXPORT_SYMBOL(dentry_create);
  * care to map the inode according to @idmap before checking permissions.
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
+ *
+ * 创建设备节点或文件
  */
 int vfs_mknod(struct mnt_idmap *idmap, struct inode *dir,
 	      struct dentry *dentry, umode_t mode, dev_t dev,
@@ -5167,6 +5196,7 @@ retry:
 	idmap = mnt_idmap(path.mnt);
 	switch (mode & S_IFMT) {
 		case 0: case S_IFREG:
+			/* 创建普通文件 */
 			error = vfs_create(idmap, dentry, mode, &di);
 			if (!error)
 				security_path_post_mknod(idmap, dentry);
@@ -5335,6 +5365,8 @@ SYSCALL_DEFINE2(mkdir, const char __user *, pathname, umode_t, mode)
  * care to map the inode according to @idmap before checking permissions.
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
+ *
+ * 删除目录
  */
 int vfs_rmdir(struct mnt_idmap *idmap, struct inode *dir,
 	      struct dentry *dentry, struct delegated_inode *delegated_inode)
@@ -5468,6 +5500,8 @@ SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
  * care to map the inode according to @idmap before checking permissions.
  * On non-idmapped mounts or if permission checking is to be performed on the
  * raw inode simply pass @nop_mnt_idmap.
+ *
+ * 删除文件(连接数减一)
  */
 int vfs_unlink(struct mnt_idmap *idmap, struct inode *dir,
 	       struct dentry *dentry, struct delegated_inode *delegated_inode)
@@ -5483,10 +5517,13 @@ int vfs_unlink(struct mnt_idmap *idmap, struct inode *dir,
 
 	inode_lock(target);
 	if (IS_SWAPFILE(target))
+		/* 交换文件 */
 		error = -EPERM;
 	else if (is_local_mountpoint(dentry))
+		/* 不能删除本地挂载点 */
 		error = -EBUSY;
 	else {
+		/* 安全的取消连接 */
 		error = security_inode_unlink(dir, dentry);
 		if (!error) {
 			error = try_break_deleg(dir, delegated_inode);

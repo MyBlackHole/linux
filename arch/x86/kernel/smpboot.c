@@ -931,6 +931,7 @@ static int wakeup_secondary_cpu_via_init(u32 phys_apicid, unsigned long start_ei
 }
 
 /* reduce the number of lines printed when booting a large cpu count system */
+/* 减少启动大型 CPU 计数系统时打印的行数 */
 static void announce_cpu(int cpu, int apicid)
 {
 	static int width, node_width, first = 1;

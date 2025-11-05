@@ -2662,11 +2662,13 @@ static int tcp_recvmsg_locked(struct sock *sk, struct msghdr *msg, size_t len,
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 	int last_copied_dmabuf = -1; /* uninitialized */
+	/* copied是指向用户空间拷贝了多少字节，即读了多少 */
 	int copied = 0;
 	u32 peek_seq;
 	u32 *seq;
 	unsigned long used;
 	int err;
+	/* target指的是期望多少字节 */
 	int target;		/* Read at least this many bytes */
 	long timeo;
 	struct sk_buff *skb, *last;
@@ -2679,6 +2681,7 @@ static int tcp_recvmsg_locked(struct sock *sk, struct msghdr *msg, size_t len,
 
 	if (tp->recvmsg_inq)
 		*cmsg_flags = TCP_CMSG_INQ;
+	/* 等效为timeo = nonblock ? 0 : sk->sk_rcvtimeo; */
 	timeo = sock_rcvtimeo(sk, flags & MSG_DONTWAIT);
 
 	/* Urgent data needs to be handled specially. */
@@ -2706,7 +2709,10 @@ static int tcp_recvmsg_locked(struct sock *sk, struct msghdr *msg, size_t len,
 		peek_seq = tp->copied_seq + peek_offset;
 		seq = &peek_seq;
 	}
-
+	/* 
+	 * 如果设置了MSG_WAITALL标识target=需要读的长度
+	 * 如果未设置，则为最低低水位值
+	 */
 	target = sock_rcvlowat(sk, flags & MSG_WAITALL, len);
 
 	do {
@@ -2755,11 +2761,17 @@ static int tcp_recvmsg_locked(struct sock *sk, struct msghdr *msg, size_t len,
 		if (copied >= target && !READ_ONCE(sk->sk_backlog.tail))
 			break;
 
+		/* 表明读到数据 */
 		if (copied) {
+			/* 注意，这边只要!timeo，即nonblock设置了就会跳出循环 */
 			if (!timeo ||
 			    tcp_recv_should_stop(sk))
 				break;
 		} else {
+			/* 
+			 * 到这里，表明没有读到任何数据
+			 * 且 nonblock 设置了导致 timeo=0，则返回-EAGAIN,符合我们的预期
+			 */
 			if (sock_flag(sk, SOCK_DONE))
 				break;
 
@@ -2774,6 +2786,8 @@ static int tcp_recvmsg_locked(struct sock *sk, struct msghdr *msg, size_t len,
 			if (sk->sk_state == TCP_CLOSE) {
 				/* This occurs when user tries to read
 				 * from never connected socket.
+				 *
+				 * 当用户尝试从未连接的套接字读取时会发生这种情况。
 				 */
 				copied = -ENOTCONN;
 				break;
@@ -2790,6 +2804,7 @@ static int tcp_recvmsg_locked(struct sock *sk, struct msghdr *msg, size_t len,
 			}
 		}
 
+		/* 这边如果堵到了期望的数据，继续，否则当前进程阻塞在sk_wait_data上 */
 		if (copied >= target) {
 			/* Do not sleep, just process backlog. */
 			__sk_flush_backlog(sk);
@@ -2944,6 +2959,7 @@ int tcp_recvmsg(struct sock *sk, struct msghdr *msg, size_t len, int flags)
 	    sk->sk_state == TCP_ESTABLISHED)
 		sk_busy_loop(sk, flags & MSG_DONTWAIT);
 
+	/* 加锁接收数据 */
 	lock_sock(sk);
 	ret = tcp_recvmsg_locked(sk, msg, len, flags, &tss, &cmsg_flags);
 	release_sock(sk);

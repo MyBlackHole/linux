@@ -572,6 +572,9 @@ static void panic_other_cpus_shutdown(bool crash_kexec)
  * @args: Arguments for the format string
  *
  * Display a message, then perform cleanups. This function never returns.
+ *
+ * 停止系统。显示一条消息，然后进行清理工作。
+ * 这个函数永远不会返回。
  */
 void vpanic(const char *fmt, va_list args)
 {

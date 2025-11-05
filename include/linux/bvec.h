@@ -25,9 +25,13 @@ struct page;
  * All pages within a bio_vec starting from @bv_page are contiguous and
  * can simply be iterated (see bvec_advance()).
  */
+/* struct bio_vec - 连续的物理内存地址范围 */
 struct bio_vec {
+	/* 与地址范围关联的第一页 */
 	struct page	*bv_page;
+	/* 地址范围内的字节数 */
 	unsigned int	bv_len;
+	/* 相对于@bv_page 开头的地址范围的开头 */
 	unsigned int	bv_offset;
 };
 
@@ -79,22 +83,27 @@ struct bvec_iter {
 	 * Current device address in 512 byte sectors. Only updated by the bio
 	 * iter wrappers and not the bvec iterator helpers themselves.
 	 */
+	/* 扇区中的设备地址偏移量(512 字节单位)
+	 * 开始读的扇区偏移位置 */
 	sector_t		bi_sector;
 
 	/*
 	 * Remaining size in bytes.
 	 */
+	/* 剩余数量 */
 	unsigned int		bi_size;
 
 	/*
 	 * Current index into the bvec array. This indexes into `bi_io_vec` when
 	 * iterating a bvec array that is part of a `bio`.
 	 */
+	/* bvl_vec 的当前索引 */
 	unsigned int		bi_idx;
 
 	/*
 	 * Current offset in the bvec entry pointed to by `bi_idx`.
 	 */
+	/* 当前 bvec 中完成的字节数 */
 	unsigned int		bi_bvec_done;
 } __packed __aligned(4);
 

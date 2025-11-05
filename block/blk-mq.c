@@ -57,6 +57,9 @@ static int blk_hctx_poll(struct request_queue *q, struct blk_mq_hw_ctx *hctx,
 /*
  * Check if any of the ctx, dispatch list or elevator
  * have pending work in this hardware queue.
+ *
+ * 检查此硬件队列中是否有任何 ctx、
+ * 调度列表或电梯有待处理的工作。
  */
 static bool blk_mq_hctx_has_pending(struct blk_mq_hw_ctx *hctx)
 {
@@ -2145,6 +2148,7 @@ bool blk_mq_dispatch_rq_list(struct blk_mq_hw_ctx *hctx, struct list_head *list,
 		bd.rq = rq;
 		bd.last = list_empty(list);
 
+		/* 调用设备驱动的queue_rq函数 */
 		ret = q->mq_ops->queue_rq(hctx, &bd);
 		switch (ret) {
 		case BLK_STS_OK:
@@ -2312,6 +2316,8 @@ select_cpu:
  * @msecs: Milliseconds of delay to wait before running the queue.
  *
  * Run a hardware queue asynchronously with a delay of @msecs.
+ *
+ * 异步运行硬件队列
  */
 void blk_mq_delay_run_hw_queue(struct blk_mq_hw_ctx *hctx, unsigned long msecs)
 {
@@ -2348,6 +2354,10 @@ static inline bool blk_mq_hw_queue_need_run(struct blk_mq_hw_ctx *hctx)
  * Check if the request queue is not in a quiesced state and if there are
  * pending requests to be sent. If this is true, run the queue to send requests
  * to hardware.
+ *
+ * 开始运行硬件队列。
+ *
+ * 硬件队列上的请求异步发送到块设备驱动
  */
 void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
 {
@@ -2375,6 +2385,7 @@ void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
 		spin_unlock_irqrestore(&hctx->queue->queue_lock, flags);
 
 		if (!need_run)
+			/* 没有需要运行的请求，直接返回 */
 			return;
 	}
 
@@ -3076,6 +3087,8 @@ static struct request *blk_mq_get_new_requests(struct request_queue *q,
 
 /*
  * Check if there is a suitable cached request and return it.
+ *
+ * 检查是否有合适的缓存请求并返回。
  */
 static struct request *blk_mq_peek_cached_request(struct blk_plug *plug,
 		struct request_queue *q, blk_opf_t opf)
@@ -3137,13 +3150,17 @@ static bool bio_unaligned(const struct bio *bio, struct request_queue *q)
  *
  * It will not queue the request if there is an error with the bio, or at the
  * request creation.
+ *
+ * 创建请求并将其发送到块设备。
  */
 void blk_mq_submit_bio(struct bio *bio)
 {
+	/* 获取 bio 对应的请求队列 */
 	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
 	struct blk_plug *plug = current->plug;
 	const int is_sync = op_is_sync(bio->bi_opf);
 	unsigned int integrity_action;
+	/* 硬件队列 */
 	struct blk_mq_hw_ctx *hctx;
 	unsigned int nr_segs;
 	struct request *rq;
@@ -4063,6 +4080,7 @@ blk_mq_alloc_hctx(struct request_queue *q, struct blk_mq_tag_set *set,
 		node = set->numa_node;
 	hctx->numa_node = node;
 
+	/* 初始化延迟工作 */
 	INIT_DELAYED_WORK(&hctx->run_work, blk_mq_run_work_fn);
 	spin_lock_init(&hctx->lock);
 	INIT_LIST_HEAD(&hctx->dispatch);
@@ -5250,6 +5268,7 @@ static int blk_hctx_poll(struct request_queue *q, struct blk_mq_hw_ctx *hctx,
 	int ret;
 
 	do {
+		/* nvme: nvme_poll */
 		ret = q->mq_ops->poll(hctx, iob);
 		if (ret > 0)
 			return ret;

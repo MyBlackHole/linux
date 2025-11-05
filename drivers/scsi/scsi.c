@@ -1023,6 +1023,7 @@ MODULE_LICENSE("GPL");
 module_param(scsi_logging_level, int, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(scsi_logging_level, "a bit mask of logging levels");
 
+/* 初始化 scsi */
 static int __init init_scsi(void)
 {
 	int error;
@@ -1063,6 +1064,7 @@ cleanup_queue:
 	return error;
 }
 
+/* 卸载 scsi */
 static void __exit exit_scsi(void)
 {
 	scsi_netlink_exit();

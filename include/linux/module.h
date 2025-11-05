@@ -558,11 +558,14 @@ struct module {
 
 #ifdef CONFIG_MODULE_UNLOAD
 	/* What modules depend on me? */
+	/* 哪些模块依赖于我？ */
 	struct list_head source_list;
 	/* What modules do I depend on? */
+	/* 我依赖哪些模块？*/
 	struct list_head target_list;
 
 	/* Destruction function. */
+	/* 销毁函数。 */
 	void (*exit)(void);
 
 	atomic_t refcnt;

@@ -157,6 +157,7 @@ static void klp_unpatch_func(struct klp_func *func)
 	func->patched = false;
 }
 
+/* 开始 patch 函数了 */
 static int klp_patch_func(struct klp_func *func)
 {
 	struct klp_ops *ops;
@@ -172,6 +173,7 @@ static int klp_patch_func(struct klp_func *func)
 	if (!ops) {
 		unsigned long ftrace_loc;
 
+		/* 找到要patch的函数的地址 */
 		ftrace_loc = ftrace_location((unsigned long)func->old_func);
 		if (!ftrace_loc) {
 			pr_err("failed to find location for function '%s'\n",
@@ -191,9 +193,11 @@ static int klp_patch_func(struct klp_func *func)
 				  FTRACE_OPS_FL_IPMODIFY |
 				  FTRACE_OPS_FL_PERMANENT;
 
+		/* 记录到 klp_ops */
 		list_add(&ops->node, &klp_ops);
 
 		INIT_LIST_HEAD(&ops->func_stack);
+		/* 记录到 func */
 		list_add_rcu(&func->stack_node, &ops->func_stack);
 
 		ret = ftrace_set_filter_ip(&ops->fops, ftrace_loc, 0, 0);
@@ -257,7 +261,9 @@ int klp_patch_object(struct klp_object *obj)
 	if (WARN_ON(obj->patched))
 		return -EINVAL;
 
+	/* 遍历每个需要patch的函数(klp_func) */
 	klp_for_each_func(obj, func) {
+		/* 来了 */
 		ret = klp_patch_func(func);
 		if (ret) {
 			klp_unpatch_object(obj);

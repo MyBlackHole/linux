@@ -145,6 +145,7 @@ static u32 iscsi_handle_authentication(
 	if (strstr("None", authtype))
 		return 1;
 	else if (strstr("CHAP", authtype))
+	/* chap 校验 */
 		return chap_main_loop(conn, auth, in_buf, out_buf,
 				&in_length, out_length);
 	/* SRP, SPKM1, SPKM2 and KRB5 are unsupported */
@@ -156,6 +157,7 @@ static void iscsi_remove_failed_auth_entry(struct iscsit_conn *conn)
 	kfree(conn->auth_protocol);
 }
 
+/* 验证登陆请求 */
 int iscsi_target_check_login_request(
 	struct iscsit_conn *conn,
 	struct iscsi_login *login)
@@ -749,6 +751,7 @@ static int iscsi_target_check_for_existing_instances(
 				login->initial_exp_statsn);
 }
 
+/* 目标-校验 */
 static int iscsi_target_do_authentication(
 	struct iscsit_conn *conn,
 	struct iscsi_login *login)
@@ -767,6 +770,7 @@ static int iscsi_target_do_authentication(
 	if (!param)
 		return -1;
 
+	/* 进入校验逻辑 */
 	authret = iscsi_handle_authentication(
 			conn,
 			login->req_buf,
@@ -792,6 +796,7 @@ static int iscsi_target_do_authentication(
 		return iscsi_target_check_for_existing_instances(
 				conn, login);
 	case 2:
+		/* ISCSI_ERR_LOGIN_AUTH_FAILED */
 		pr_err("Security negotiation"
 			" failed.\n");
 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
@@ -862,6 +867,7 @@ static int iscsi_target_handle_csg_zero(
 	if (!param)
 		return -1;
 
+	/* 解码数据 */
 	ret = iscsi_decode_text_input(
 			PHASE_SECURITY|PHASE_DECLARATIVE,
 			SENDER_INITIATOR|SENDER_RECEIVER,
@@ -883,6 +889,7 @@ static int iscsi_target_handle_csg_zero(
 
 		goto do_auth;
 	} else if (!payload_length) {
+		/* ISCSI_ERR_LOGIN_AUTH_FAILED */
 		pr_err("Initiator sent zero length security payload,"
 		       " login failed\n");
 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_INITIATOR_ERR,
@@ -909,6 +916,7 @@ static int iscsi_target_handle_csg_zero(
 
 		if (auth_required) {
 			if (!strncmp(param->value, NONE, 4)) {
+				/* ISCSI_ERR_LOGIN_AUTH_FAILED */
 				pr_err("Initiator sent AuthMethod=None but"
 				       " Target is enforcing iSCSI Authentication,"
 				       " login failed.\n");
@@ -936,6 +944,7 @@ static int iscsi_target_handle_csg_zero(
 
 	return 0;
 do_auth:
+	/* 登陆检验逻辑例程 */
 	return iscsi_target_do_authentication(conn, login);
 }
 
@@ -995,6 +1004,7 @@ static int iscsi_target_handle_csg_one(struct iscsit_conn *conn, struct iscsi_lo
 	}
 
 	if (!iscsi_conn_authenticated(conn, login)) {
+		/* ISCSI_ERR_LOGIN_AUTH_FAILED */
 		pr_err("Initiator is requesting CSG: 1, has not been"
 		       " successfully authenticated, and the Target is"
 		       " enforcing iSCSI Authentication, login failed.\n");
@@ -1018,6 +1028,9 @@ static int iscsi_target_handle_csg_one(struct iscsit_conn *conn, struct iscsi_lo
  *  1 = Login successful
  * -1 = Login failed
  *  0 = More PDU exchanges required
+ *
+ *  登陆 target 处理
+ *
  */
 static int iscsi_target_do_login(struct iscsit_conn *conn, struct iscsi_login *login)
 {
@@ -1038,6 +1051,7 @@ static int iscsi_target_do_login(struct iscsit_conn *conn, struct iscsi_login *l
 
 		switch (ISCSI_LOGIN_CURRENT_STAGE(login_req->flags)) {
 		case 0:
+			/* 登陆 */
 			login_rsp->flags &= ~ISCSI_FLAG_LOGIN_CURRENT_STAGE_MASK;
 			if (iscsi_target_handle_csg_zero(conn, login) < 0)
 				return -1;
@@ -1102,6 +1116,8 @@ static void iscsi_initiatorname_tolower(
 
 /*
  * Processes the first Login Request..
+ *
+ * 处理登陆请求
  */
 int iscsi_target_locate_portal(
 	struct iscsi_np *np,
@@ -1118,6 +1134,7 @@ int iscsi_target_locate_portal(
 	u32 payload_length, queue_depth = 0;
 	int sessiontype = 0, ret = 0, tag_num, tag_size;
 
+	/* 初始化 work */
 	INIT_DELAYED_WORK(&conn->login_work, iscsi_target_do_login_rx);
 	iscsi_target_set_sock_callbacks(conn);
 
@@ -1287,6 +1304,7 @@ get_target:
 	sess->se_sess->se_node_acl = core_tpg_check_initiator_node_acl(
 			&conn->tpg->tpg_se_tpg, i_buf);
 	if (!sess->se_sess->se_node_acl) {
+        /* ISCSI_ERR_LOGIN_AUTH_FAILED */
 		pr_err("iSCSI Initiator Node: %s is not authorized to"
 			" access iSCSI target portal group: %hu.\n",
 				i_buf, conn->tpg->tpgt);
@@ -1321,6 +1339,7 @@ out:
 	return ret;
 }
 
+/* 开始协商 */
 int iscsi_target_start_negotiation(
 	struct iscsi_login *login,
 	struct iscsit_conn *conn)

@@ -76,6 +76,7 @@ static ssize_t write_recoverydir(struct file *file, char *buf, size_t size);
 static ssize_t write_v4_end_grace(struct file *file, char *buf, size_t size);
 #endif
 
+/* 定义 nfsd 文件操作方式 map */
 static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 	[NFSD_Fh] = write_filehandle,
 	[NFSD_FO_UnlockIP] = write_unlock_ip,
@@ -95,6 +96,7 @@ static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 #endif
 };
 
+/* nfsctl 事务 写入 */
 static ssize_t nfsctl_transaction_write(struct file *file, const char __user *buf, size_t size, loff_t *pos)
 {
 	ino_t ino =  file_inode(file)->i_ino;
@@ -104,6 +106,7 @@ static ssize_t nfsctl_transaction_write(struct file *file, const char __user *bu
 	if (ino >= ARRAY_SIZE(write_op) || !write_op[ino])
 		return -EINVAL;
 
+    /* user data to kernel data */
 	data = simple_transaction_get(file, buf, size);
 	if (IS_ERR(data))
 		return PTR_ERR(data);
@@ -413,6 +416,8 @@ static ssize_t write_filehandle(struct file *file, char *buf, size_t size)
  *			number of NFSD threads;
  *			return code is the size in bytes of the string
  *	On error:	return code is zero or a negative errno value
+ *
+ * write_threads - 启动 NFSD，或者报告当前正在运行的线程数
  */
 static ssize_t write_threads(struct file *file, char *buf, size_t size)
 {
@@ -758,6 +763,7 @@ static ssize_t __write_ports_addxprt(char *buf, struct net *net, const struct cr
 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
 	struct svc_serv *serv;
 
+    /* 解析协议与端口号, 例如 tcp 2049 */
 	if (sscanf(buf, "%15s %5u", transport, &port) != 2)
 		return -EINVAL;
 
@@ -811,6 +817,10 @@ static ssize_t __write_ports(struct file *file, char *buf, size_t size,
 
 /*
  * write_ports - Pass a socket file descriptor or transport name to listen on
+ *
+ * 传递套接字文件描述符
+ * 或
+ * 传递名称端口
  *
  * Input:
  *			buf:		ignored
@@ -1283,6 +1293,8 @@ void nfsd_client_rmdir(struct dentry *dentry)
 	simple_recursive_removal(dentry, clear_ncl);
 }
 
+/* mount 后内存文件系统的内容 */
+/* 提供用户层操作文件修改内核 nfsd 的作用 */
 static int nfsd_fill_super(struct super_block *sb, struct fs_context *fc)
 {
 	struct nfsd_net *nn = net_generic(current->nsproxy->net_ns,
@@ -1301,12 +1313,15 @@ static int nfsd_fill_super(struct super_block *sb, struct fs_context *fc)
 		[NFSD_FO_UnlockFS] = {"unlock_filesystem",
 					&transaction_ops, S_IWUSR|S_IRUSR},
 		[NFSD_Fh] = {"filehandle", &transaction_ops, S_IWUSR|S_IRUSR},
+        /* 线程数 */
 		[NFSD_Threads] = {"threads", &transaction_ops, S_IWUSR|S_IRUSR},
 		[NFSD_Pool_Threads] = {"pool_threads", &transaction_ops, S_IWUSR|S_IRUSR},
 		[NFSD_Pool_Stats] = {"pool_stats", &pool_stats_operations, S_IRUGO},
 		[NFSD_Reply_Cache_Stats] = {"reply_cache_stats",
 					&nfsd_reply_cache_stats_fops, S_IRUGO},
+        /* 支持版本 */
 		[NFSD_Versions] = {"versions", &transaction_ops, S_IWUSR|S_IRUSR},
+        /* 监听多口 */
 		[NFSD_Ports] = {"portlist", &transaction_ops, S_IWUSR|S_IRUGO},
 		[NFSD_MaxBlkSize] = {"max_block_size", &transaction_ops, S_IWUSR|S_IRUGO},
 		[NFSD_Filecache] = {"filecache", &nfsd_file_cache_stats_fops, S_IRUGO},
@@ -1321,6 +1336,7 @@ static int nfsd_fill_super(struct super_block *sb, struct fs_context *fc)
 		/* last one */ {""}
 	};
 
+    /* 创建 nfsd files */
 	ret = simple_fill_super(sb, 0x6e667364, nfsd_files);
 	if (ret)
 		return ret;
@@ -2322,6 +2338,7 @@ static int __init init_nfsd(void)
 	retval = nfsd4_create_laundry_wq();
 	if (retval)
 		goto out_free_cld;
+    /* 注册 nfsd 文件系统 */
 	retval = register_filesystem(&nfsd_fs_type);
 	if (retval)
 		goto out_free_nfsd4;

@@ -34,6 +34,7 @@ static inline unsigned int bio_max_segs(unsigned int nr_segs)
 #define bio_offset(bio)		bio_iter_offset((bio), (bio)->bi_iter)
 #define bio_iovec(bio)		bio_iter_iovec((bio), (bio)->bi_iter)
 
+/* 扇区数量 */
 #define bvec_iter_sectors(iter)	((iter).bi_size >> 9)
 #define bvec_iter_end_sector(iter) ((iter).bi_sector + bvec_iter_sectors((iter)))
 
@@ -63,6 +64,8 @@ static inline void bio_clear_flag(struct bio *bio, unsigned int bit)
 
 /*
  * Check whether this bio carries any data or not. A NULL bio is allowed.
+ *
+ * 检查该 bio 是否携带任何数据。 允许 NULL bio
  */
 static inline bool bio_has_data(struct bio *bio)
 {
@@ -341,7 +344,12 @@ static inline struct bio *bio_next_split(struct bio *bio, int sectors,
 }
 
 enum {
+	/* 创建一个单独的内存池用于分配iovecs，fs_bio_set需设置该标记。 */
 	BIOSET_NEED_BVECS = BIT(0),
+	/* 创建一个workqueue，处理函数为bio_alloc_rescue， */
+	/* 当内存不足无法从内存池中申请到bio时， */
+	/* 该workqueue 把处理stack device时（比如raid）暂存在list中的bio（参考后文“bio的提交”）提交处理，从而回收bio。 */
+	/* 对于非stack device场景，不需要这个工作队列。 */
 	BIOSET_NEED_RESCUER = BIT(1),
 	BIOSET_PERCPU_CACHE = BIT(2),
 };
@@ -367,6 +375,7 @@ static inline struct bio *bio_alloc(struct block_device *bdev,
 	return bio_alloc_bioset(bdev, nr_vecs, opf, gfp_mask, &fs_bio_set);
 }
 
+/* 向块层请求 bio bio_vec 映射的页 */
 void submit_bio(struct bio *bio);
 
 extern void bio_endio(struct bio *);
@@ -435,6 +444,7 @@ void bio_chain(struct bio *, struct bio *);
 void bio_await(struct bio *bio, void *priv,
 	       void (*submit)(struct bio *bio, void *priv));
 
+/* 把 page 加入到 bio bio_vec 中 */
 int __must_check bio_add_page(struct bio *bio, struct page *page, unsigned len,
 			      unsigned off);
 bool __must_check bio_add_folio(struct bio *bio, struct folio *folio,
@@ -463,6 +473,7 @@ static inline unsigned int bio_add_max_vecs(void *kaddr, unsigned int len)
 unsigned int bio_add_vmalloc_chunk(struct bio *bio, void *vaddr, unsigned len);
 bool bio_add_vmalloc(struct bio *bio, void *vaddr, unsigned int len);
 
+/* 同 submit_bio，向块层请求 bio bio_vec 映射的页 */
 int submit_bio_wait(struct bio *bio);
 int bdev_rw_virt(struct block_device *bdev, sector_t sector, void *data,
 		size_t len, enum req_op op);
@@ -678,7 +689,9 @@ struct bio_set {
 	 */
 	struct bio_alloc_cache __percpu *cache;
 
+	/* 内存池，用于分配 bio */
 	mempool_t bio_pool;
+	/* 内存池，用于分配 bio_vec */
 	mempool_t bvec_pool;
 
 	unsigned int back_pad;
@@ -689,6 +702,7 @@ struct bio_set {
 	spinlock_t		rescue_lock;
 	struct bio_list		rescue_list;
 	struct work_struct	rescue_work;
+	/* rescue 工作队列 */
 	struct workqueue_struct	*rescue_workqueue;
 
 	/*

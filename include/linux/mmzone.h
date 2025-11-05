@@ -830,20 +830,31 @@ enum zone_watermarks {
 #define	PCPF_FREE_HIGH_BATCH		BIT(1)
 
 struct per_cpu_pages {
+	/* 保护列表字段 */
 	spinlock_t lock;	/* Protects lists field */
+	/* 列表中的页面数 */
 	int count;		/* number of pages in the list */
+	/* 高水位，需要清空 */
 	int high;		/* high watermark, emptying needed */
+	/* 最小高水位 */
 	int high_min;		/* min high watermark */
+	/* 最大高水位 */
 	int high_max;		/* max high watermark */
+	/* 一次性从伙伴系统添加/删除的块大小 */
 	int batch;		/* chunk size for buddy add/remove */
+	/* 受 pcp->lock 保护 */
 	u8 flags;		/* protected by pcp->lock */
+	/* 分配期间的批量缩放因子 */
 	u8 alloc_factor;	/* batch scaling factor during allocate */
 #ifdef CONFIG_NUMA
+	/* 当为 0 时，远程页面集将被耗尽 */
 	u8 expire;		/* When 0, remote pagesets are drained */
 #endif
+	/* 连续空闲计数 */
 	short free_count;	/* consecutive free count */
 
 	/* Lists of pages, one per migrate type stored on the pcp-lists */
+	/* 页面列表，每个迁移类型存储在 pcp 列表中 */
 	struct list_head lists[NR_PCP_LISTS];
 } ____cacheline_aligned_in_smp;
 
@@ -963,7 +974,7 @@ enum zone_type {
 #ifndef __GENERATING_BOUNDS_H
 
 #define ASYNC_AND_SYNC 2
-
+/* 代表内存区域 */
 struct zone {
 	/* Read-mostly fields */
 
@@ -1084,6 +1095,7 @@ struct zone {
 	CACHELINE_PADDING(_pad1_);
 
 	/* free areas of different sizes */
+	/* 不同大小的空闲区域 */
 	struct free_area	free_area[NR_PAGE_ORDERS];
 
 #ifdef CONFIG_UNACCEPTED_MEMORY
@@ -1098,6 +1110,7 @@ struct zone {
 	unsigned long		flags;
 
 	/* Primarily protects free_area */
+	/* 主要保护 free_area */
 	spinlock_t		lock;
 
 	/* Pages to be freed when next trylock succeeds */
@@ -1380,6 +1393,7 @@ static inline bool zone_intersects(const struct zone *zone,
 #define DEF_PRIORITY 12
 
 /* Maximum number of zones on a zonelist */
+/* 区域列表中的最大区域数 */
 #define MAX_ZONES_PER_ZONELIST (MAX_NUMNODES * MAX_NR_ZONES)
 
 enum {
@@ -1468,6 +1482,11 @@ struct memory_failure_stats {
  *
  * Memory statistics and page replacement data structures are maintained on a
  * per-zone basis.
+ *
+ * 在 NUMA 机器上，每个 NUMA 节点都会有一个 pg_data_t 来描述其内存布局。
+ * 在 UMA 机器上，有一个 pglist_data 来描述整个内存。
+ *
+ * 内存统计信息和页面替换数据结构是按区域维护的。
  */
 typedef struct pglist_data {
 	/*

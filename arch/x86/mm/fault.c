@@ -635,6 +635,9 @@ static void set_signal_archinfo(unsigned long address,
 	tsk->thread.cr2 = address;
 }
 
+/* 
+ * 访问非法地址时，触发 page fault 异常 
+ */
 static noinline void
 page_fault_oops(struct pt_regs *regs, unsigned long error_code,
 		unsigned long address)
@@ -697,6 +700,9 @@ oops:
 	/*
 	 * Oops. The kernel tried to access some bad page. We'll have to
 	 * terminate things with extreme prejudice:
+	 *
+	 * 哎呀。内核试图访问一些坏页面。
+	 * 我们必须以极端的偏见终止一切：
 	 */
 	flags = oops_begin();
 

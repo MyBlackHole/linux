@@ -911,6 +911,7 @@ static struct cftype hugetlb_files[] = {
 	{} /* terminate */
 };
 
+/* 大页文件系统的cgroup子系统 */
 struct cgroup_subsys hugetlb_cgrp_subsys = {
 	.css_alloc	= hugetlb_cgroup_css_alloc,
 	.css_offline	= hugetlb_cgroup_css_offline,

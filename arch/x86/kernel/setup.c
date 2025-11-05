@@ -1200,6 +1200,8 @@ void __init setup_arch(char **cmdline_p)
 	if (!early_xdbc_setup_hardware())
 		early_xdbc_register_console();
 
+	/* 页表初始化
+	 * paging_init */
 	x86_init.paging.pagetable_init();
 
 	kasan_init();

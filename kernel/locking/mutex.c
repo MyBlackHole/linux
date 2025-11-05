@@ -642,6 +642,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 #endif
 	}
 
+	/* 关闭抢占 */
 	preempt_disable();
 	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
 
@@ -649,26 +650,34 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 	if (__mutex_trylock(lock) ||
 	    mutex_optimistic_spin(lock, ww_ctx, NULL)) {
 		/* got the lock, yay! */
+		/* 取到锁 */
 		lock_acquired(&lock->dep_map, ip);
 		if (ww_ctx)
 			ww_mutex_set_context_fastpath(ww, ww_ctx);
 		trace_contention_end(lock, 0);
+		/* 使能抢占 */
 		preempt_enable();
 		return 0;
 	}
 
+	/* 自旋获取等待 lock */
 	raw_spin_lock_irqsave(&lock->wait_lock, flags);
 	/*
 	 * After waiting to acquire the wait_lock, try again.
+	 *
+	 * 等待获取 wait_lock 后，再重试。
 	 */
 	if (__mutex_trylock(lock)) {
 		if (ww_ctx)
 			__ww_mutex_check_waiters(lock, ww_ctx, &wake_q);
 
+		/* 取到锁 */
 		goto skip_wait;
 	}
 
 	debug_mutex_lock_common(lock, &waiter);
+
+	/* 记录需要唤醒的任务为当前任务 */
 	waiter.task = current;
 	if (use_ww_ctx)
 		waiter.ww_ctx = ww_ctx;
@@ -677,6 +686,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 
 	if (!use_ww_ctx) {
 		/* add waiting tasks to the end of the waitqueue (FIFO): */
+		/* 将等待的任务添加到等待队列的末尾（FIFO:先进先出） */
 		__mutex_add_waiter(lock, &waiter, NULL);
 	} else {
 		/*
@@ -690,6 +700,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 
 	raw_spin_lock(&current->blocked_lock);
 	__set_task_blocked_on(current, lock);
+	/* 设置睡眠状态 */
 	set_current_state(state);
 	trace_contention_begin(lock, LCB_F_MUTEX);
 	for (;;) {
@@ -700,6 +711,8 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 		 * mutex_unlock() handing the lock off to us, do a trylock
 		 * before testing the error conditions to make sure we pick up
 		 * the handoff.
+		 *
+		 * 尝试获取锁
 		 */
 		if (__mutex_trylock(lock))
 			break;
@@ -725,6 +738,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 
 		schedule_preempt_disabled();
 
+		/* 调度唤醒起点 */
 		first = lock->first_waiter == &waiter;
 
 		raw_spin_lock_irqsave(&lock->wait_lock, flags);
@@ -770,6 +784,7 @@ __mutex_lock_common(struct mutex *lock, unsigned int state, unsigned int subclas
 		}
 	}
 	__clear_task_blocked_on(current, lock);
+	/* 设置状态为可运行状态 */
 	__set_current_state(TASK_RUNNING);
 	raw_spin_unlock(&current->blocked_lock);
 
@@ -1051,6 +1066,8 @@ __mutex_lock_interruptible_slowpath(struct mutex *lock);
  * Context: Process context.
  * Return: 0 if the lock was successfully acquired or %-EINTR if a
  * signal arrived.
+ *
+ * 获取互斥锁，可通过信号中断
  */
 int __sched mutex_lock_interruptible(struct mutex *lock)
 {
@@ -1111,6 +1128,7 @@ static noinline void __sched
 __mutex_lock_slowpath(struct mutex *lock)
 	__acquires(lock)
 {
+	/* 睡眠的状态为不可中断睡眠 */
 	__mutex_lock(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
 	__acquire(lock);
 }
@@ -1162,6 +1180,8 @@ __ww_mutex_lock_interruptible_slowpath(struct ww_mutex *lock,
  *
  * This function must not be used in interrupt context. The
  * mutex must be released by the same task that acquired it.
+ *
+ * 尝试获取互斥锁，无需等待
  */
 int __sched mutex_trylock(struct mutex *lock)
 {

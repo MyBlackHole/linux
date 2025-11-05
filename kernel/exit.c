@@ -863,6 +863,9 @@ static void check_stack_usage(void)
 static inline void check_stack_usage(void) {}
 #endif /* CONFIG_DEBUG_STACK_USAGE */
 
+/*
+ * 同步组退出信号
+ */
 static void synchronize_group_exit(struct task_struct *tsk, long code)
 {
 	struct sighand_struct *sighand = tsk->sighand;
@@ -892,12 +895,16 @@ static void synchronize_group_exit(struct task_struct *tsk, long code)
 		coredump_task_exit(tsk, core_state);
 }
 
+/*
+ * 回收当前任务上下文
+ */
 void __noreturn do_exit(long code)
 {
 	struct task_struct *tsk = current;
 	struct kthread *kthread;
 	int group_dead;
 
+	/* 先把中断关了 */
 	WARN_ON(irqs_disabled());
 	WARN_ON(tsk->plug);
 
@@ -912,6 +919,7 @@ void __noreturn do_exit(long code)
 	ptrace_event(PTRACE_EVENT_EXIT, code);
 	user_events_exit(tsk);
 
+	/* 取消异步 io */
 	io_uring_files_cancel();
 	sched_mm_cid_exit(tsk);
 	exit_signals(tsk);  /* sets PF_EXITING */
@@ -941,6 +949,7 @@ void __noreturn do_exit(long code)
 		tty_audit_exit();
 	audit_free(tsk);
 
+	/* 设置退出状态 */
 	tsk->exit_code = code;
 	taskstats_exit(tsk, group_dead);
 	trace_sched_process_exit(tsk, group_dead);

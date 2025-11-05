@@ -90,6 +90,8 @@ struct core_state {
  * implies a shared sighand_struct, so locking
  * sighand_struct is always a proper superset of
  * the locking of signal_struct.
+ *
+ * 信号结构体
  */
 struct signal_struct {
 	refcount_t		sigcnt;
@@ -173,6 +175,7 @@ struct signal_struct {
 	struct pid *tty_old_pgrp;
 
 	/* boolean value for session group leader */
+	/* 会话组老大 */
 	int leader;
 
 	struct tty_struct *tty; /* NULL if no tty */
@@ -343,6 +346,7 @@ extern void __wake_up_parent(struct task_struct *p, struct task_struct *parent);
 extern void force_sig(int);
 extern void force_fatal_sig(int);
 extern void force_exit_sig(int);
+/* 给指定进程发信号 */
 extern int send_sig(int, struct task_struct *, int);
 extern int zap_other_threads(struct task_struct *p);
 extern int do_sigaction(int, struct k_sigaction *, struct k_sigaction *);
@@ -660,6 +664,7 @@ extern bool current_is_single_threaded(void);
 	__for_each_thread((p)->signal, t)
 
 /* Careful: this is a double loop, 'break' won't work as expected. */
+/* 小心：这是一个双循环，“break”不会按预期工作。 */
 #define for_each_process_thread(p, t)	\
 	for_each_process(p) for_each_thread(p, t)
 
@@ -687,11 +692,13 @@ static inline struct pid *task_tgid(struct task_struct *task)
  * the result of task_pgrp/task_session even if task == current,
  * we can race with another thread doing sys_setsid/sys_setpgid.
  */
+/* 获取组 pid 表 */
 static inline struct pid *task_pgrp(struct task_struct *task)
 {
 	return task->signal->pids[PIDTYPE_PGID];
 }
 
+/* 获取会话 pid 表 */
 static inline struct pid *task_session(struct task_struct *task)
 {
 	return task->signal->pids[PIDTYPE_SID];

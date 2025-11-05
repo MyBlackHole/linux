@@ -760,7 +760,9 @@ retry:
 		}
 	}
 	if (!s) {
+		/* 为空 */
 		spin_unlock(&sb_lock);
+		/* 分配一个超级块 */
 		s = alloc_super(fc->fs_type, fc->sb_flags, user_ns);
 		if (!s)
 			return ERR_PTR(-ENOMEM);
@@ -768,6 +770,7 @@ retry:
 	}
 
 	s->s_fs_info = fc->s_fs_info;
+	/* set_anon_super_fc */
 	err = set(s, fc);
 	if (err) {
 		s->s_fs_info = NULL;
@@ -1324,6 +1327,7 @@ static int vfs_get_super(struct fs_context *fc,
 		return PTR_ERR(sb);
 
 	if (!sb->s_root) {
+		/* pseudo_fs_fill_super */
 		err = fill_super(sb, fc);
 		if (err)
 			goto error;
@@ -1658,6 +1662,9 @@ EXPORT_SYMBOL_GPL(setup_bdev_super);
  * @fc: The filesystem context holding the parameters
  * @fill_super: Helper to initialise a new superblock
  * @flags: GET_TREE_BDEV_* flags
+ *
+ * 基于单个块设备获取超级块
+ * fill_super 帮助程序初始化一个新超级块
  */
 int get_tree_bdev_flags(struct fs_context *fc,
 		int (*fill_super)(struct super_block *sb,
@@ -1691,6 +1698,7 @@ int get_tree_bdev_flags(struct fs_context *fc,
 	} else {
 		error = setup_bdev_super(s, fc->sb_flags, fc);
 		if (!error)
+			/* xfs_fs_fill_super */
 			error = fill_super(s, fc);
 		if (error) {
 			deactivate_locked_super(s);
@@ -1739,6 +1747,10 @@ EXPORT_SYMBOL(kill_block_super);
  * The filesystem is invoked to get or create a superblock which can then later
  * be used for mounting.  The filesystem places a pointer to the root to be
  * used for mounting in @fc->root.
+ *
+ * 获取可用根
+ * 获取或创建一个超级块
+ *
  */
 int vfs_get_tree(struct fs_context *fc)
 {
@@ -1750,6 +1762,9 @@ int vfs_get_tree(struct fs_context *fc)
 
 	/* Get the mountable root in fc->root, with a ref on the root and a ref
 	 * on the superblock.
+	 *
+	 * 获取超级块
+	 * pseudo_fs_get_tree
 	 */
 	error = fc->ops->get_tree(fc);
 	if (error < 0)

@@ -904,6 +904,7 @@ static int zynq_gpio_probe(struct platform_device *pdev)
 	struct gpio_chip *chip;
 	struct gpio_irq_chip *girq;
 
+	/* 分配 zynq_gpio 大小内存 */
 	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
 	if (!gpio)
 		return -ENOMEM;
@@ -915,15 +916,18 @@ static int zynq_gpio_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, gpio);
 
+	/* 从设备树获取 IORESOURCE_MEM 资源，即 reg 属性中的 GPIO 寄存器基地址 */
 	gpio->base_addr = devm_platform_ioremap_resource(pdev, 0);
 	if (IS_ERR(gpio->base_addr))
 		return PTR_ERR(gpio->base_addr);
 
+	/* 从设备树获取 GPIO IRQ 资源，记录硬件中断号 */
 	gpio->irq = platform_get_irq(pdev, 0);
 	if (gpio->irq < 0)
 		return gpio->irq;
 
 	/* configure the gpio chip */
+	/* 设置 gpio_chip 的操作函数 */
 	chip = &gpio->chip;
 	chip->label = gpio->p_data->label;
 	chip->owner = THIS_MODULE;
@@ -935,6 +939,7 @@ static int zynq_gpio_probe(struct platform_device *pdev)
 	chip->direction_input = zynq_gpio_dir_in;
 	chip->direction_output = zynq_gpio_dir_out;
 	chip->get_direction = zynq_gpio_get_direction;
+	/* 设置 gpio_chip 的基地址 */
 	chip->base = of_alias_get_id(pdev->dev.of_node, "gpio");
 	chip->ngpio = gpio->p_data->ngpio;
 
@@ -1018,6 +1023,7 @@ static void zynq_gpio_remove(struct platform_device *pdev)
 
 static struct platform_driver zynq_gpio_driver = {
 	.driver	= {
+		/* "zynq-gpio" */
 		.name = DRIVER_NAME,
 		.pm = pm_ptr(&zynq_gpio_dev_pm_ops),
 		.of_match_table = zynq_gpio_of_match,
@@ -1026,6 +1032,7 @@ static struct platform_driver zynq_gpio_driver = {
 	.remove = zynq_gpio_remove,
 };
 
+/* 注册到 platform_bus_type 总线 */
 module_platform_driver(zynq_gpio_driver);
 
 MODULE_AUTHOR("Xilinx Inc.");

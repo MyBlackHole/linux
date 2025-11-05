@@ -147,8 +147,15 @@ void __lockfunc queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 *
 	 * 0,1,0 -> 0,0,1
 	 */
+	/*
+	 * val 等于 _Q_PENDING_VAL , locked = 0 , pending = 1, tail = 0
+	 * 无人持有锁，等待队列为空，
+	 * pending 被持有前面有人等待, 但持有人还未拿锁
+	 * 等待 pending 被释放
+	 * */
 	if (val == _Q_PENDING_VAL) {
 		int cnt = _Q_PENDING_LOOPS;
+		/* 等待 pending 被释放 */
 		val = atomic_cond_read_relaxed(&lock->val,
 					       (VAL != _Q_PENDING_VAL) || !cnt--);
 	}
@@ -156,6 +163,9 @@ void __lockfunc queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	/*
 	 * If we observe any contention; queue.
 	 */
+	/* 还有其他位被设置了，
+	 * 说明有其他竞争者
+	 * 进入队列等待*/
 	if (val & ~_Q_LOCKED_MASK)
 		goto queue;
 
@@ -164,6 +174,12 @@ void __lockfunc queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 *
 	 * 0,0,* -> 0,1,* -> 0,0,1 pending, trylock
 	 */
+	/* 到这里代表只有 locked 被设置了
+	 * pending tail 都为 0
+	 * 自己就是第一个等待锁的人
+	 * 设置 pending 位
+	 * 基于 locked 位进行自旋等待其为 0
+	 * val 为旧值*/
 	val = queued_fetch_set_pending_acquire(lock);
 
 	/*
@@ -173,6 +189,10 @@ void __lockfunc queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 * n,0,0 -> 0,0,0 transition fail and it will now be waiting
 	 * on @next to become !NULL.
 	 */
+	/* 如果设置了 pending 位之前有其他 cpu 进入等待队列
+	 * 即 tail 发生了变化
+	 * 说明存在竞争
+	 * 清除 pending 位，进入队列等待*/
 	if (unlikely(val & ~_Q_LOCKED_MASK)) {
 
 		/* Undo PENDING if we set it. */
@@ -193,6 +213,9 @@ void __lockfunc queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 * clear_pending_set_locked() implementations imply full
 	 * barriers.
 	 */
+	/* 到此持有 pending 位
+	 * 并且 tail 也为 0
+	 * 即等待等待队列为空*/
 	if (val & _Q_LOCKED_MASK)
 		smp_cond_load_acquire(&lock->locked, !VAL);
 
@@ -201,6 +224,10 @@ void __lockfunc queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 *
 	 * 0,1,0 -> 0,0,1
 	 */
+	/* locked 位被清零了
+	 * 可以获得锁了
+	 * 并清除 pending 位
+	 * 设置 locked 位*/
 	clear_pending_set_locked(lock);
 	lockevent_inc(lock_pending);
 	return;

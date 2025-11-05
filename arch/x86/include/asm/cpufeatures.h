@@ -192,6 +192,7 @@
 #define X86_FEATURE_HW_PSTATE		( 7*32+ 8) /* "hw_pstate" AMD HW-PState */
 #define X86_FEATURE_PROC_FEEDBACK	( 7*32+ 9) /* "proc_feedback" AMD ProcFeedbackInterface */
 #define X86_FEATURE_XCOMPACTED		( 7*32+10) /* Use compacted XSTATE (XSAVES or XSAVEC) */
+/* 已启用内核页表隔离 */
 #define X86_FEATURE_PTI			( 7*32+11) /* "pti" Kernel Page Table Isolation enabled */
 #define X86_FEATURE_KERNEL_IBRS		( 7*32+12) /* Set/clear IBRS on kernel entry/exit */
 #define X86_FEATURE_RSB_VMEXIT		( 7*32+13) /* Fill RSB on VM-Exit */

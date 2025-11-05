@@ -225,6 +225,8 @@ static int mod_strncmp(const char *str_a, const char *str_b, size_t n)
 /*
  * A thread that wants to hold a reference to a module only while it
  * is running can call this to safely exit.
+ *
+ * 只想在运行时保留对模块的引用的线程可以调用此方法来安全退出。
  */
 void __noreturn __module_put_and_kthread_exit(struct module *mod, long code)
 {
@@ -801,6 +803,7 @@ EXPORT_SYMBOL(module_refcount);
 /* This exists whether we can unload or not */
 static void free_module(struct module *mod);
 
+/* 内核模块卸载 */
 SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
 		unsigned int, flags)
 {
@@ -809,9 +812,11 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
 	char buf[MODULE_FLAGS_BUF_SIZE];
 	int ret, len, forced = 0;
 
+	/* 功能权限检查 */
 	if (!capable(CAP_SYS_MODULE) || modules_disabled)
 		return -EPERM;
 
+	/* 拷贝用户空间内存到内核空间 */
 	len = strncpy_from_user(name, name_user, MODULE_NAME_LEN);
 	if (len == 0 || len == MODULE_NAME_LEN)
 		return -ENOENT;
@@ -820,15 +825,18 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
 
 	audit_log_kern_module(name);
 
+	/* 获取模块互斥锁 */
 	if (mutex_lock_interruptible(&module_mutex) != 0)
 		return -EINTR;
 
+	/* 查找模块 */
 	mod = find_module(name);
 	if (!mod) {
 		ret = -ENOENT;
 		goto out;
 	}
 
+	/* 依赖检查 */
 	if (!list_empty(&mod->source_list)) {
 		/* Other modules depend on us: get rid of them first. */
 		ret = -EWOULDBLOCK;
@@ -836,6 +844,7 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
 	}
 
 	/* Doing init or already dying? */
+	/* 正在进行初始化或者已经死亡？ */
 	if (mod->state != MODULE_STATE_LIVE) {
 		/* FIXME: if (force), slam module count damn the torpedoes */
 		pr_debug("%s already dying\n", mod->name);
@@ -844,6 +853,7 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
 	}
 
 	/* If it has an init func, it must have an exit func to unload */
+	/* 如果它有一个 init 函数，它必须有一个 exit 函数来卸载 */
 	if (mod->init && !mod->exit) {
 		forced = try_force_unload(flags);
 		if (!forced) {
@@ -859,11 +869,15 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
 
 	mutex_unlock(&module_mutex);
 	/* Final destruction now no one is using it. */
+	/* 最终销毁现在没有人使用它。 */
 	if (mod->exit != NULL)
+		/* 调用用户实现的 exit 函数 */
 		mod->exit();
 	blocking_notifier_call_chain(&module_notify_list,
 				     MODULE_STATE_GOING, mod);
+	/* 处理 mod 上可能存在的热补丁 */
 	klp_module_going(mod);
+	/* 处理 mod 上可能存在的 ftrace 跟踪 */
 	ftrace_release_mod(mod);
 
 	async_synchronize_full();
@@ -948,6 +962,7 @@ bool try_module_get(struct module *module)
 }
 EXPORT_SYMBOL(try_module_get);
 
+/* 减少 mod 引用计数 */
 void module_put(struct module *module)
 {
 	int ret;
@@ -1414,12 +1429,14 @@ static void free_mod_mem(struct module *mod)
 }
 
 /* Free a module, remove from lists, etc. */
+/* 释放模块、从列表中删除等等 */
 static void free_module(struct module *mod)
 {
 	trace_module_free(mod);
 
 	codetag_unload_module(mod);
 
+	/* 卸载模块 sysfs 的信息 */
 	mod_sysfs_teardown(mod);
 
 	/*
@@ -1437,6 +1454,7 @@ static void free_module(struct module *mod)
 	module_unload_free(mod);
 
 	/* Free any allocated parameters. */
+	/* 释放任何分配的参数。 */
 	module_destroy_params(mod->kp, mod->num_kp);
 
 	if (is_livepatch_module(mod))
@@ -1457,6 +1475,7 @@ static void free_module(struct module *mod)
 	mutex_unlock(&module_mutex);
 
 	/* This may be empty, but that's OK */
+	/* 这可能是空的，但是没关系 */
 	module_arch_freeing_init(mod);
 	kfree(mod->args);
 	percpu_modfree(mod);
@@ -3007,6 +3026,7 @@ int __weak module_finalize(const Elf_Ehdr *hdr,
 static int post_relocation(struct module *mod, const struct load_info *info)
 {
 	/* Sort exception table now relocations are done. */
+	/* 排序异常表现在重定位已完成。 */
 	sort_extable(mod->extable, mod->extable + mod->num_exentries);
 
 	/* Copy relocated percpu area over. */
@@ -3843,6 +3863,7 @@ out:
 }
 
 /* Given an address, look for it in the module exception tables. */
+/* 给定一个地址，在模块异常表中查找它。 */
 const struct exception_table_entry *search_module_extables(unsigned long addr)
 {
 	struct module *mod;
@@ -3955,6 +3976,7 @@ struct module *__module_text_address(unsigned long addr)
 }
 
 /* Don't grab lock, we're oopsing. */
+/* 不要抓锁，我们要出错了。 */
 void print_modules(void)
 {
 	struct module *mod;

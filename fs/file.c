@@ -330,6 +330,7 @@ static inline void __set_close_on_exec(unsigned int fd, struct fdtable *fdt,
 	}
 }
 
+/* 设置为打开 */
 static inline void __set_open_fd(unsigned int fd, struct fdtable *fdt, bool set)
 {
 	__set_bit(fd, fdt->open_fds);
@@ -574,11 +575,13 @@ static int alloc_fd(unsigned start, unsigned end, unsigned flags)
 	int error;
 	struct fdtable *fdt;
 
+	/* 加锁 */
 	spin_lock(&files->file_lock);
 repeat:
 	fdt = files_fdtable(files);
 	fd = start;
 	if (fd < files->next_fd)
+		/* 小于的话设置 next_fd */
 		fd = files->next_fd;
 
 	if (likely(fd < fdt->max_fds))
@@ -608,12 +611,14 @@ repeat:
 	VFS_BUG_ON(rcu_access_pointer(fdt->fd[fd]) != NULL);
 
 out:
+	/* 解锁 */
 	spin_unlock(&files->file_lock);
 	return error;
 }
 
 int __get_unused_fd_flags(unsigned flags, unsigned long nofile)
 {
+	/* 分配 fd */
 	return alloc_fd(0, nofile, flags);
 }
 

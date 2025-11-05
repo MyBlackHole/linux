@@ -1120,6 +1120,7 @@ xfs_bmap_complain_bad_rec(
 }
 
 /* Stuff every bmbt record from this block into the incore extent map. */
+/* 将此块中的每个 bmbt 记录填充到核心范围图中。 */
 static int
 xfs_iread_bmbt_block(
 	struct xfs_btree_cur	*cur,
@@ -1151,6 +1152,7 @@ xfs_iread_bmbt_block(
 	}
 
 	/* Copy records into the incore cache. */
+	/* 将记录复制到核心缓存中。 */
 	frp = xfs_bmbt_rec_addr(mp, block, 1);
 	for (j = 0; j < num_recs; j++, frp++, ir->loaded++) {
 		struct xfs_bmbt_irec	new;
@@ -1178,6 +1180,8 @@ xfs_iread_bmbt_block(
 
 /*
  * Read in extents from a btree-format inode.
+ *
+ * 从 btree 格式的 inode 中读取范围。
  */
 int
 xfs_iread_extents(

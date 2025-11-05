@@ -301,6 +301,10 @@ static int klp_check_and_switch_task(struct task_struct *task, void *arg)
  * Try to safely switch a task to the target patch state.  If it's currently
  * running, or it's sleeping on a to-be-patched or to-be-unpatched function, or
  * if the stack is unreliable, return false.
+ *
+ * 尝试安全地将任务切换到目标补丁状态。
+ * 如果它当前正在运行，或者它正在待修补或待取消修补的函数上休眠，
+ * 或者堆栈不可靠，则返回 false。
  */
 static bool klp_try_switch_task(struct task_struct *task)
 {
@@ -308,12 +312,16 @@ static bool klp_try_switch_task(struct task_struct *task)
 	int ret;
 
 	/* check if this task has already switched over */
+	/*检查此任务是否已经切换*/
 	if (task->patch_state == klp_target_state)
 		return true;
 
 	/*
 	 * For arches which don't have reliable stack traces, we have to rely
 	 * on other methods (e.g., switching tasks at kernel exit).
+	 *
+	 * 对于没有可靠堆栈跟踪的拱门，我们必须依赖其他方法（例如，在内核退出时切换任务）。
+	 *
 	 */
 	if (!klp_have_reliable_stack())
 		return false;
@@ -322,6 +330,10 @@ static bool klp_try_switch_task(struct task_struct *task)
 	 * Now try to check the stack for any to-be-patched or to-be-unpatched
 	 * functions.  If all goes well, switch the task to the target patch
 	 * state.
+	 *
+	 * 现在尝试检查堆栈中是否有任何需要修补或需要取消修补的函数。
+	 * 如果一切顺利，则将任务切换到目标修补状态。
+	 *
 	 */
 	if (task == current)
 		ret = klp_check_and_switch_task(current, &old_name);
@@ -426,6 +438,12 @@ static void klp_send_signals(void)
  * switched yet.
  *
  * If any tasks are still stuck in the initial patch state, schedule a retry.
+ *
+ * 尝试通过遍历休眠任务的堆栈并查找任何要修补或要取消修补的函数，
+ * 将所有剩余任务切换到目标修补状态。
+ * 如果发现此类函数，则无法切换任务。
+ *
+ * 如果任何任务仍停留在初始修补状态，请安排重试。
  */
 void klp_try_complete_transition(void)
 {
@@ -444,6 +462,12 @@ void klp_try_complete_transition(void)
 	 *
 	 * Usually this will transition most (or all) of the tasks on a system
 	 * unless the patch includes changes to a very common function.
+	 *
+	 * 尝试通过遍历任务堆栈并查找任何要修补或要取消修补的函数来将任务切换到目标修补状态。
+	 * 如果在堆栈上发现此类函数，或者堆栈被视为不可靠，则无法切换任务。
+	 *
+	 * 通常，这将转换系统上的大多数（或所有）任务，除非修补程序包含对非常常见函数的更改。
+	 *
 	 */
 	read_lock(&tasklist_lock);
 	for_each_process_thread(g, task)

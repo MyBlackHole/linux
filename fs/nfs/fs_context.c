@@ -1692,10 +1692,12 @@ static int nfs_init_fs_context(struct fs_context *fc)
 {
 	struct nfs_fs_context *ctx;
 
+	/* 分配 nfs fs 上下文内存 */
 	ctx = kzalloc_obj(struct nfs_fs_context);
 	if (unlikely(!ctx))
 		return -ENOMEM;
 
+	/* 挂载文件处理数据内存 */
 	ctx->mntfh = nfs_alloc_fhandle();
 	if (unlikely(!ctx->mntfh)) {
 		kfree(ctx);
@@ -1758,11 +1760,13 @@ static int nfs_init_fs_context(struct fs_context *fc)
 
 		fc->s_iflags		|= SB_I_STABLE_WRITES;
 	}
+    /* 保存 nfs fs 的上下文到文件系统上下文私有数据属性 */
 	fc->fs_private = ctx;
 	fc->ops = &nfs_fs_context_ops;
 	return 0;
 }
 
+/* nfs 文件系统类型 */
 struct file_system_type nfs_fs_type = {
 	.owner			= THIS_MODULE,
 	.name			= "nfs",
@@ -1775,6 +1779,7 @@ MODULE_ALIAS_FS("nfs");
 EXPORT_SYMBOL_GPL(nfs_fs_type);
 
 #if IS_ENABLED(CONFIG_NFS_V4)
+/* nfs v4 版本文件系统类型 */
 struct file_system_type nfs4_fs_type = {
 	.owner			= THIS_MODULE,
 	.name			= "nfs4",

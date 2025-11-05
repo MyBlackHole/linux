@@ -581,6 +581,7 @@ void nfsd_shutdown_threads(struct net *net)
 	}
 
 	/* Kill outstanding nfsd threads */
+	/* 结束未结束的 nfsd 线程 */
 	svc_set_num_threads(serv, 0, 0);
 	nfsd_destroy_serv(net);
 	mutex_unlock(&nfsd_mutex);
@@ -593,6 +594,7 @@ struct svc_rqst *nfsd_current_rqst(void)
 	return NULL;
 }
 
+/* 创建 nfs 服务 */
 int nfsd_create_serv(struct net *net)
 {
 	int error;
@@ -613,6 +615,7 @@ int nfsd_create_serv(struct net *net)
 	if (nfsd_max_blksize == 0)
 		nfsd_max_blksize = nfsd_get_default_max_blksize();
 	nfsd_reset_versions(nn);
+	/* 创建 初始化 serv */
 	serv = svc_create_pooled(nfsd_programs, ARRAY_SIZE(nfsd_programs),
 				 &nn->nfsd_svcstats,
 				 nfsd_max_blksize, nfsd);
@@ -621,6 +624,7 @@ int nfsd_create_serv(struct net *net)
 		return -ENOMEM;
 	}
 
+	/* 服务与网络绑定 */
 	error = svc_bind(serv, net);
 	if (error < 0) {
 		svc_destroy(&serv);
@@ -746,6 +750,9 @@ out:
  *
  * Adjust the number of threads in each pool and return the new
  * total number of threads in the service.
+ *
+ * 调整线程数并返回新的线程数。 如果这是第一次 nrservs 非零,
+ * 这也是必要时启动服务器的函数。
  */
 int
 nfsd_svc(int n, int *nthreads, struct net *net, const struct cred *cred, const char *scope)
@@ -761,6 +768,7 @@ nfsd_svc(int n, int *nthreads, struct net *net, const struct cred *cred, const c
 	strscpy(nn->nfsd_name, scope ? scope : utsname()->nodename,
 		sizeof(nn->nfsd_name));
 
+	/* 创建 nfsd 服务 */
 	error = nfsd_create_serv(net);
 	if (error)
 		goto out;
@@ -769,6 +777,7 @@ nfsd_svc(int n, int *nthreads, struct net *net, const struct cred *cred, const c
 	error = nfsd_startup_net(net, cred);
 	if (error)
 		goto out_put;
+	/* 创建 nfsd 线程 */
 	error = nfsd_set_nrthreads(n, nthreads, net);
 	if (error)
 		goto out_put;
@@ -878,6 +887,7 @@ nfsd_init_request(struct svc_rqst *rqstp,
 
 /*
  * This is the NFS server kernel thread
+ * 这是 NFS 服务器内核线程
  */
 static int
 nfsd(void *vrqstp)
@@ -910,6 +920,7 @@ nfsd(void *vrqstp)
 	 * The main request loop
 	 */
 	while (!svc_thread_should_stop(rqstp)) {
+		/* 接受 rpc 数据包 */
 		switch (svc_recv(rqstp, 5 * HZ)) {
 		case -ETIMEDOUT:
 			/* No work arrived within the timeout window */
@@ -969,6 +980,12 @@ nfsd(void *vrqstp)
  * Return values:
  *  %0: Processing complete; do not send a Reply
  *  %1: Processing complete; send Reply in rqstp->rq_res
+ *
+ *  这是RPC请求的处理函数
+ *  简单来说就是依次调用 svc_procedure 中的
+ *  pc_decode
+ *  pc_func
+ *  pc_encode 函数.
  */
 int nfsd_dispatch(struct svc_rqst *rqstp)
 {
@@ -992,6 +1009,7 @@ int nfsd_dispatch(struct svc_rqst *rqstp)
 	 */
 	start = xdr_stream_pos(&rqstp->rq_arg_stream);
 	len = xdr_stream_remaining(&rqstp->rq_arg_stream);
+	/* 解码 */
 	if (!proc->pc_decode(rqstp, &rqstp->rq_arg_stream))
 		goto out_decode_err;
 
@@ -1015,10 +1033,14 @@ int nfsd_dispatch(struct svc_rqst *rqstp)
 	}
 
 	nfs_reply = xdr_inline_decode(&rqstp->rq_res_stream, 0);
+	/* 执行不同版本的 nfs compound
+	 * (例如: nfsd4_proc_compound 聚合处理调用)
+	 * 进入 nfs 对应版本处理函数业务 */
 	*statp = proc->pc_func(rqstp);
 	if (test_bit(RQ_DROPME, &rqstp->rq_flags))
 		goto out_update_drop;
 
+	/* 编码 */
 	if (!proc->pc_encode(rqstp, &rqstp->rq_res_stream))
 		goto out_encode_err;
 

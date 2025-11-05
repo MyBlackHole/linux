@@ -77,9 +77,11 @@
 
 #include <trace/events/vmscan.h>
 
+/* 内存控制组子系统定义 */
 struct cgroup_subsys memory_cgrp_subsys __read_mostly;
 EXPORT_SYMBOL(memory_cgrp_subsys);
 
+/* 根内存控制组 */
 struct mem_cgroup *root_mem_cgroup __read_mostly;
 EXPORT_SYMBOL(root_mem_cgroup);
 
@@ -1129,6 +1131,7 @@ struct mem_cgroup *get_mem_cgroup_from_mm(struct mm_struct *mm)
 		memcg = active_memcg();
 		if (unlikely(memcg)) {
 			/* remote memcg must hold a ref */
+			/* 远程 memcg 必须持有一个 ref */
 			css_get(&memcg->css);
 			return memcg;
 		}
@@ -2005,8 +2008,11 @@ void mem_cgroup_print_oom_group(struct mem_cgroup *memcg)
 #define NR_MEMCG_STOCK 7
 #define FLUSHING_CACHED_CHARGE	0
 struct memcg_stock_pcp {
+	/* 锁 */
 	local_trylock_t lock;
+	/* 预留页面数 */
 	uint8_t nr_pages[NR_MEMCG_STOCK];
+	/* 非根控制组内存控制器 */
 	struct mem_cgroup *cached[NR_MEMCG_STOCK];
 
 	struct work_struct work;
@@ -2025,6 +2031,8 @@ struct obj_stock_pcp {
 	int nr_slab_reclaimable_b;
 	int nr_slab_unreclaimable_b;
 
+	/* 工作负载
+	 * func: drain_local_stock */
 	struct work_struct work;
 	unsigned long flags;
 };
@@ -2089,6 +2097,8 @@ static void memcg_uncharge(struct mem_cgroup *memcg, unsigned int nr_pages)
 
 /*
  * Returns stocks cached in percpu and reset cached information.
+ *
+ * 重置percpu缓存区中的预留页面数
  */
 static void drain_stock(struct memcg_stock_pcp *stock, int i)
 {
@@ -2123,6 +2133,7 @@ static void drain_local_memcg_stock(struct work_struct *dummy)
 	if (WARN_ONCE(!in_task(), "drain in non-task context"))
 		return;
 
+	/* 保存中断状态加锁 */
 	local_lock(&memcg_stock.lock);
 
 	stock = this_cpu_ptr(&memcg_stock);
@@ -2132,6 +2143,9 @@ static void drain_local_memcg_stock(struct work_struct *dummy)
 	local_unlock(&memcg_stock.lock);
 }
 
+/*
+ * 将预留页面数(nr_pages)缓存到本地per_cpu缓存区。
+ */
 static void drain_local_obj_stock(struct work_struct *dummy)
 {
 	struct obj_stock_pcp *stock;
@@ -2588,8 +2602,10 @@ retry:
 		batch = nr_pages;
 
 	reclaim_options = MEMCG_RECLAIM_MAY_SWAP;
+	/* 计算 memory + swap */
 	if (!do_memsw_account() ||
 	    page_counter_try_charge(&memcg->memsw, batch, &counter)) {
+		/* 记账memory,也就是cat memory.usage_in_bytes看到的值*/
 		if (page_counter_try_charge(&memcg->memory, batch, &counter))
 			goto done_restock;
 		if (do_memsw_account())
@@ -2624,10 +2640,12 @@ retry:
 	raised_max_event = true;
 
 	psi_memstall_enter(&pflags);
+	/* 内存usage超过了limit,触发cgroup回收*/
 	nr_reclaimed = try_to_free_mem_cgroup_pages(mem_over_limit, nr_pages,
 						    gfp_mask, reclaim_options, NULL);
 	psi_memstall_leave(&pflags);
 
+	/*内存回收后，再次判断内存usage */
 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
 		goto retry;
 
@@ -2666,6 +2684,7 @@ retry:
 	 * a forward progress or bypass the charge if the oom killer
 	 * couldn't make any progress.
 	 */
+	 /* 无法回收足够的内存，触发oom killer */
 	if (mem_cgroup_oom(mem_over_limit, gfp_mask,
 			   get_order(nr_pages * PAGE_SIZE))) {
 		passed_oom = true;
@@ -2769,6 +2788,7 @@ static inline int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
 	return try_charge_memcg(memcg, gfp_mask, nr_pages);
 }
 
+/* 建立page与objcg关联 */
 static void commit_charge(struct folio *folio, struct obj_cgroup *objcg)
 {
 	VM_BUG_ON_FOLIO(folio_memcg_charged(folio), folio);
@@ -2955,6 +2975,7 @@ static struct obj_cgroup *current_objcg_update(void)
 	return objcg;
 }
 
+/* 获取当前任务的对象控制组 */
 __always_inline struct obj_cgroup *current_obj_cgroup(void)
 {
 	struct mem_cgroup *memcg;
@@ -3124,6 +3145,8 @@ int __memcg_kmem_charge_page(struct page *page, gfp_t gfp, int order)
  * __memcg_kmem_uncharge_page: uncharge a kmem page
  * @page: page to uncharge
  * @order: allocation order
+ *
+ * 从 objcg 中卸载一些内核页面
  */
 void __memcg_kmem_uncharge_page(struct page *page, int order)
 {
@@ -3131,6 +3154,7 @@ void __memcg_kmem_uncharge_page(struct page *page, int order)
 	unsigned int nr_pages = 1 << order;
 
 	if (!objcg)
+		/* 非 memcg 内核页面，不需要卸载 */
 		return;
 
 	obj_cgroup_uncharge_pages(objcg, nr_pages);
@@ -3274,6 +3298,8 @@ static void drain_obj_stock(struct obj_stock_pcp *stock)
 
 	/*
 	 * Flush the vmstat data in current stock
+	 *
+	 * 刷新当前stock中的vmstat数据
 	 */
 	if (stock->nr_slab_reclaimable_b || stock->nr_slab_unreclaimable_b) {
 		if (stock->nr_slab_reclaimable_b) {
@@ -3328,6 +3354,7 @@ static void __refill_obj_stock(struct obj_cgroup *objcg,
 	}
 
 	if (READ_ONCE(stock->cached_objcg) != objcg) { /* reset if necessary */
+		/* 如果需要则重置 */
 		drain_obj_stock(stock);
 		obj_cgroup_get(objcg);
 		stock->nr_bytes = atomic_read(&objcg->nr_charged_bytes)
@@ -4962,6 +4989,7 @@ static struct cftype memory_files[] = {
 	{ }	/* terminate */
 };
 
+/* 内存控制器子系统初始化 */
 struct cgroup_subsys memory_cgrp_subsys = {
 	.css_alloc = mem_cgroup_css_alloc,
 	.css_online = mem_cgroup_css_online,

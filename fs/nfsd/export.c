@@ -1284,6 +1284,7 @@ rqst_exp_find(struct cache_req *reqp, struct net *net,
 		goto gss;
 
 	/* First try the auth_unix client: */
+	/* 首先尝试 auth_unix 客户端: */
 	exp = exp_find(cd, cl, fsid_type, fsidv, reqp);
 	if (PTR_ERR(exp) == -ENOENT)
 		goto gss;

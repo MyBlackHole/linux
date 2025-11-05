@@ -1275,6 +1275,9 @@ SYSCALL_DEFINE3(sched_setaffinity, pid_t, pid, unsigned int, len,
 	return retval;
 }
 
+/*
+ * 设置 CPU 亲和性
+ */
 long sched_getaffinity(pid_t pid, struct cpumask *mask)
 {
 	struct task_struct *p;

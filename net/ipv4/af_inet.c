@@ -254,6 +254,7 @@ EXPORT_SYMBOL(inet_listen);
 
 /*
  *	Create an inet socket.
+ *	创建网络套接字
  */
 
 static int inet_create(struct net *net, struct socket *sock, int protocol,
@@ -273,9 +274,11 @@ static int inet_create(struct net *net, struct socket *sock, int protocol,
 	sock->state = SS_UNCONNECTED;
 
 	/* Look for the requested type/protocol pair. */
+	/* 此处是寻找对应协议处理器的过程 */
 lookup_protocol:
 	err = -ESOCKTNOSUPPORT;
 	rcu_read_lock();
+	/* 迭代寻找 protocol==answer->protocol 的情况 */
 	list_for_each_entry_rcu(answer, &inetsw[sock->type], list) {
 
 		err = 0;
@@ -322,6 +325,7 @@ lookup_protocol:
 	    !ns_capable(net->user_ns, CAP_NET_RAW))
 		goto out_rcu_unlock;
 
+	/* 这边 answer 指的是 SOCK_STREAM */
 	sock->ops = answer->ops;
 	answer_prot = answer->prot;
 	answer_flags = answer->flags;
@@ -330,6 +334,7 @@ lookup_protocol:
 	WARN_ON(!answer_prot->slab);
 
 	err = -ENOMEM;
+	/* 这边 sk->prot 就是 answer_prot=>tcp_prot */
 	sk = sk_alloc(net, PF_INET, GFP_KERNEL, answer_prot, kern);
 	if (!sk)
 		goto out;
@@ -359,6 +364,7 @@ lookup_protocol:
 
 	atomic_set(&inet->inet_id, 0);
 
+	/* 初始化 sock */
 	sock_init_data(sock, sk);
 
 	sk->sk_destruct	   = inet_sock_destruct;
@@ -863,6 +869,7 @@ int inet_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 		return -EAGAIN;
 
 	prot = READ_ONCE(sk->sk_prot);
+	/* tcp_sendmsg */
 	return INDIRECT_CALL_2(prot->sendmsg, tcp_sendmsg, udp_sendmsg,
 			       sk, msg, size);
 }
@@ -1059,6 +1066,7 @@ static int inet_compat_ioctl(struct socket *sock, unsigned int cmd, unsigned lon
 }
 #endif /* CONFIG_COMPAT */
 
+/* TCP 操作 */
 const struct proto_ops inet_stream_ops = {
 	.family		   = PF_INET,
 	.owner		   = THIS_MODULE,
@@ -1126,6 +1134,7 @@ EXPORT_SYMBOL(inet_dgram_ops);
 /*
  * For SOCK_RAW sockets; should be the same as inet_dgram_ops but without
  * udp_poll
+ * udp 操作
  */
 static const struct proto_ops inet_sockraw_ops = {
 	.family		   = PF_INET,
@@ -1152,6 +1161,7 @@ static const struct proto_ops inet_sockraw_ops = {
 #endif
 };
 
+/* 网络协议操作 */
 static const struct net_proto_family inet_family_ops = {
 	.family = PF_INET,
 	.create = inet_create,

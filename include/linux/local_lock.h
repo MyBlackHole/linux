@@ -13,6 +13,8 @@
 /**
  * local_lock - Acquire a per CPU local lock
  * @lock:	The lock variable
+ *
+ * cpu 本地锁的获取
  */
 #define local_lock(lock)		__local_lock(__this_cpu_local_lock(lock))
 
@@ -27,6 +29,9 @@
  *			 interrupts
  * @lock:	The lock variable
  * @flags:	Storage for interrupt flags
+ *
+ * 获取cpu本地锁，并保存并禁止中断。
+ * 确保只在一个cpu上执行
  */
 #define local_lock_irqsave(lock, flags)				\
 	__local_lock_irqsave(__this_cpu_local_lock(lock), flags)

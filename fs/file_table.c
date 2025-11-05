@@ -581,6 +581,9 @@ static void __fput_deferred(struct file *file)
 		schedule_delayed_work(&delayed_fput_work, 1);
 }
 
+/*
+ * 减少引用计数，如果引用计数为0，
+ * 则调用__fput()释放资源 */
 void fput(struct file *file)
 {
 	if (unlikely(file_ref_put(&file->f_ref)))

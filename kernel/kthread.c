@@ -32,6 +32,7 @@
 
 
 static DEFINE_SPINLOCK(kthread_create_lock);
+/* 定义一个链表，用于存放需要创建的 kthread */
 static LIST_HEAD(kthread_create_list);
 struct task_struct *kthreadd_task;
 
@@ -75,6 +76,7 @@ struct kthread {
 
 enum KTHREAD_BITS {
 	KTHREAD_IS_PER_CPU = 0,
+	/* 标记退出 */
 	KTHREAD_SHOULD_STOP,
 	KTHREAD_SHOULD_PARK,
 };
@@ -377,6 +379,7 @@ static void kthread_affine_node(void)
 	free_cpumask_var(affinity);
 }
 
+/* 实际创建线程与运行 */
 static int kthread(void *_create)
 {
 	static const struct sched_param param = { .sched_priority = 0 };
@@ -391,6 +394,7 @@ static int kthread(void *_create)
 	self = to_kthread(current);
 
 	/* Release the structure when caller killed by a fatal signal. */
+	/* 检查发起者是否还活着 */
 	done = xchg(&create->done, NULL);
 	if (!done) {
 		kfree(create->full_name);
@@ -405,19 +409,27 @@ static int kthread(void *_create)
 	/*
 	 * The new thread inherited kthreadd's priority and CPU mask. Reset
 	 * back to default in case they have been changed.
+	 *
+	 * 新线程继承 kthreadd 的优先级、cpu 掩码
 	 */
 	sched_setscheduler_nocheck(current, SCHED_NORMAL, &param);
 
 	/* OK, tell user we're spawned, wait for stop or wakeup */
+	/* 线程生成完成 */
 	__set_current_state(TASK_UNINTERRUPTIBLE);
 	create->result = current;
 	/*
 	 * Thread is going to call schedule(), do not preempt it,
 	 * or the creator may spend more time in wait_task_inactive().
 	 */
+	/* 关闭抢占 */
 	preempt_disable();
 	complete(done);
+	/* 发起调度
+	 * 创建完成切换 cpu 控制 */
 	schedule_preempt_disabled();
+	/* 唤醒起点
+	 * 恢复抢占 */
 	preempt_enable();
 
 	self->started = 1;
@@ -430,9 +442,11 @@ static int kthread(void *_create)
 		kthread_affine_node();
 
 	ret = -EINTR;
+	/* 非结束 */
 	if (!test_bit(KTHREAD_SHOULD_STOP, &self->flags)) {
 		cgroup_kthread_ready();
 		__kthread_parkme(self);
+		/* 用户业务处理 */
 		ret = threadfn(data);
 	}
 	kthread_exit(ret);
@@ -448,6 +462,8 @@ int tsk_fork_get_node(struct task_struct *tsk)
 	return NUMA_NO_NODE;
 }
 
+/* 创建 kthread 线程, 
+ * kthread 处理具体线程创建 */
 static void create_kthread(struct kthread_create_info *create)
 {
 	int pid;
@@ -480,8 +496,10 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
 {
 	DECLARE_COMPLETION_ONSTACK(done);
 	struct task_struct *task;
+	/* 分配线程创建描述信息，所需内存 */
 	struct kthread_create_info *create = kmalloc_obj(*create);
 
+	/* 初始化 */
 	if (!create)
 		return ERR_PTR(-ENOMEM);
 	create->threadfn = threadfn;
@@ -495,9 +513,11 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
 	}
 
 	spin_lock(&kthread_create_lock);
+	/* 添加到全局线程链表 kthread_create_list */
 	list_add_tail(&create->list, &kthread_create_list);
 	spin_unlock(&kthread_create_lock);
 
+	/* 启动 内核线程添加任务线程 */
 	wake_up_process(kthreadd_task);
 	/*
 	 * Wait for completion in killable state, for I might be chosen by
@@ -743,6 +763,8 @@ EXPORT_SYMBOL_GPL(kthread_park);
  *
  * Returns the result of threadfn(), or %-EINTR if wake_up_process()
  * was never called.
+ *
+ * 线程退出
  */
 int kthread_stop(struct task_struct *k)
 {
@@ -756,8 +778,11 @@ int kthread_stop(struct task_struct *k)
 	set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);
 	kthread_unpark(k);
 	set_tsk_thread_flag(k, TIF_NOTIFY_SIGNAL);
+	/* 唤醒 */
 	wake_up_process(k);
+	/* 等待退出 */
 	wait_for_completion(&kthread->exited);
+	/* 获取退出状态 */
 	ret = kthread->result;
 	put_task_struct(k);
 
@@ -784,6 +809,8 @@ int kthread_stop_put(struct task_struct *k)
 }
 EXPORT_SYMBOL(kthread_stop_put);
 
+/* 线程创建 线程 */
+/* 管理线程创建 */
 int kthreadd(void *unused)
 {
 	static const char comm[TASK_COMM_LEN] = "kthreadd";
@@ -800,20 +827,27 @@ int kthreadd(void *unused)
 	kthread_affine_node();
 
 	for (;;) {
+		/* 设置当前任务状态: 可以中断 */
 		set_current_state(TASK_INTERRUPTIBLE);
 		if (list_empty(&kthread_create_list))
+			/* 没有任务就休眠 */
+			/* 发起任务调度切换 */
 			schedule();
 		__set_current_state(TASK_RUNNING);
 
 		spin_lock(&kthread_create_lock);
+		/* 遍历线程创建列表 */
 		while (!list_empty(&kthread_create_list)) {
 			struct kthread_create_info *create;
 
+			/* 获取线程创建信息 */
 			create = list_entry(kthread_create_list.next,
 					    struct kthread_create_info, list);
+			/* 从列表中删除 */
 			list_del_init(&create->list);
 			spin_unlock(&kthread_create_lock);
 
+			/* 创建线程 */
 			create_kthread(create);
 
 			spin_lock(&kthread_create_lock);

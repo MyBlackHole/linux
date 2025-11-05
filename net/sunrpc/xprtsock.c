@@ -2414,6 +2414,8 @@ static int xs_tcp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
  * @work: queued work item
  *
  * Invoked by a work queue tasklet.
+ *
+ * 创建 TCP 套接字并连接到远程端点
  */
 static void xs_tcp_setup_socket(struct work_struct *work)
 {

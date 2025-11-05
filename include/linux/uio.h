@@ -15,6 +15,7 @@ struct folio_queue;
 
 typedef unsigned int __bitwise iov_iter_extraction_t;
 
+/* 描述内核态的一段空间 */
 struct kvec {
 	void *iov_base; /* and that should *never* hold a userland pointer */
 	size_t iov_len;
@@ -40,10 +41,16 @@ struct iov_iter_state {
 	unsigned long nr_segs;
 };
 
+/* IO 迭代
+ * 描述文件 IO 内存侧
+ * 一般与 kiocb 一起出现 */
 struct iov_iter {
+	/* IO 迭代类型 */
 	u8 iter_type;
 	bool nofault;
+	/* 数据方向 */
 	bool data_source;
+	/* 第一个 iovec 数据起始偏移 */
 	size_t iov_offset;
 	/*
 	 * Hack alert: overlay ubuf_iovec with iovec + count, so
@@ -65,17 +72,23 @@ struct iov_iter {
 		struct {
 			union {
 				/* use iter_iov() to get the current vec */
+				/* 结构与 kvec 一致，描述用户空间的一段空间 */
 				const struct iovec *__iov;
+				/* 描述内核态的一段空间 */
 				const struct kvec *kvec;
+				/* 描述一个内存页的一段空间 */
 				const struct bio_vec *bvec;
 				const struct folio_queue *folioq;
 				struct xarray *xarray;
+				/* 用户层 buf */
 				void __user *ubuf;
 			};
+			/* 数据大小, buf 大小 */
 			size_t count;
 		};
 	};
 	union {
+		/* iovec 数量 */
 		unsigned long nr_segs;
 		u8 folioq_slot;
 		loff_t xarray_start;
@@ -369,6 +382,7 @@ ssize_t __import_iovec(int type, const struct iovec __user *uvec,
 		 struct iov_iter *i, bool compat);
 int import_ubuf(int type, void __user *buf, size_t len, struct iov_iter *i);
 
+/* 初始化 iov_iter */
 static inline void iov_iter_ubuf(struct iov_iter *i, unsigned int direction,
 			void __user *buf, size_t count)
 {

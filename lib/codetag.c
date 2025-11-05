@@ -343,6 +343,7 @@ void codetag_unload_module(struct module *mod)
 		return;
 
 	/* await any module's kfree_rcu() operations to complete */
+	/* 等待任何模块的 kfree_rcu() 操作完成 */
 	kvfree_rcu_barrier();
 
 	mutex_lock(&codetag_lock);

@@ -830,6 +830,9 @@ context_unsafe(							      \
  * read-side critical sections may be preempted and they may also block, but
  * only when acquiring spinlocks that are subject to priority inheritance.
  */
+/*
+ * 标记 RCU 读端临界区的开始
+ */
 static __always_inline void rcu_read_lock(void)
 	__acquires_shared(RCU)
 {

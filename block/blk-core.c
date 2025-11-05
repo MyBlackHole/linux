@@ -69,6 +69,8 @@ static struct kmem_cache *blk_requestq_cachep;
 
 /*
  * Controlling structure to kblockd
+ *
+ * 内核块设备控制结构，用于控制块设备驱动程序的运行。
  */
 static struct workqueue_struct *kblockd_workqueue;
 
@@ -366,6 +368,7 @@ dead:
 	return -ENODEV;
 }
 
+/* 引用计数减一 */
 void blk_queue_exit(struct request_queue *q)
 {
 	percpu_ref_put(&q->q_usage_counter);
@@ -624,28 +627,74 @@ static inline blk_status_t blk_check_zone_append(struct request_queue *q,
 	return BLK_STS_OK;
 }
 
+/* 核心BIO提交函数，处理加密预处理、请求合并和设备驱动的提交逻辑 
+          开始
+            ↓
+    加密预处理检查
+     ┌──────┴─────┐
+    失败         成功
+     ↓             ↓
+   返回      启动plug机制
+                   ↓
+            判断设备类型
+            ┌──────┴──────────┐
+          传统设备          自定义设备
+            ↓                  ↓
+        blk_mq_submit_bio  获取队列权限
+                              ↓
+                        检查轮询支持
+                       ┌─────┴─────┐
+                    不支持       支持
+                      ↓             ↓
+                  结束带错误     调用驱动submit_bio
+                                    ↓
+                                释放队列
+                                    ↓
+                                结束plug机制
+                                    ↓
+                                   结束
+ * */
 static void __submit_bio(struct bio *bio)
 {
 	/* If plug is not used, add new plug here to cache nsecs time. */
+	/* 定义块设备请求的"插塞"结构，用于批量合并请求减少锁竞争 */
 	struct blk_plug plug;
 
+	/* 启动请求插塞机制，开始合并后续的块设备请求 */
 	blk_start_plug(&plug);
-
+	/*
+	 * 判断块设备是否定义了自定义的submit_bio方法：
+	 * - BD_HAS_SUBMIT_BIO标志表示设备驱动实现了自己的submit_bio
+	 * - 传统路径：使用默认的多队列提交（blk_mq_submit_bio）
+	 * - 现代路径：调用驱动自定义的submit_bio方法
+	 */
 	if (!bdev_test_flag(bio->bi_bdev, BD_HAS_SUBMIT_BIO)) {
+		/* 默认提交路径：通过多队列层提交BIO */
 		blk_mq_submit_bio(bio);
 	} else if (likely(bio_queue_enter(bio) == 0)) {
+		/* 成功获取队列访问权限后：*/
 		struct gendisk *disk = bio->bi_bdev->bd_disk;
-	
+
+		/*
+		 * 处理轮询(polling)请求的特殊情况：
+		 * - 当BIO要求轮询（REQ_POLLED）但设备队列不支持轮询特性时
+		 * - 直接返回"不支持"错误状态并结束IO
+		 */
 		if ((bio->bi_opf & REQ_POLLED) &&
 		    !(disk->queue->limits.features & BLK_FEAT_POLL)) {
+			/* 设置BIO状态为不支持 */
 			bio->bi_status = BLK_STS_NOTSUPP;
+			/* 调用BIO结束 iO 函数 */
 			bio_endio(bio);
 		} else {
+			/* 调用设备驱动自定义的 submit_bio 函数 */
 			disk->fops->submit_bio(bio);
 		}
+		/* 减少引用计数 (与bio_queue_enter配对使用) */
 		blk_queue_exit(disk->queue);
 	}
 
+	 /* 结束请求插塞，可能触发批量请求的提交 */
 	blk_finish_plug(&plug);
 }
 
@@ -667,26 +716,39 @@ static void __submit_bio(struct bio *bio)
  * bio_list_on_stack[0] contains bios submitted by the current ->submit_bio.
  * bio_list_on_stack[1] contains bios that were submitted before the current
  *	->submit_bio(), but that haven't been processed yet.
+ *
+ * 提交 bio 到块设备层进行 I/O
  */
 static void __submit_bio_noacct(struct bio *bio)
 {
+	/* 定义一个栈上的BIO链表数组，用于管理不同层级的BIO */
 	struct bio_list bio_list_on_stack[2];
 
+	/* 确保传入的BIO没有链接到其他BIO(即单独请求) */
 	BUG_ON(bio->bi_next);
 
+	/* 初始化第一个BIO链表(索引0) */
 	bio_list_init(&bio_list_on_stack[0]);
+	/* 将当前进程的bio_list指向栈上的链表，用于跟踪递归提交的BIO */
 	current->bio_list = bio_list_on_stack;
 
+	/* 循环处理所有BIO，直到链表为空 */
 	do {
+		/* 获取当前BIO对应的块设备的请求队列 */
 		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
+		/* 定义两个临时链表：处理下层设备和同层设备的BIO */
 		struct bio_list lower, same;
 
 		/*
 		 * Create a fresh bio_list for all subordinate requests.
+		 *
+		 * 将之前的未处理BIO（bio_list_on_stack[0]）转移到链表1，
+		 * 然后重新初始化链表0，用于收集新提交的BIO。
 		 */
 		bio_list_on_stack[1] = bio_list_on_stack[0];
 		bio_list_init(&bio_list_on_stack[0]);
 
+		/* 提交当前BIO到请求队列，可能生成新的BIO并加入链表0 */
 		__submit_bio(bio);
 
 		/*
@@ -703,12 +765,20 @@ static void __submit_bio_noacct(struct bio *bio)
 
 		/*
 		 * Now assemble so we handle the lowest level first.
+		 *
+		 * 按优先级合并链表，确保处理顺序：
+		 * 1. 下层设备的BIO（lower）优先处理，避免上层依赖阻塞
+		 * 2. 同层设备的BIO（same）
+		 * 3. 之前未处理的BIO（链表1中的内容）
 		 */
 		bio_list_merge(&bio_list_on_stack[0], &lower);
 		bio_list_merge(&bio_list_on_stack[0], &same);
 		bio_list_merge(&bio_list_on_stack[0], &bio_list_on_stack[1]);
+
+	/* 继续处理链表中的下一个BIO */
 	} while ((bio = bio_list_pop(&bio_list_on_stack[0])));
 
+	/* 清除当前进程的bio_list，结束递归提交过程 */
 	current->bio_list = NULL;
 }
 
@@ -743,6 +813,12 @@ void submit_bio_noacct_nocheck(struct bio *bio, bool split)
 	 * usage with stacked devices could be a problem.  Use current->bio_list
 	 * to collect a list of requests submitted by a ->submit_bio method
 	 * while it is active, and then process them after it returned.
+	 *
+	 * 我们一次只希望一个 ->submit_bio 处于活动状态，
+	 * 否则堆栈设备的堆栈使用可能会出现问题。
+	 * 使用 current->bio_list 收集 ->submit_bio 方法处于活动状态时提交的请求列表，
+	 * 然后在返回后处理它们。
+	 *
 	 */
 	if (current->bio_list) {
 		if (split)
@@ -776,10 +852,13 @@ static blk_status_t blk_validate_atomic_write_op_size(struct request_queue *q,
  * resubmitted to lower level drivers by stacking block drivers.  All file
  * systems and other upper level users of the block layer should use
  * submit_bio() instead.
+ *
+ * 重新提交 bio 到块设备层进行 I/O
  */
 void submit_bio_noacct(struct bio *bio)
 {
 	struct block_device *bdev = bio->bi_bdev;
+	/* 获取设备请求队列 */
 	struct request_queue *q = bdev_get_queue(bdev);
 	blk_status_t status = BLK_STS_IOERR;
 
@@ -827,6 +906,7 @@ void submit_bio_noacct(struct bio *bio)
 		}
 	}
 
+	/* 校验是否支持 */
 	switch (bio_op(bio)) {
 	case REQ_OP_READ:
 		break;
@@ -892,6 +972,7 @@ end_io:
 }
 EXPORT_SYMBOL(submit_bio_noacct);
 
+/* 设置 bio 优先级 */
 static void bio_set_ioprio(struct bio *bio)
 {
 	/* Nobody set ioprio so far? Initialize it based on task's nice value */
@@ -912,16 +993,21 @@ static void bio_set_ioprio(struct bio *bio)
  * completion, is delivered asynchronously through the ->bi_end_io() callback
  * in @bio.  The bio must NOT be touched by the caller until ->bi_end_io() has
  * been called.
+ *
+ * 向块设备层提交bio以进行I/O
  */
 void submit_bio(struct bio *bio)
 {
 	if (bio_op(bio) == REQ_OP_READ) {
 		task_io_account_read(bio->bi_iter.bi_size);
+		/* 设置数据方向 */
 		count_vm_events(PGPGIN, bio_sectors(bio));
 	} else if (bio_op(bio) == REQ_OP_WRITE) {
+		/* 设置数据方向 */
 		count_vm_events(PGPGOUT, bio_sectors(bio));
 	}
 
+	/* 设置 bio 优先级 */
 	bio_set_ioprio(bio);
 	submit_bio_noacct(bio);
 }
@@ -1134,8 +1220,10 @@ void blk_start_plug_nr_ios(struct blk_plug *plug, unsigned short nr_ios)
 	 * If this is a nested plug, don't actually assign it.
 	 */
 	if (tsk->plug)
+		/* 有了 plug 就不再分配新的 plug */
 		return;
 
+	/* 初始化 */
 	plug->cur_ktime = 0;
 	rq_list_init(&plug->mq_list);
 	rq_list_init(&plug->cached_rqs);
@@ -1149,6 +1237,7 @@ void blk_start_plug_nr_ios(struct blk_plug *plug, unsigned short nr_ios)
 	 * Store ordering should not be needed here, since a potential
 	 * preempt will imply a full memory barrier
 	 */
+	/* 跟踪 plug */
 	tsk->plug = plug;
 }
 
@@ -1174,6 +1263,8 @@ void blk_start_plug_nr_ios(struct blk_plug *plug, unsigned short nr_ios)
  *   page belonging to that request that is currently residing in our private
  *   plug. By flushing the pending I/O when the process goes to sleep, we avoid
  *   this kind of deadlock.
+ *
+ * 初始化 blk_plug 并在 task_struct 中跟踪它
  */
 void blk_start_plug(struct blk_plug *plug)
 {
@@ -1250,6 +1341,8 @@ void __blk_flush_plug(struct blk_plug *plug, bool from_schedule)
  * must be paired with an initial call to blk_start_plug().  The intent
  * is to allow the block layer to optimize I/O submission.  See the
  * documentation for blk_start_plug() for more information.
+ *
+ * 标记一批提交的 I/O 的结束
  */
 void blk_finish_plug(struct blk_plug *plug)
 {

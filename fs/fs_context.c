@@ -264,6 +264,7 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 	struct fs_context *fc;
 	int ret = -ENOMEM;
 
+	/* 分配 fs_context 内存 */
 	fc = kzalloc_obj(struct fs_context, GFP_KERNEL_ACCOUNT);
 	if (!fc)
 		return ERR_PTR(-ENOMEM);
@@ -273,6 +274,7 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 	fc->sb_flags_mask = sb_flags_mask;
 	fc->fs_type	= get_filesystem(fs_type);
 	fc->cred	= get_current_cred();
+	/* 赋值当前进程的网络命名空间  */
 	fc->net_ns	= get_net(current->nsproxy->net_ns);
 	fc->log.prefix	= fs_type->name;
 
@@ -292,6 +294,8 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 		break;
 	}
 
+	/* 初始化  */
+	/* bdev bd_init_fs_context */
 	ret = fc->fs_type->init_fs_context(fc);
 	if (ret < 0)
 		goto err_fc;
@@ -306,6 +310,7 @@ err_fc:
 struct fs_context *fs_context_for_mount(struct file_system_type *fs_type,
 					unsigned int sb_flags)
 {
+	/* 分配 初始化 上下文 */
 	return alloc_fs_context(fs_type, NULL, sb_flags, 0,
 					FS_CONTEXT_FOR_MOUNT);
 }

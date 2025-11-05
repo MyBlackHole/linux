@@ -6,19 +6,31 @@
 
 #if defined(__KERNEL__) || !defined(__GLIBC__) || (__GLIBC__ < 2)
 
+/* 文件类型位 */
 #define S_IFMT  00170000
+/* 套接字 */
 #define S_IFSOCK 0140000
+/* 符号链接 */
 #define S_IFLNK	 0120000
+/* 普通文件 */
 #define S_IFREG  0100000
+/* 块文件 */
 #define S_IFBLK  0060000
+/* 目录 */
 #define S_IFDIR  0040000
+/* 字符文件 */
 #define S_IFCHR  0020000
+/* 管道文件 */
 #define S_IFIFO  0010000
+/* 权限位 */
 #define S_ISUID  0004000
+/* 粘滞位 */
 #define S_ISGID  0002000
+/* 设置用户ID位 */
 #define S_ISVTX  0001000
 
 #define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
+/* 是否常规文件 */
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
 #define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
@@ -211,6 +223,7 @@ struct statx {
 #define STATX_INO		0x00000100U	/* Want/got stx_ino */
 #define STATX_SIZE		0x00000200U	/* Want/got stx_size */
 #define STATX_BLOCKS		0x00000400U	/* Want/got stx_blocks */
+/* 普通统计结构中的内容 */
 #define STATX_BASIC_STATS	0x000007ffU	/* The stuff in the normal stat struct */
 #define STATX_BTIME		0x00000800U	/* Want/got stx_btime */
 #define STATX_MNT_ID		0x00001000U	/* Got stx_mnt_id */

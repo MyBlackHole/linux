@@ -91,30 +91,52 @@
  * SPARSEMEM_EXTREME with !SPARSEMEM_VMEMMAP).
  */
 enum pageflags {
+	/* 表示页面已上锁，不要访问 */
 	PG_locked,		/* Page is locked. Don't touch. */
+	/* 页面正在写回 */
 	PG_writeback,		/* Page is under writeback */
+	/* 用于RCU算法 */
 	PG_referenced,
+	/* 表示页面内容有效，当该页面上读操作完成后，设置该标志位 */
 	PG_uptodate,
+	/* 表示页面是脏页，内容被修改过 */
 	PG_dirty,
+	/* 表示该页面在lrc链表中 */
 	PG_lru,
+	/* 必须位于位 6 */
 	PG_head,		/* Must be in bit 6 */
+	/* 页面有等待者，请检查其等待队列。必须是位 #7，
+	 * 并且与“PG_locked”位于同一字节 */
 	PG_waiters,		/* Page has waiters, check its waitqueue. Must be bit #7 and in the same byte as "PG_locked" */
+	/* 表示该页面在活跃lru链表中 */
 	PG_active,
 	PG_workingset,
+	/* 页面的所有者使用，如果是pagecache页面，文件系统可能使用 */
 	PG_owner_priv_1,	/* Owner use. If pagecache, fs may use */
+	/* 页面的所有者使用，如果是pagecache页面，文件系统可能使用 */
 	PG_owner_2,		/* Owner use. If pagecache, fs may use */
 	PG_arch_1,
+	/* 表示该页面不可被换出，防止该page被交换到swap */
 	PG_reserved,
+	/* 如果page中的private成员非空，则需要设置该标志，
+	 * 如果是pagecache, 包含fs-private data */
 	PG_private,		/* If pagecache, has fs-private data */
+	/* 如果是页面缓存，则有 fs 辅助数据 */
 	PG_private_2,		/* If pagecache, has fs aux data */
+	/* 表示该page要被回收，决定要回收某个page后，需要设置该标志 */
 	PG_reclaim,		/* To be reclaimed asap */
+	/* 该page的后备存储器是swap/ram，
+	 * 一般匿名页才可以回写swap分区 */
 	PG_swapbacked,		/* Page is backed by RAM/swap */
+	/* 该page被锁住，不能回收，并会出现在LRU_UNEVICTABLE链表中，
+	 * 它包括的几种page：ramdisk或ramfs使用的页、shm_locked、mlock锁定的页 */
 	PG_unevictable,		/* Page is "unevictable"  */
 	PG_dropbehind,		/* drop pages on IO completion */
 #ifdef CONFIG_MMU
 	PG_mlocked,		/* Page is vma mlocked */
 #endif
 #ifdef CONFIG_MEMORY_FAILURE
+	/* 该page在vma中被锁定，一般是通过系统调用mlock()锁定了一段内存 */
 	PG_hwpoison,		/* hardware poisoned page. Don't touch */
 #endif
 #if defined(CONFIG_PAGE_IDLE_FLAG) && defined(CONFIG_64BIT)

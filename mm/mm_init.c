@@ -1802,6 +1802,8 @@ static void __init set_high_memory(void)
  * that arch_max_dma32_pfn has no pages. It is also assumed that a zone
  * starts where the previous one ended. For example, ZONE_DMA32 starts
  * at arch_max_dma_pfn.
+ *
+ * 初始化所有pg_data_t和zone数据
  */
 static void __init free_area_init(void)
 {

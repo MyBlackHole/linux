@@ -886,10 +886,14 @@ struct sk_buff {
 	union {
 		struct {
 			/* These two members must be first to match sk_buff_head. */
+			/* 这两个域是用来连接相关的skb的
+			 * (如果有分片的话, 可以通过它们将分片链接到一起),
+			 * sk_buff是双链表结构。*/
 			struct sk_buff		*next;
 			struct sk_buff		*prev;
 
 			union {
+				/* 记录接受或发送报文的网络设备 */
 				struct net_device	*dev;
 				/* Some protocols might use this space to store information,
 				 * while device pointer would be NULL.
@@ -898,14 +902,17 @@ struct sk_buff {
 				unsigned long		dev_scratch;
 			};
 		};
+		/* 红黑树节点 */
 		struct rb_node		rbnode; /* used in netem, ip4 defrag, and tcp stack */
 		struct list_head	list;
 		struct llist_node	ll_node;
 	};
 
+	/* 指向报文所属的套接字指针 */
 	struct sock		*sk;
 
 	union {
+		/* 记录接受或者传输报文的时间戳 */
 		ktime_t		tstamp;
 		u64		skb_mstamp_ns; /* earliest departure time */
 	};
@@ -914,11 +921,15 @@ struct sk_buff {
 	 * layer. Please put your private variables there. If you
 	 * want to keep them across layers you have to do a skb_clone()
 	 * first. This is owned by whoever has the skb queued ATM.
+	 *
+	 * 保存与协议相关的控制信息,
+	 * 每个协议可能独立使用这些信息
 	 */
 	char			cb[48] __aligned(8);
 
 	union {
 		struct {
+			/* 主要用于路由子系统, 保存路由相关的东西 */
 			unsigned long	_skb_refdst;
 			void		(*destructor)(struct sk_buff *skb);
 		};

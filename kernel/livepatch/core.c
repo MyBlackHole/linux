@@ -882,6 +882,7 @@ static int klp_init_object_loaded(struct klp_patch *patch,
 	}
 
 	klp_for_each_func(obj, func) {
+		/* 初始化每个函数 */
 		ret = klp_find_object_symbol(obj->name, func->old_name,
 					     func->old_sympos,
 					     (unsigned long *)&func->old_func);
@@ -937,6 +938,7 @@ static int klp_init_object(struct klp_patch *patch, struct klp_object *obj)
 	}
 
 	if (klp_is_object_loaded(obj))
+		/* 初始化对象 */
 		ret = klp_init_object_loaded(patch, obj);
 
 	return ret;
@@ -995,6 +997,7 @@ static int klp_init_patch(struct klp_patch *patch)
 	}
 
 	klp_for_each_object(patch, obj) {
+		/* 初始化每个对象 */
 		ret = klp_init_object(patch, obj);
 		if (ret)
 			return ret;
@@ -1072,6 +1075,7 @@ static int __klp_enable_patch(struct klp_patch *patch)
 			goto err;
 		}
 
+		/* 开搞 */
 		ret = klp_patch_object(obj);
 		if (ret) {
 			pr_warn("failed to patch object '%s'\n",
@@ -1149,6 +1153,9 @@ int klp_enable_patch(struct klp_patch *patch)
 
 	klp_init_patch_early(patch);
 
+	/* 初始化
+	 * 例如:
+	 * 处理根据 old_name 找到的函数地址 old_func*/
 	ret = klp_init_patch(patch);
 	if (ret)
 		goto err;

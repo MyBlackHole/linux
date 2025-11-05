@@ -803,6 +803,12 @@ static inline struct page *find_buddy_page_pfn(struct page *page,
 	if (buddy_pfn)
 		*buddy_pfn = __buddy_pfn;
 
+	/*
+	 * 1. 伙伴页是否处于一个空洞中
+	 * 2. 伙伴页是否在伙伴系统中
+	 * 3. page 和 buddy 页的 order 是否相同
+	 * 4. page 和 buddy 页是否在同一个 zone 中
+	 */
 	if (page_is_buddy(page, buddy, order))
 		return buddy;
 	return NULL;
@@ -1468,15 +1474,19 @@ unsigned int reclaim_clean_pages_from_list(struct zone *zone,
 #define ALLOC_MIN_RESERVE	 0x20 /* __GFP_HIGH set. Allow access to 50%
 				       * of the min watermark.
 				       */
+/* 检查正确的 cpuset */
 #define ALLOC_CPUSET		 0x40 /* check for correct cpuset */
+/* 允许来自 CMA 区域的分配 */
 #define ALLOC_CMA		 0x80 /* allow allocations from CMA areas */
 #ifdef CONFIG_ZONE_DMA32
+/* 避免混合页面块类型 */
 #define ALLOC_NOFRAGMENT	0x100 /* avoid mixing pageblock types */
 #else
 #define ALLOC_NOFRAGMENT	  0x0
 #endif
 #define ALLOC_HIGHATOMIC	0x200 /* Allows access to MIGRATE_HIGHATOMIC */
 #define ALLOC_TRYLOCK		0x400 /* Only use spin_trylock in allocation path */
+/*允许唤醒 kswapd，设置 __GFP_KSWAPD_RECLAIM*/
 #define ALLOC_KSWAPD		0x800 /* allow waking of kswapd, __GFP_KSWAPD_RECLAIM set */
 
 /* Flags that allow allocations below the min watermark. */

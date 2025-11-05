@@ -103,14 +103,25 @@ extern void queued_spin_lock_slowpath(struct qspinlock *lock, u32 val);
 /**
  * queued_spin_lock - acquire a queued spinlock
  * @lock: Pointer to queued spinlock structure
+ *
+ * 获取排队自旋锁
  */
 static __always_inline void queued_spin_lock(struct qspinlock *lock)
 {
 	int val = 0;
 
+	/* 尝试获取锁
+	 * 比较 lock->val 与0, 如果相等, 
+	 * 则尝试设置 lock->val 为 _Q_LOCKED_VAL
+	 * 如果设置成功, 返回旧值, 否则返回 val
+	 *
+	 * lock->val是联合体的所有成员的结合，这里判断如果三个部分都为0，
+	 * 即无人持锁，无人持有pending，无人在等待队列，
+	 * 那么直接获取锁即设置val的locked为1*/
 	if (likely(atomic_try_cmpxchg_acquire(&lock->val, &val, _Q_LOCKED_VAL)))
 		return;
 
+	/* 获取失败, 进入慢路径,进行等待 */
 	queued_spin_lock_slowpath(lock, val);
 }
 #endif

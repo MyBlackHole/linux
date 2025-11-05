@@ -3032,6 +3032,8 @@ check_if_stalefh_allowed(struct nfsd4_compoundargs *args)
 
 /*
  * COMPOUND call.
+ *
+ * nfs4 复合调用
  */
 static __be32
 nfsd4_proc_compound(struct svc_rqst *rqstp)
@@ -3144,6 +3146,7 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 
 		if (op->opdesc->op_get_currentstateid)
 			op->opdesc->op_get_currentstateid(cstate, &op->u);
+		/* 执行相应的操作 (例如删除 nfsd4_remove 等) */
 		op->status = op->opdesc->op_func(rqstp, cstate, &op->u);
 		trace_nfsd_compound_op_err(rqstp, op->opnum, op->status);
 
@@ -4067,6 +4070,7 @@ static const char *nfsd4_op_name(unsigned opnum)
 }
 
 static const struct svc_procedure nfsd_procedures4[2] = {
+	/* 空处理 */
 	[NFSPROC4_NULL] = {
 		.pc_func = nfsd4_proc_null,
 		.pc_decode = nfssvc_decode_voidarg,
@@ -4094,6 +4098,8 @@ static const struct svc_procedure nfsd_procedures4[2] = {
 
 static DEFINE_PER_CPU_ALIGNED(unsigned long,
 			      nfsd_count4[ARRAY_SIZE(nfsd_procedures4)]);
+
+/* nfs 4 rpc 服务服务 */
 const struct svc_version nfsd_version4 = {
 	.vs_vers		= 4,
 	.vs_nproc		= ARRAY_SIZE(nfsd_procedures4),

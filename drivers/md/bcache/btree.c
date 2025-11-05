@@ -199,6 +199,7 @@ void bch_btree_node_read_done(struct btree *b)
 		if (i != b->keys.set[0].data && !i->keys)
 			goto err;
 
+		/* (start, last)加入堆, 使用 start 排序 */
 		bch_btree_iter_push(iter, i->start, bset_bkey_last(i));
 
 		b->written += set_blocks(i, block_bytes(b->c->cache));
@@ -252,8 +253,11 @@ static void bch_btree_node_read(struct btree *b)
 
 	bio = bch_bbio_alloc(b->c);
 	bio->bi_iter.bi_size = KEY_SIZE(&b->key) << 9;
+	/*  io 结束回调 */
 	bio->bi_end_io	= btree_node_read_endio;
+	/* 设置私有数据,用于回调 */
 	bio->bi_private	= &cl;
+	/* 读操作 */
 	bio->bi_opf = REQ_OP_READ | REQ_META;
 
 	bch_bio_map(bio, b->keys.set[0].data);

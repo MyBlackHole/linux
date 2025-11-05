@@ -122,6 +122,9 @@ extern void ct_idle_exit(void);
  * context_tracking.state.
  *
  * No ordering, as we are sampling CPU-local information.
+ *
+ * 当前 CPU 是否处于长时间静止状态？
+ * 没有排序，因为我们正在采样 CPU 本地信息。
  */
 static __always_inline bool rcu_is_watching_curr_cpu(void)
 {

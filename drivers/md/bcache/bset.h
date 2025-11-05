@@ -183,6 +183,7 @@ struct bset_tree {
 	uint8_t			*prev;
 
 	/* The actual btree node, with pointers to each sorted set */
+	/* 实际的 b 树节点，包含指向每个已排序集合的指针 */
 	struct bset		*data;
 };
 
@@ -408,7 +409,7 @@ struct bset_stats {
 void bch_btree_keys_stats(struct btree_keys *b, struct bset_stats *state);
 
 /* Bkey utility code */
-
+/* 获取卒后一个 key */
 #define bset_bkey_last(i)	bkey_idx((struct bkey *) (i)->d, \
 					 (unsigned int)(i)->keys)
 

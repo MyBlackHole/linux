@@ -127,6 +127,7 @@ static void nvme_loop_execute_work(struct work_struct *work)
 	struct nvme_loop_iod *iod =
 		container_of(work, struct nvme_loop_iod, work);
 
+	/* nvmet_file_execute_rw */
 	iod->req.execute(&iod->req);
 }
 

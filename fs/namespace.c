@@ -77,7 +77,9 @@ static DEFINE_IDA(mnt_group_ida);
 #define MNT_UNIQUE_ID_OFFSET (1ULL << 31)
 static u64 mnt_id_ctr = MNT_UNIQUE_ID_OFFSET;
 
+/* 全局挂载链表 */
 static struct hlist_head *mount_hashtable __ro_after_init;
+/* 全局点挂载链表 */
 static struct hlist_head *mountpoint_hashtable __ro_after_init;
 static struct kmem_cache *mnt_cache __ro_after_init;
 static DECLARE_RWSEM(namespace_sem);
@@ -485,6 +487,8 @@ EXPORT_SYMBOL_GPL(mnt_get_write_access);
  * it, and makes sure that writes are allowed (mount is read-write, filesystem
  * is not frozen) before returning success.  When the write operation is
  * finished, mnt_drop_write() must be called.  This is effectively a refcount.
+ *
+ * 对挂载点获取写访问权限
  */
 int mnt_want_write(struct vfsmount *m)
 {
@@ -529,6 +533,9 @@ int mnt_get_write_access_file(struct file *file)
  * skips incrementing mnt_writers (since the open file already has a reference)
  * and instead only does the freeze protection and the check for emergency r/o
  * remounts.  This must be paired with mnt_drop_write_file.
+ *
+ * 获取文件挂载对应超级块写权限
+ *
  */
 int mnt_want_write_file(struct file *file)
 {
@@ -1175,6 +1182,7 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 	if (!fc->root)
 		return ERR_PTR(-EINVAL);
 
+	/* 分配挂载对象 */
 	mnt = alloc_vfsmnt(fc->source);
 	if (!mnt)
 		return ERR_PTR(-ENOMEM);
@@ -1193,6 +1201,7 @@ struct vfsmount *fc_mount(struct fs_context *fc)
 	int err = vfs_get_tree(fc);
 	if (!err) {
 		up_write(&fc->root->d_sb->s_umount);
+		/* 创建挂载 */
 		return vfs_create_mount(fc);
 	}
 	return ERR_PTR(err);
@@ -1219,6 +1228,7 @@ struct vfsmount *vfs_kern_mount(struct file_system_type *type,
 	if (!type)
 		return ERR_PTR(-EINVAL);
 
+	/* 初始化挂载上下文 */
 	fc = fs_context_for_mount(type, flags);
 	if (IS_ERR(fc))
 		return ERR_CAST(fc);
@@ -1228,6 +1238,7 @@ struct vfsmount *vfs_kern_mount(struct file_system_type *type,
 	if (!ret)
 		ret = parse_monolithic_mount_data(fc, data);
 	if (!ret)
+		/* 开始挂载 */
 		mnt = fc_mount(fc);
 	else
 		mnt = ERR_PTR(ret);
@@ -3783,6 +3794,8 @@ static int do_new_mount_fc(struct fs_context *fc, const struct path *mountpoint,
 /*
  * create a new mount for userspace and request it to be added into the
  * namespace's tree
+ *
+ * 为用户空间创建一个新的挂载并请求将其添加到命名空间的树
  */
 static int do_new_mount(const struct path *path, const char *fstype,
 			int sb_flags, int mnt_flags,
@@ -3796,6 +3809,7 @@ static int do_new_mount(const struct path *path, const char *fstype,
 	if (!fstype)
 		return -EINVAL;
 
+	/* 查找已注册 file_system_type */
 	type = get_fs_type(fstype);
 	if (!type)
 		return -ENODEV;
@@ -3831,6 +3845,7 @@ static int do_new_mount(const struct path *path, const char *fstype,
 	if (!err && !mount_capable(fc))
 		err = -EPERM;
 	if (!err)
+		/* 是他 */
 		err = do_new_mount_fc(fc, path, mnt_flags);
 
 	put_fs_context(fc);
@@ -4093,6 +4108,7 @@ int path_mount(const char *dev_name, const struct path *path,
 	if (flags & MS_NOUSER)
 		return -EINVAL;
 
+	/* 验证挂载 */
 	ret = security_sb_mount(dev_name, path, type_page, flags, data_page);
 	if (ret)
 		return ret;
@@ -4151,6 +4167,7 @@ int path_mount(const char *dev_name, const struct path *path,
 	if (flags & MS_MOVE)
 		return do_move_mount_old(path, dev_name);
 
+	/* 进入挂载流程 */
 	return do_new_mount(path, type_page, sb_flags, mnt_flags, dev_name,
 			    data_page);
 }
@@ -4515,6 +4532,7 @@ SYSCALL_DEFINE3(fsmount, int, fs_fd, unsigned int, flags,
 		return FD_ADD((flags & FSMOUNT_CLOEXEC) ? O_CLOEXEC : 0,
 			      open_new_namespace(&new_path, MOUNT_COPY_NEW));
 
+	/* 分配用户命名空间 */
 	ns = alloc_mnt_ns(current->nsproxy->mnt_ns->user_ns, true);
 	if (IS_ERR(ns))
 		return PTR_ERR(ns);
@@ -6184,10 +6202,12 @@ static void __init init_mount_tree(void)
 	if (IS_ERR(nullfs_mnt))
 		panic("VFS: Failed to create nullfs");
 
+	/* 挂载根文件系统 */
 	mnt = vfs_kern_mount(&rootfs_fs_type, 0, "rootfs", initramfs_options);
 	if (IS_ERR(mnt))
 		panic("Can't create rootfs");
 
+	/* 获取 mount */
 	VFS_WARN_ON_ONCE(real_mount(nullfs_mnt)->mnt_id != 1);
 	VFS_WARN_ON_ONCE(real_mount(mnt)->mnt_id != 2);
 
@@ -6230,18 +6250,22 @@ static void __init init_mount_tree(void)
 	ns_tree_add(&init_mnt_ns);
 }
 
+/* 挂载初始化 */
 void __init mnt_init(void)
 {
 	int err;
 
+	/* 分配挂载缓存 */
 	mnt_cache = kmem_cache_create("mnt_cache", sizeof(struct mount),
 			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT, NULL);
 
+	/* 分配全局挂载链表 */
 	mount_hashtable = alloc_large_system_hash("Mount-cache",
 				sizeof(struct hlist_head),
 				mhash_entries, 19,
 				HASH_ZERO,
 				&m_hash_shift, &m_hash_mask, 0, 0);
+	/* 分配全局挂载点链表 */
 	mountpoint_hashtable = alloc_large_system_hash("Mountpoint-cache",
 				sizeof(struct hlist_head),
 				mphash_entries, 19,
@@ -6253,10 +6277,12 @@ void __init mnt_init(void)
 
 	kernfs_init();
 
+	/* 处理 sys 初始化与设置一些全局变量 */
 	err = sysfs_init();
 	if (err)
 		printk(KERN_WARNING "%s: sysfs_init error: %d\n",
 			__func__, err);
+	/* 初始化全局 fs_kobj /sys/fs */
 	fs_kobj = kobject_create_and_add("fs", NULL);
 	if (!fs_kobj)
 		printk(KERN_WARNING "%s: kobj create error\n", __func__);
@@ -6275,6 +6301,7 @@ void put_mnt_ns(struct mnt_namespace *ns)
 	umount_tree(ns->root, 0);
 }
 
+/* 内核文件系统挂载函数 */
 struct vfsmount *kern_mount(struct file_system_type *type)
 {
 	struct vfsmount *mnt;

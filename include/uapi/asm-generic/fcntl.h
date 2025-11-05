@@ -81,6 +81,7 @@
 #endif
 
 #ifndef O_PATH
+/* 非真正打开文件 */
 #define O_PATH		010000000
 #endif
 

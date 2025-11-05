@@ -1240,6 +1240,8 @@ static int bio_iov_iter_align_down(struct bio *bio, struct iov_iter *iter,
  * fit into the bio, or are requested in @iter, whatever is smaller. If
  * MM encounters an error pinning the requested pages, it stops. Error
  * is returned only if 0 pages could be pinned.
+ *
+ * 将用户或内核页面添加到 bio
  */
 int bio_iov_iter_get_pages(struct bio *bio, struct iov_iter *iter,
 			   unsigned len_align_mask)
@@ -1508,6 +1510,8 @@ EXPORT_SYMBOL_GPL(bio_await);
  * WARNING: Unlike to how submit_bio() is usually used, this function does not
  * result in bio reference to be consumed. The caller must drop the reference
  * on his own.
+ *
+ * 提交 bio，然后等待完成
  */
 int submit_bio_wait(struct bio *bio)
 {
@@ -1893,6 +1897,8 @@ int biovec_init_pool(mempool_t *pool, int pool_entries)
  *
  * May be called on a zeroed but uninitialized bioset (i.e. allocated with
  * kzalloc()).
+ *
+ * 退出一个 bioset_init() 初始化的 bioset
  */
 void bioset_exit(struct bio_set *bs)
 {
@@ -1901,6 +1907,7 @@ void bioset_exit(struct bio_set *bs)
 		destroy_workqueue(bs->rescue_workqueue);
 	bs->rescue_workqueue = NULL;
 
+	/* 释放内存池 */
 	mempool_exit(&bs->bio_pool);
 	mempool_exit(&bs->bvec_pool);
 
@@ -1953,6 +1960,7 @@ int bioset_init(struct bio_set *bs,
 	if (mempool_init_slab_pool(&bs->bio_pool, pool_size, bs->bio_slab))
 		goto bad;
 
+	/* 创建内存池 */
 	if ((flags & BIOSET_NEED_BVECS) &&
 	    biovec_init_pool(&bs->bvec_pool, pool_size))
 		goto bad;

@@ -111,6 +111,7 @@ extern void free_task(struct task_struct *tsk);
 /* sched_exec is called by processes performing an exec */
 extern void sched_exec(void);
 
+/* 获取 task_struct 的引用计数，并返回 task_struct */
 static inline struct task_struct *get_task_struct(struct task_struct *t)
 {
 	refcount_inc(&t->usage);
@@ -125,6 +126,7 @@ static inline struct task_struct *tryget_task_struct(struct task_struct *t)
 extern void __put_task_struct(struct task_struct *t);
 extern void __put_task_struct_rcu_cb(struct rcu_head *rhp);
 
+/* 修改 task_struct 的引用计数，并释放 task_struct */
 static inline void put_task_struct(struct task_struct *t)
 {
 	if (!refcount_dec_and_test(&t->usage))

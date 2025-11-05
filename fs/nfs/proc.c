@@ -104,6 +104,7 @@ static int
 nfs_proc_getattr(struct nfs_server *server, struct nfs_fh *fhandle,
 		struct nfs_fattr *fattr, struct inode *inode)
 {
+    /* 构建 rpc 消息结构  */
 	struct rpc_message msg = {
 		.rpc_proc	= &nfs_procedures[NFSPROC_GETATTR],
 		.rpc_argp	= fhandle,
@@ -118,6 +119,7 @@ nfs_proc_getattr(struct nfs_server *server, struct nfs_fh *fhandle,
 
 	dprintk("NFS call  getattr\n");
 	nfs_fattr_init(fattr);
+    /* 发起 rpc 调用 */
 	status = rpc_call_sync(server->client, &msg, task_flags);
 	dprintk("NFS reply getattr: %d\n", status);
 	return status;
@@ -698,6 +700,7 @@ static int nfs_have_delegation(struct inode *inode, fmode_t type, int flags)
 	return 0;
 }
 
+/* 索引目录操作集 */
 static void nfs_return_delegation(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
@@ -720,12 +723,14 @@ static const struct inode_operations nfs_dir_inode_operations = {
 	.setattr	= nfs_setattr,
 };
 
+/* 索引文件操作集 */
 static const struct inode_operations nfs_file_inode_operations = {
 	.permission	= nfs_permission,
 	.getattr	= nfs_getattr,
 	.setattr	= nfs_setattr,
 };
 
+/* nfs v2 rpc 服务函数集 */
 const struct nfs_rpc_ops nfs_v2_clientops = {
 	.version	= 2,		       /* protocol version */
 	.dentry_ops	= &nfs_dentry_operations,

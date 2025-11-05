@@ -23,7 +23,9 @@ struct ipc_perm
 
 /* resource get request flags */
 #define IPC_CREAT  00001000   /* create if key is nonexistent */
+/* key 存在时，调用失败，error EEXIST */
 #define IPC_EXCL   00002000   /* fail if key exists */
+/* 如果没有满足条件的消息，调用立即返回, error ENOMSG */
 #define IPC_NOWAIT 00004000   /* return error on wait */
 
 /* these fields are used by the DIPC package so the kernel as standard

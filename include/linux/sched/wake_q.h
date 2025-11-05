@@ -94,8 +94,13 @@ void raw_spin_unlock_irqrestore_wake(raw_spinlock_t *lock, unsigned long flags,
 	__releases(lock)
 {
 	guard(preempt)();
+
+	/* 
+	 * 释放等待锁
+	 */
 	raw_spin_unlock_irqrestore(lock, flags);
 	if (wake_q) {
+		/* 确保我们在调用 schedule 之前完成唤醒 */
 		wake_up_q(wake_q);
 		wake_q_init(wake_q);
 	}

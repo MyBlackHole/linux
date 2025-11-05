@@ -1003,6 +1003,8 @@ void iscsit_stop_nopin_timer(struct iscsit_conn *conn)
 	spin_unlock_bh(&conn->nopin_timer_lock);
 }
 
+/* 登陆超时处理函数
+ * 由定时器发起执行 */
 void iscsit_login_timeout(struct timer_list *t)
 {
 	struct iscsit_conn *conn = timer_container_of(conn, t, login_timer);
@@ -1016,8 +1018,10 @@ void iscsit_login_timeout(struct timer_list *t)
 	if (conn->login_kworker) {
 		pr_debug("Sending SIGINT to conn->login_kworker %s/%d\n",
 			 conn->login_kworker->comm, conn->login_kworker->pid);
+		/* 给登陆 worker 进程发信号 */
 		send_sig(SIGINT, conn->login_kworker, 1);
 	} else {
+		/* 唤醒 login_work */
 		schedule_delayed_work(&conn->login_work, 0);
 	}
 	spin_unlock_bh(&conn->login_timer_lock);
@@ -1028,6 +1032,7 @@ void iscsit_start_login_timer(struct iscsit_conn *conn, struct task_struct *kthr
 	pr_debug("Login timer started\n");
 
 	conn->login_kworker = kthr;
+	/* 重设定时器 */
 	mod_timer(&conn->login_timer, jiffies + TA_LOGIN_TIMEOUT * HZ);
 }
 
@@ -1195,6 +1200,8 @@ send_datacrc:
  *
  *      Parameters:     iSCSI Connection, Status Class, Status Detail.
  *      Returns:        0 on success, -1 on error.
+ *
+ *      发动登陆响应
  */
 int iscsit_tx_login_rsp(struct iscsit_conn *conn, u8 status_class, u8 status_detail)
 {

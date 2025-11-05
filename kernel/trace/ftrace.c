@@ -6666,6 +6666,8 @@ unlock:
  * This can allocate memory which must be freed before @ops can be freed,
  * either by removing each filtered addr or by using
  * ftrace_free_filter(@ops).
+ *
+ * 设置一个函数，通过地址在 ftrace 中进行过滤
  */
 int ftrace_set_filter_ip(struct ftrace_ops *ops, unsigned long ip,
 			 int remove, int reset)

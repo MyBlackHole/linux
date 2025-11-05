@@ -1176,6 +1176,7 @@ struct inode *new_inode(struct super_block *sb)
 {
 	struct inode *inode;
 
+	/* 分配 inode */
 	inode = alloc_inode(sb);
 	if (inode)
 		inode_sb_list_add(inode);

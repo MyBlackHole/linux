@@ -426,8 +426,11 @@ struct slub_percpu_sheaves {
 
 /*
  * The slab lists for all objects.
+ *
+ * 所有对象的平板列表。
  */
 struct kmem_cache_node {
+	/* 自旋锁 */
 	spinlock_t list_lock;
 	unsigned long nr_partial;
 	struct list_head partial;

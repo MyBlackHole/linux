@@ -26,6 +26,7 @@
 
 #include "target_core_internal.h"
 
+/* 全局后端列表 */
 static LIST_HEAD(backend_list);
 static DEFINE_MUTEX(backend_mutex);
 

@@ -3,6 +3,8 @@
  * @css: target css
  *
  * The caller must already have a reference.
+ *
+ * 记录引用
  */
 CGROUP_REF_FN_ATTRS
 void css_get(struct cgroup_subsys_state *css)
@@ -37,6 +39,8 @@ CGROUP_REF_EXPORT(css_get_many)
  * but doesn't have to be holding a reference on it - IOW, RCU protected
  * access is good enough for this function.  Returns %true if a reference
  * count was successfully obtained; %false otherwise.
+ *
+ * 尝试获取对指定 css 的引用
  */
 CGROUP_REF_FN_ATTRS
 bool css_tryget(struct cgroup_subsys_state *css)
@@ -71,6 +75,8 @@ CGROUP_REF_EXPORT(css_tryget_online)
  * @css: target css
  *
  * Put a reference obtained via css_get() and css_tryget_online().
+ *
+ * 取消对css的引用计数，如果引用计数为0，则释放css资源。
  */
 CGROUP_REF_FN_ATTRS
 void css_put(struct cgroup_subsys_state *css)

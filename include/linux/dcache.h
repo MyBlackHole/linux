@@ -92,23 +92,32 @@ struct completion_list;
 
 struct dentry {
 	/* RCU lookup touched fields */
+	/* 状态位 */
 	unsigned int d_flags;		/* protected by d_lock */
+	/* 自旋锁 */
 	seqcount_spinlock_t d_seq;	/* per dentry seqlock */
+	/* 哈希链表节点 */
 	struct hlist_bl_node d_hash;	/* lookup hash list */
+	/* 父目录指针 */
 	struct dentry *d_parent;	/* parent directory */
 	union {
 	struct qstr __d_name;		/* for use ONLY in fs/dcache.c */
+	/* 文件或者目录名 */
 	const struct qstr d_name;
 	};
+	/* 关联的 inode */
 	struct inode *d_inode;		/* Where the name belongs to - NULL is
 					 * negative */
+	/* 短文件名 */
 	union shortname_store d_shortname;
 	/* --- cacheline 1 boundary (64 bytes) was 32 bytes ago --- */
 
 	/* Ref lookup also touches following */
 	const struct dentry_operations *d_op;
+	/* 关联的超级块 */
 	struct super_block *d_sb;	/* The root of the dentry tree */
 	unsigned long d_time;		/* used by d_revalidate */
+	/* 私有数据 */
 	void *d_fsdata;			/* fs-specific data */
 	/* --- cacheline 2 boundary (128 bytes) --- */
 	struct lockref d_lockref;	/* per-dentry lock and refcount
@@ -120,7 +129,9 @@ struct dentry {
 		struct list_head d_lru;		/* LRU list */
 		wait_queue_head_t *d_wait;	/* in-lookup ones only */
 	};
+	/* 父目录中子目录项对象链表的指针 */
 	struct hlist_node d_sib;	/* child of parent list */
+	/* 子目录项链表 */
 	struct hlist_head d_children;	/* our children */
 	/*
 	 * the following members can share memory - their uses are
@@ -161,19 +172,53 @@ enum d_real_type {
 };
 
 struct dentry_operations {
+	/* VFS用于检查在dcache里找到的dentry是否有效
+	 * 通常设置为NULL，则只要在dcache找到即认为是有效的
+	 * 但对网络文件系统如NFS来说，
+	 * dentry可能在一段时间之后就会失效，
+	 * 因此需要实现该函数用于检查是否有效
+	 * 如果有效，函数需要返回一个正数 */
 	int (*d_revalidate)(struct inode *, const struct qstr *,
 			    struct dentry *, unsigned int);
+	/* 用于检查'jumped'的dentry，
+	 * 即那些不是通过lookup获取的dentry，
+	 * 如'', '.'或者'..'
+	 * 这种场景只需要检查dentry对应inode是否OK即可
+	 * 该函数不会在rcu-walk模式下调用，所以可以放心的使用inode */
 	int (*d_weak_revalidate)(struct dentry *, unsigned int);
+	/* 用于VFS将dentry放入HASH列表
+	 * 并不清楚HASH表用来做啥，
+	 * 通常不需要设置它，
+	 * 使用VFS默认的即可 */
 	int (*d_hash)(const struct dentry *, struct qstr *);
+	/* 用于比较dentry name和指定的name。
+	 * 该函数必须是可重入的，
+	 * 即每次的返回结果一样 */
 	int (*d_compare)(const struct dentry *,
 			unsigned int, const char *, const struct qstr *);
+	/* 用于引用计数递减为0时调用，
+	 * 返回1则dcache立即删除dentry，
+	 * 返回0则继续缓存该dentry 
+	 * 默认为NULL，则总是将dentry进行缓存
+	 * 该函数必须是可重入的，即每次的返回结果一样 */
 	int (*d_delete)(const struct dentry *);
 	int (*d_init)(struct dentry *);
+	/* 用于释放dentry资源 */
 	void (*d_release)(struct dentry *);
 	void (*d_prune)(struct dentry *);
+	/* 用于释放dentry对应inode引用计数。该函数在释放dentry之前调用
+	 * 如果为NULL，则VFS默认调用iput() */
 	void (*d_iput)(struct dentry *, struct inode *);
+	/* 用于生成dentry的pathname，主要是一些伪文件系统（sockfs, pipefs等）用于延迟生成pathname
+	 * 一般文件系统不实现该函数，
+	 * 因为其dentry存在于dcache的hash表里（通过pathname做hash），
+	 * 所以并不希望pathname变化 */
 	char *(*d_dname)(struct dentry *, char *, int);
+	/* 可选函数，用于穿越到一个自动挂载的dentry 
+	 * 它会创建一个新的vfsmount记录，并将其返回，
+	 * 成功后调用者将根据vfsmount去尝试mount它到挂载点 */
 	struct vfsmount *(*d_automount)(struct path *);
+	/* 可选函数，用于管理从dentry进行transition */
 	int (*d_manage)(const struct path *, bool);
 	struct dentry *(*d_real)(struct dentry *, enum d_real_type type);
 	bool (*d_unalias_trylock)(const struct dentry *);
@@ -273,6 +318,7 @@ extern void shrink_dcache_parent(struct dentry *);
 extern void d_invalidate(struct dentry *);
 
 /* only used at mount-time */
+/* 仅在挂载时使用 */
 extern struct dentry * d_make_root(struct inode *);
 
 extern void d_mark_tmpfile(struct file *, struct inode *);
@@ -293,7 +339,7 @@ extern int path_has_submounts(const struct path *);
  * This adds the entry to the hash queues.
  */
 extern void d_rehash(struct dentry *);
- 
+
 extern void d_add(struct dentry *, struct inode *);
 
 /* used for rename() and baskets */
@@ -318,6 +364,7 @@ char *dynamic_dname(char *, int, const char *, ...);
 
 extern char *__d_path(const struct path *, const struct path *, char *, int);
 extern char *d_absolute_path(const struct path *, char *, int);
+/* 获取 path 的绝对路径(是返回值，不是第二个 char *) */
 extern char *d_path(const struct path *, char *, int);
 extern char *dentry_path_raw(const struct dentry *, char *, int);
 extern char *dentry_path(const struct dentry *, char *, int);

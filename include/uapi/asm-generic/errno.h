@@ -5,6 +5,7 @@
 #include <asm-generic/errno-base.h>
 
 #define	EDEADLK		35	/* Resource deadlock would occur */
+/* 文件长度超出范围 */
 #define	ENAMETOOLONG	36	/* File name too long */
 #define	ENOLCK		37	/* No record locks available */
 
@@ -20,7 +21,9 @@
 #define	ENOTEMPTY	39	/* Directory not empty */
 #define	ELOOP		40	/* Too many symbolic links encountered */
 #define	EWOULDBLOCK	EAGAIN	/* Operation would block */
+/* IPC_NOWAIT 没有消息时，返回此错误 */
 #define	ENOMSG		42	/* No message of desired type */
+/* SHM IPC 共享内存段不存在 */
 #define	EIDRM		43	/* Identifier removed */
 #define	ECHRNG		44	/* Channel number out of range */
 #define	EL2NSYNC	45	/* Level 2 not synchronized */
@@ -56,6 +59,7 @@
 #define	EDOTDOT		73	/* RFS specific error */
 #define	EBADMSG		74	/* Not a data message */
 #define	EFSBADCRC	EBADMSG	/* Bad CRC detected */
+/* 值太大 */
 #define	EOVERFLOW	75	/* Value too large for defined data type */
 #define	ENOTUNIQ	76	/* Name not unique on network */
 #define	EBADFD		77	/* File descriptor in bad state */
@@ -69,6 +73,7 @@
 #define	ERESTART	85	/* Interrupted system call should be restarted */
 #define	ESTRPIPE	86	/* Streams pipe error */
 #define	EUSERS		87	/* Too many users */
+/* 非套接字上的套接字操作 */
 #define	ENOTSOCK	88	/* Socket operation on non-socket */
 #define	EDESTADDRREQ	89	/* Destination address required */
 #define	EMSGSIZE	90	/* Message too long */
@@ -97,6 +102,7 @@
 #define	EHOSTUNREACH	113	/* No route to host */
 #define	EALREADY	114	/* Operation already in progress */
 #define	EINPROGRESS	115	/* Operation now in progress */
+/* 过时的文件句柄 */
 #define	ESTALE		116	/* Stale file handle */
 #define	EUCLEAN		117	/* Structure needs cleaning */
 #define	EFSCORRUPTED	EUCLEAN	/* Filesystem is corrupted */
@@ -104,6 +110,7 @@
 #define	ENAVAIL		119	/* No XENIX semaphores available */
 #define	EISNAM		120	/* Is a named type file */
 #define	EREMOTEIO	121	/* Remote I/O error */
+/* 磁盘已满或超过配额 */
 #define	EDQUOT		122	/* Quota exceeded */
 
 #define	ENOMEDIUM	123	/* No medium found */
@@ -115,6 +122,7 @@
 #define	EKEYREJECTED	129	/* Key was rejected by service */
 
 /* for robust mutexes */
+/* 代表锁的持有者已死 */
 #define	EOWNERDEAD	130	/* Owner died */
 #define	ENOTRECOVERABLE	131	/* State not recoverable */
 

@@ -180,6 +180,8 @@ struct memcg_cgwb_frn {
  * cgroup. The bucket can be reparented in one piece when the cgroup
  * is destroyed, without having to round up the individual references
  * of all live memory objects in the wild.
+ *
+ * 用于存储任意字节大小对象(内存控制器子系统)。
  */
 struct obj_cgroup {
 	struct percpu_ref refcnt;
@@ -199,12 +201,14 @@ struct obj_cgroup {
  * to help the administrator determine what knobs to tune.
  */
 struct mem_cgroup {
+	/* 控制组子系统状态 */
 	struct cgroup_subsys_state css;
 
 	/* Private memcg ID. Used to ID objects that outlive the cgroup */
 	struct mem_cgroup_private_id id;
 
 	/* Accounted resources */
+	/* 内存引用计数器 */
 	struct page_counter memory;		/* Both v1 & v2 */
 
 	union {
@@ -339,6 +343,7 @@ enum page_memcg_data_flags {
 	/* page->memcg_data is a pointer to an slabobj_ext vector */
 	MEMCG_DATA_OBJEXTS = (1UL << 0),
 	/* page has been accounted as a non-slab kernel page */
+	/* 该页面已被视为非 slab 内核页面 */
 	MEMCG_DATA_KMEM = (1UL << 1),
 	/* the next bit after the last actual flag */
 	__NR_MEMCG_DATA_FLAGS  = (1UL << 2),
@@ -505,6 +510,8 @@ retry:
  * Checks if the folio has MemcgKmem flag set. The caller must ensure
  * that the folio has an associated memory cgroup. It's not safe to call
  * this function against some types of folios, e.g. slab folios.
+ *
+ * 检查 folio 是否设置了 memcg_kmem 标志。
  */
 static inline bool folio_memcg_kmem(struct folio *folio)
 {
@@ -518,6 +525,7 @@ static inline bool PageMemcgKmem(struct page *page)
 	return folio_memcg_kmem(page_folio(page));
 }
 
+/* 是否根内存控制器 */
 static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
 {
 	return (memcg == root_mem_cgroup);

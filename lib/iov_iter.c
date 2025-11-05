@@ -617,6 +617,7 @@ static void iov_iter_folioq_revert(struct iov_iter *i, size_t unroll)
 	i->folioq = folioq;
 }
 
+/* 把未对齐大小 unroll 修改到 iov_offset 上 */
 void iov_iter_revert(struct iov_iter *i, size_t unroll)
 {
 	if (!unroll)

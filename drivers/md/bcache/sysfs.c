@@ -54,7 +54,9 @@ static const char * const error_actions[] = {
 	NULL
 };
 
+/* 后端设备附加 */
 write_attribute(attach);
+/* 后端设备移除 */
 write_attribute(detach);
 write_attribute(unregister);
 write_attribute(stop);
@@ -296,6 +298,7 @@ STORE(__cached_dev)
 	struct kobj_uevent_env *env;
 
 	/* no user space access if system is rebooting */
+	/* 如果系统正在重启，则不允许用户空间访问 */
 	if (bcache_is_reboot)
 		return -EBUSY;
 
@@ -430,6 +433,7 @@ STORE(__cached_dev)
 	if (attr == &sysfs_attach) {
 		uint8_t		set_uuid[16];
 
+		/* 解析缓存设备 uuid */
 		if (bch_parse_uuid(buf, set_uuid) < 16)
 			return -EINVAL;
 

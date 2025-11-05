@@ -46,6 +46,7 @@
 #define DIV_ROUND_UP_POW2(n, d) \
 	((n) / (d) + !!((n) & ((d) - 1)))
 
+/* 向上取整 */
 #define DIV_ROUND_UP __KERNEL_DIV_ROUND_UP
 
 #define DIV_ROUND_DOWN_ULL(ll, d) \

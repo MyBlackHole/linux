@@ -448,13 +448,16 @@ void __init bdev_cache_init(void)
 {
 	int err;
 
+	/* 创建 bdev 缓存 */
 	bdev_cachep = kmem_cache_create("bdev_cache", sizeof(struct bdev_inode),
 			0, (SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT|
 				SLAB_ACCOUNT|SLAB_PANIC),
 			init_once);
+	/* 注册 bdev 文件系统 */
 	err = register_filesystem(&bd_type);
 	if (err)
 		panic("Cannot register bdev pseudo-fs");
+	/* 挂载 bdev 文件系统 */
 	blockdev_mnt = kern_mount(&bd_type);
 	if (IS_ERR(blockdev_mnt))
 		panic("Cannot create bdev pseudo-fs");
@@ -1083,6 +1086,7 @@ struct file *bdev_file_open_by_path(const char *path, blk_mode_t mode,
 	dev_t dev;
 	int error;
 
+	/* 通过 path 查找填充 dev */
 	error = lookup_bdev(path, &dev);
 	if (error)
 		return ERR_PTR(error);
@@ -1200,6 +1204,8 @@ EXPORT_SYMBOL(bdev_fput);
  *
  * Context: May sleep.
  * Return: 0 if succeeded, negative errno otherwise.
+ *
+ * 查询 block device 的 dev_t 并返回。
  */
 int lookup_bdev(const char *pathname, dev_t *dev)
 {

@@ -705,8 +705,11 @@ struct iscsi_login {
 	u32 rsp_length;
 	u16 cid;
 	u16 tsih;
+	/* 请求头 */
 	char req[ISCSI_HDR_LEN];
+	/* 响应头 */
 	char rsp[ISCSI_HDR_LEN];
+	/* 有效数据存放位置 */
 	char *req_buf;
 	char *rsp_buf;
 	struct iscsit_conn *conn;
@@ -792,6 +795,7 @@ struct iscsi_np {
 	enum np_flags_table	np_flags;
 	spinlock_t		np_thread_lock;
 	struct completion	np_restart_comp;
+	/* 监听的 sock */
 	struct socket		*np_socket;
 	struct sockaddr_storage np_sockaddr;
 	struct task_struct	*np_thread;
@@ -890,7 +894,9 @@ struct iscsit_global {
 	spinlock_t		ts_bitmap_lock;
 	cpumask_var_t		allowed_cpumask;
 	/* Used for iSCSI discovery session authentication */
+	/* 发现会话校验域 */
 	struct iscsi_node_acl	discovery_acl;
+	/* 入口组 */
 	struct iscsi_portal_group	*discovery_tpg;
 };
 

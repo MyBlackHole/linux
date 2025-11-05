@@ -463,6 +463,8 @@ static unsigned long node_dirty_limit(struct pglist_data *pgdat)
  *
  * Return: %true when the dirty pages in @pgdat are within the node's
  * dirty limit, %false if the limit is exceeded.
+ *
+ * 判断节点是否在其脏限值内
  */
 bool node_dirty_ok(struct pglist_data *pgdat)
 {
@@ -2557,6 +2559,7 @@ done:
 }
 EXPORT_SYMBOL_GPL(writeback_iter);
 
+/* 开始了吗，开始写了吗 */
 int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
 {
 	int ret;
