@@ -1749,6 +1749,93 @@ bool sync_lazytime(struct inode *inode)
  * The caller is also responsible for setting the I_SYNC flag beforehand and
  * calling inode_sync_complete() to clear it afterwards.
  */
+//
+// 脏页回写执行流图：
+//
+//   触发源:
+//   ┌────────────┐  ┌──────────┐  ┌────────────┐  ┌──────────┐
+//   │flusher线程 │  │脏页超限   │  │ 内存压力   │  │msync/    │
+//   │周期性唤醒  │  │dirty_ratio│  │ kswapd     │  │fsync     │
+//   └─────┬──────┘  └────┬──────┘  └─────┬──────┘  └────┬─────┘
+//         └──────────────┴───────────────┴──────────────┘
+//                               │
+//                               ▼
+//   ┌──────────────────────────────────────────────────────────┐
+//   │ __writeback_single_inode()     ←── 当前函数               │
+//   │                                                          │
+//   │  1. do_writepages(mapping, wbc)                          │
+//   │       │                                                  │
+//   │       └── mapping->a_ops->writepages()                   │
+//   │             │                                            │
+//   │             ├── writeback_iter() 遍历 PAGECACHE_TAG_DIRTY│
+//   │             ├── 对每个脏 folio:                           │
+//   │             │    清除脏标志 → 提交 bio → 块层 → 磁盘     │
+//   │             └── 文件系统特定逻辑 (delalloc, 合并等)       │
+//   │                                                          │
+//   │  2. filemap_fdatawait()    (仅 WB_SYNC_ALL 模式)         │
+//   │      等待所有已提交 I/O 完成                              │
+//   │                                                          │
+//   │  3. 清除/重检 I_DIRTY_PAGES                              │
+//   │      smp_mb() + 检查 PAGECACHE_TAG_DIRTY                │
+//   │      → 若有新脏页则重新标记 I_DIRTY_PAGES                │
+//   │                                                          │
+//   │  4. 写 inode 元数据 (除非 dirty 仅为 I_DIRTY_PAGES)      │
+//   └──────────────────────────────────────────────────────────┘
+//
+// 从用户写入磁盘的完整时序图：
+//
+//   用户进程                   内核缺页处理              flusher 线程              磁盘
+//     │                          │                        │                      │
+//     │  ① 首次写 mmap 地址       │                        │                      │
+//     │ ──────────────────────►  │                        │                      │
+//     │                          │  ② filemap_page_mkwrite()                     │
+//     │                          │     ├─ file_update_time()                     │
+//     │                          │     ├─ folio_mark_dirty()   ←── 仅标记脏       │
+//     │                          │     └─ folio_wait_stable()                    │
+//     │                          │  ③ fault_dirty_shared_page()                 │
+//     │                          │     └─ balance_dirty_pages() ←── 可能限流      │
+//     │  ◄─────────────────────  │  (返回用户态, PTE 可写+脏)                     │
+//     │                          │                        │                      │
+//     │  ④ 后续写入 (N 次)        │                        │                      │
+//     │  ───╮                     │                        │                      │
+//     │  ◄──╯ 纯 CPU store        │                        │                      │
+//     │     (0 次内核切换)        │                        │                      │
+//     │                          │                        │                      │
+//     │                          │                        ⑤ 周期性唤醒            │
+//     │                          │                        │ ──────────────────►  │
+//     │                          │                        │                      │
+//     │                          │                        ⑥ do_writepages()      │
+//     │                          │                        │                      │
+//     │                          │                        ⑦ clear_dirty + PTE 只读│
+//     │                          │                        │                      │
+//     │  ⑧ 回写期间写入           │                        │                      │
+//     │  ──────────────► 写保护缺页│                        │                      │
+//     │                          │  ⑨ page_mkwrite()      │                      │
+//     │                          │     ├─ folio_mark_dirty()                     │
+//     │                          │     └─ folio_wait_stable() ←── 等待回写完成    │
+//     │                          │                        │                      │
+//     │  ◄─────────────────────  │                        │  ⑩ submit_bio()     │
+//     │                          │                        │ ──────────────────►  │
+//     │                          │                        │                      │
+//     │                          │                        │                      │  ⑪ 写入完成
+//     │                          │                        │  ◄────────────────── │
+//     │                          │                        │                      │
+//     │  ⑫ 如果 msync(MS_SYNC)   │                        │                      │
+//     │  ──────────────────────►  │  ⑬ vfs_fsync_range()  │                      │
+//     │                          │     └─ wait_on_bio()   │                      │
+//     │                          │                        │                      │
+//     │  ◄─────────────────────  │                        │                      │
+//     │                          │                        │                      │
+//     │  ─── 关键设计要点 ───                                                      │
+//     │  ④→⑤: 写入和回写**异步** —— 用户写入不等待刷盘                             │
+//     │  ⑤→⑨: 回写期间写入会被捕获并等待回写完成再修改                               │
+//     │  ⑫→⑬: msync(MS_SYNC) 提供同步契约 —— 等待直至数据落盘                      │
+//
+// 备注：单个 inode 的脏页回写协调函数 —— 将 inode 对应的所有脏页刷出
+// 备注：核心流程：do_writepages → 文件系统 writepages → submit_bio → 磁盘
+// 备注：WB_SYNC_ALL 模式下调用 filemap_fdatawait 等待 I/O 完全完成
+// 备注：回写后清除 I_DIRTY_PAGES 标志；若回写过程中又有新脏页则重新标记
+// 备注：仅 I_DIRTY_PAGES 时不写 inode 元数据（避免不必要的 inode 写入）
 static int
 __writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
 {

@@ -2560,6 +2560,11 @@ done:
 EXPORT_SYMBOL_GPL(writeback_iter);
 
 /* 开始了吗，开始写了吗 */
+// 备注：脏页回写的总入口 —— 将脏页从 page cache 写入磁盘
+// 备注：wbc->nr_to_write <= 0 表示无需回写，直接返回
+// 备注：委托给 mapping->a_ops->writepages()（文件系统具体实现，如 ext4_writepages）
+// 备注：若内存不足（-ENOMEM）且为 WB_SYNC_ALL 模式，限流后重试
+// 备注：回写完成后周期性更新带宽估算（wb_update_bandwidth）
 int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
 {
 	int ret;
@@ -2670,6 +2675,80 @@ void folio_account_cleaned(struct folio *folio, struct bdi_writeback *wb)
  * reference to the buffer_head that is being marked dirty, which causes
  * try_to_free_buffers() to fail.
  */
+//
+// 脏页标记与回写 —— 完整数据流图：
+//
+//   Page Cache 中的 folio 被写入
+//     │
+//     ▼
+//   ┌─────────────────────────────────────────────────────────┐
+//   │ folio_mark_dirty()             对外脏标记 API            │
+//   │   → mapping->a_ops->dirty_folio()                       │
+//   │                                                         │
+//   │ filemap_dirty_folio()           文件映射标准 dirty_folio │
+//   │   ├── folio_test_set_dirty()    ① folio 脏标志           │
+//   │   ├── __folio_mark_dirty()      ② xarray 标签            │
+//   │   │     → __xa_set_mark(..., PAGECACHE_TAG_DIRTY)       │
+//   │   └── __mark_inode_dirty()      ③ inode 脏状态           │
+//   │         → I_DIRTY_PAGES                                  │
+//   │                                                         │
+//   │   三层脏标记协同:                                          │
+//   │   folio->flags  │  mapping->i_pages  │  inode->i_state  │
+//   │   (原子位操作)    │  (xarray tag)      │  (I_DIRTY_PAGES) │
+//   └─────────────────────────────────────────────────────────┘
+//                               │
+//                               ▼
+//   ┌─────────────────────────────────────────────────────────┐
+//   │ 回写触发                                                 │
+//   │                                                         │
+//   │   ├── flusher 线程周期性唤醒 (dirty_expire_centisecs)    │
+//   │   ├── 脏页比例超限 (dirty_background_ratio / dirty_ratio)│
+//   │   ├── 内存压力 (kswapd)                                  │
+//   │   └── 显式调用 msync() / fsync() / sync()               │
+//   │                                                         │
+//   │ do_writepages()                回写总入口                 │
+//   │   → mapping->a_ops->writepages()  文件系统具体实现        │
+//   │     → 遍历 PAGECACHE_TAG_DIRTY 页面                     │
+//   │     → submit_bio() → 块层 → 磁盘                        │
+//   └─────────────────────────────────────────────────────────┘
+//
+// 三层脏标记对比表：
+//
+//   为什么需要三层脏标记？—— 各有不同的服务场景和并发约束
+//
+//   ┌──────────────────┬────────────────────┬──────────────────────┬──────────────────────────┬──────────────────────┐
+//   │ 层级              │ 位置               │ 作用                   │ 访问方式                  │ 清除时机              │
+//   ├──────────────────┼────────────────────┼──────────────────────┼──────────────────────────┼──────────────────────┤
+//   │ ① folio->flags   │ folio 结构体       │ 标记单个 folio 脏状态  │ folio_test_set_dirty()   │                      │
+//   │ (PG_dirty 位)    │ 中的位标志         │ 原子位操作，快速判断    │ (非阻塞，原子指令)        │ clear_page_dirty_    │
+//   │                  │                    │ 消除重复脏标记          │                          │ for_io()             │
+//   ├──────────────────┼────────────────────┼──────────────────────┼──────────────────────────┼──────────────────────┤
+//   │ ② xarray tag     │ mapping->i_pages   │ 批量遍历脏页的高效索引  │ xa_get_mark()            │                      │
+//   │ (PAGECACHE_      │ (xarray 标签位图)  │ 回写线程只需扫描打了   │ writeback_iter()         │ 回写完成后清除        │
+//   │ TAG_DIRTY)       │                    │ DIRTY 标签的页面       │ (xarray 位运算，O(1))    │ (mapping tag)        │
+//   │                  │                    │ 避免遍历整个 page cache│                          │                      │
+//   ├──────────────────┼────────────────────┼──────────────────────┼──────────────────────────┼──────────────────────┤
+//   │ ③ I_DIRTY_PAGES  │ inode->i_state     │ 标记 inode 有脏页待刷 │ inode_state_*()          │                      │
+//   │                  │ (inode 状态标志)    │ 触发 flusher 线程调度  │ __mark_inode_dirty()     │ 回写完成后 smp_mb    │
+//   │                  │                    │ 将 inode 加入 dirty 链表│ (加 i_lock)              │ + 重检 tag           │
+//   └──────────────────┴────────────────────┴──────────────────────┴──────────────────────────┴──────────────────────┘
+//
+//   查询路径（flusher 线程如何找到脏页）：
+//     inode 脏链表 ──→ 取 inode ──→ mapping->i_pages ──→ xa_get_mark(TAG_DIRTY)
+//        │                                                      │
+//    I_DIRTY_PAGES 筛选                                      遍历返回的脏页
+//    (O(inodes))                                            (O(dirty_pages) 而非 O(all_pages))
+//
+//   设计原则：各层隔离不同的并发域
+//     folio->flags : 页面级的原子操作，防止同一 folio 被重复标记脏
+//     xarray tag   : 提供 O(脏页数) 而非 O(总页数) 的遍历能力
+//     inode state  : 在 inode 层面调度回写，与 flusher 线程的 wb 域关联
+//
+// 备注：脏页标记的核心底层函数
+// 备注：在 mapping->i_pages（xarray，页缓存索引）中设置 PAGECACHE_TAG_DIRTY 标签
+// 备注：该标签是回写线程遍历脏页的关键数据结构 —— 通过 xa_get_mark 快速定位脏页
+// 备注：folio_account_dirtied() 更新脏页统计计数（NR_DIRTIED 等）
+// 备注：加 xa_lock 自旋锁保护，防止与 truncate 并发竞争
 void __folio_mark_dirty(struct folio *folio, struct address_space *mapping,
 			     int warn)
 {
@@ -2710,6 +2789,11 @@ void __folio_mark_dirty(struct folio *folio, struct address_space *mapping,
  * simply hold the folio lock, but e.g. zap_pte_range() calls with the
  * folio mapped and the pte lock held, which also locks out truncation.
  */
+// 备注：文件映射的 dirty_folio 回调 — 文件系统的标准脏页标记入口
+// 备注：folio_test_set_dirty() 原子测试并设置 folio 脏标志，防止重复标记
+// 备注：__folio_mark_dirty() 在页缓存 xarray 中打上 PAGECACHE_TAG_DIRTY 标签
+// 备注：__mark_inode_dirty() 将 inode 标记为 I_DIRTY_PAGES，唤醒 flusher 线程
+// 备注：三层脏标记协同：folio 标志 → xarray 标签 → inode 状态
 bool filemap_dirty_folio(struct address_space *mapping, struct folio *folio)
 {
 	if (folio_test_set_dirty(folio))
@@ -2774,6 +2858,9 @@ EXPORT_SYMBOL(folio_redirty_for_writepage);
  *
  * Return: True if the folio was newly dirtied, false if it was already dirty.
  */
+// 备注：对外暴露的脏页标记 API — mmap 持久化路径和文件系统通用入口
+// 备注：委托给 mapping->a_ops->dirty_folio()（对于文件映射即 filemap_dirty_folio）
+// 备注：调用者可通过持有 folio 锁或页表锁来防止 truncate 竞争
 bool folio_mark_dirty(struct folio *folio)
 {
 	struct address_space *mapping = folio_mapping(folio);

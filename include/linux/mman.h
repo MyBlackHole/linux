@@ -39,6 +39,8 @@
  * MAP_EXECUTABLE and MAP_DENYWRITE are completely ignored throughout the
  * kernel.
  */
+// 备注：传统 mmap flags 掩码 — 所有 mmap 实现隐式支持的基本标志集
+// 备注：当文件系统未提供 ->mmap_validate() 钩子时使用此掩码
 #define LEGACY_MAP_MASK (MAP_SHARED \
 		| MAP_PRIVATE \
 		| MAP_FIXED \
@@ -73,11 +75,15 @@ static inline void mm_compute_batch(int overcommit_policy)
 
 unsigned long vm_memory_committed(void);
 
+// 备注：内存记账：增加已承诺 (committed) 的内存页计数
+// 备注：用于 MM 的 overcommit 核算，使用 percpu 计数器批量更新以提高性能
 static inline void vm_acct_memory(long pages)
 {
 	percpu_counter_add_batch(&vm_committed_as, pages, vm_committed_as_batch);
 }
 
+// 备注：减少已承诺 (committed) 的内存页计数
+// 备注：vm_acct_memory 的逆向操作，传入负值
 static inline void vm_unacct_memory(long pages)
 {
 	vm_acct_memory(-pages);
@@ -103,6 +109,8 @@ static inline void vm_unacct_memory(long pages)
  *
  * Returns true if the prot flags are valid
  */
+// 备注：架构可重写的保护位验证函数
+// 备注：默认只允许 PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM
 static inline bool arch_validate_prot(unsigned long prot, unsigned long addr)
 {
 	return (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM)) == 0;
@@ -129,6 +137,8 @@ static inline bool arch_validate_flags(unsigned long flags)
  * but this version is faster.
  * ("bit1" and "bit2" must be single bits)
  */
+// 备注：优化的位转换宏：等价于 (x & bit1) ? bit2 : 0 但执行速度更快
+// 备注：要求 bit1 和 bit2 都必须是单一位 (single bit)
 #define _calc_vm_trans(x, bit1, bit2) \
   ((!(bit1) || !(bit2)) ? 0 : \
   ((bit1) <= (bit2) ? ((x) & (bit1)) * ((bit2) / (bit1)) \
@@ -137,6 +147,8 @@ static inline bool arch_validate_flags(unsigned long flags)
 /*
  * Combine the mmap "prot" argument into "vm_flags" used internally.
  */
+// 备注：将用户空间的 PROT_READ/PROT_WRITE/PROT_EXEC 转换为内核 VM_* 标志
+// 备注：架构可通过 arch_calc_vm_prot_bits() 添加额外的 PROT→VM 转换
 static inline vm_flags_t
 calc_vm_prot_bits(unsigned long prot, unsigned long pkey)
 {

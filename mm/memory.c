@@ -3654,6 +3654,9 @@ static gfp_t __get_fault_gfp_mask(struct vm_area_struct *vma)
  *
  * We do this without the lock held, so that it can sleep if it needs to.
  */
+// 备注：调用 VMA 的 page_mkwrite 回调，通知文件系统该页面即将被写入
+// 备注：设置 FAULT_FLAG_MKWRITE 标志，文件系统可据此判断是 mkwrite 而非普通写缺页
+// 备注：page_mkwrite 返回 VM_FAULT_LOCKED 表示页面已加锁，否则在此手动加锁
 static vm_fault_t do_page_mkwrite(struct vm_fault *vmf, struct folio *folio)
 {
 	vm_fault_t ret;
@@ -3687,6 +3690,11 @@ static vm_fault_t do_page_mkwrite(struct vm_fault *vmf, struct folio *folio)
  *
  * The function expects the page to be locked and unlocks it.
  */
+// 备注：mmap 共享映射写入后的脏页标记与回写限速
+// 备注：folio_mark_dirty() 将页面加入 PAGECACHE_TAG_DIRTY 并通过 dirty_folio 回调通知文件系统
+// 备注：folio_unlock() 后使用 folio_raw_mapping 本地拷贝，因 truncate 可能清除 mapping
+// 备注：balance_dirty_pages_ratelimited() 限制脏页速率，防止内存超限
+// 备注：若 VMA 没有 page_mkwrite 回调则在此补充 file_update_time
 static vm_fault_t fault_dirty_shared_page(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
@@ -4048,6 +4056,10 @@ static vm_fault_t wp_pfn_shared(struct vm_fault *vmf)
 	return 0;
 }
 
+// 备注：共享映射的写保护缺页处理 —— mmap 持久化的核心缺页路径
+// 备注：先调用 do_page_mkwrite() 通知文件系统 "该页面即将被写入"
+// 备注：再调用 fault_dirty_shared_page() 标记页面为脏并限速
+// 备注：非文件映射（无 page_mkwrite）直接重用页面后标记脏
 static vm_fault_t wp_page_shared(struct vm_fault *vmf, struct folio *folio)
 	__releases(vmf->ptl)
 {
@@ -6422,6 +6434,10 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 		update_mmu_tlb(vmf->vma, vmf->address, vmf->pte);
 		goto unlock;
 	}
+	// 备注：写缺页处理入口
+	// 备注：PTE 不可写 → do_wp_page() → wp_page_shared() → page_mkwrite → 标记脏
+	// 备注：PTE 可写且为写访问 → pte_mkdirty() 在页表层面标记脏位
+	// 备注：之后 ptep_set_access_flags() 更新 PTE 使 CPU 下次可直接写入
 	if (vmf->flags & (FAULT_FLAG_WRITE|FAULT_FLAG_UNSHARE)) {
 		if (!pte_write(entry))
 			return do_wp_page(vmf);

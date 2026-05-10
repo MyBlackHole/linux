@@ -7,6 +7,12 @@
  * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
  */
 
+// ============================================
+// 文件说明：mmap/munmap/brk 系统调用的核心实现
+// 包含：do_mmap() 映射创建、地址空间查找、VMA 管理、
+//       特殊映射 (vdso/vvar)、fork 时 VMA 复制 (dup_mmap)
+// ============================================
+
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/kernel.h>
@@ -78,6 +84,8 @@ static bool ignore_rlimit_data;
 core_param(ignore_rlimit_data, ignore_rlimit_data, bool, 0644);
 
 /* Update vma->vm_page_prot to reflect vma->vm_flags. */
+// 备注：根据 vma->vm_flags 更新 vma->vm_page_prot (页表权限)
+// 备注：如果 VMA 需要写入通知 (writenotify)，则清除 VM_SHARED 标志
 void vma_set_page_prot(struct vm_area_struct *vma)
 {
 	vm_flags_t vm_flags = vma->vm_flags;
@@ -333,6 +341,11 @@ static inline bool file_mmap_ok(struct file *file, struct inode *inode,
  * Returns: Either an error, or the address at which the requested mapping has
  * been performed.
  */
+// 备注：mmap 系统调用的核心实现函数
+// 备注：将用户传入的 prot/flags 转换为内核 VMA 标志 (VM_*)，
+// 备注：完成所有权限检查和边界校验（大小、溢出、映射数限制等），
+// 备注：最后调用 mmap_region() 执行实际的 VMA 映射创建
+// 备注：调用者必须持有 mmap_lock 写锁
 unsigned long do_mmap(struct file *file, unsigned long addr,
 			unsigned long len, unsigned long prot,
 			unsigned long flags, vm_flags_t vm_flags,
@@ -349,6 +362,8 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	if (!len)
 		return -EINVAL;
 
+	// 备注：处理 READ_IMPLIES_EXEC 个性标志
+	// 备注：当应用期望 PROT_READ 隐含 PROT_EXEC 时，自动添加执行权限
 	/*
 	 * Does the application expect PROT_READ to imply PROT_EXEC?
 	 *
@@ -366,6 +381,7 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	if (!(flags & MAP_FIXED))
 		addr = round_hint_to_min(addr);
 
+	// 备注：对映射长度进行页对齐，长度必须至少为 1 页
 	/* Careful about overflows.. */
 	len = PAGE_ALIGN(len);
 	if (!len)
@@ -375,6 +391,7 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
 		return -EOVERFLOW;
 
+	// 备注：检查进程的 VMA 数量是否超过系统限制 (max_map_count)
 	/* Too many mappings? */
 	if (mm->map_count > get_sysctl_max_map_count())
 		return -ENOMEM;
@@ -395,6 +412,8 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 			pkey = 0;
 	}
 
+	// 备注：将用户空间的 PROT_* 和 MAP_* 标志转换为内核 VM_* 标志，
+	// 备注：并组合 mm->def_flags 默认标志和 VM_MAY* 继承权限
 	/* Do simple checking here so the lower-level routines won't have
 	 * to. we assume access permissions have been handled by the open
 	 * of the memory object, so we don't do any here.
@@ -402,6 +421,7 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	vm_flags |= calc_vm_prot_bits(prot, pkey) | calc_vm_flag_bits(file, flags) |
 			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
 
+	// 备注：查找或验证映射地址 — 非 MAP_FIXED 时内核自动分配空闲区间
 	/* Obtain the address to map to. we verify (or select) it and ensure
 	 * that it represents a valid section of the address space.
 	 */
@@ -421,6 +441,8 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	if (!mlock_future_ok(mm, vm_flags & VM_LOCKED, len))
 		return -EAGAIN;
 
+	// 备注：文件映射处理：检查文件读写权限、MAP_SHARED/MAP_PRIVATE 模式、
+	// 备注：验证 seals、检查 append-only 文件和 noexec 挂载等
 	if (file) {
 		struct inode *inode = file_inode(file);
 		unsigned long flags_mask;
@@ -491,6 +513,8 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 		err = memfd_check_seals_mmap(file, &vm_flags);
 		if (err)
 			return (unsigned long)err;
+	// 备注：匿名映射处理：MAP_SHARED 匿名或 MAP_PRIVATE 匿名
+	// 备注：MAP_DROPPABLE 标志映射可在内存压力下丢弃页面
 	} else {
 		switch (flags & MAP_TYPE) {
 		case MAP_SHARED:
@@ -543,6 +567,8 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 		}
 	}
 
+	// 备注：处理 MAP_NORESERVE：根据 overcommit 策略决定是否预留内存
+	// 备注：hugetlb 映射默认严格 overcommit，除非指定了 MAP_NORESERVE
 	/*
 	 * Set 'VM_NORESERVE' if we should not account for the
 	 * memory use of this mapping.
@@ -557,6 +583,7 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 			vm_flags |= VM_NORESERVE;
 	}
 
+	// 备注：所有检查通过，执行实际的 VMA 映射创建
 	addr = mmap_region(file, addr, len, vm_flags, pgoff, uf);
 	if (!IS_ERR_VALUE(addr) &&
 	    ((vm_flags & VM_LOCKED) ||
@@ -565,6 +592,9 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	return addr;
 }
 
+// 备注：mmap 系统调用的内核入口函数
+// 备注：处理文件描述符到 struct file 的转换、巨页 (HugeTLB) 对齐，
+// 备注：然后委托 vm_mmap_pgoff() 执行安全检查、锁获取和实际映射
 unsigned long ksys_mmap_pgoff(unsigned long addr, unsigned long len,
 			      unsigned long prot, unsigned long flags,
 			      unsigned long fd, unsigned long pgoff)
@@ -610,6 +640,8 @@ out_fput:
 	return retval;
 }
 
+// 备注：mmap 系统调用 (现代 6 参数版本)
+// 备注：直接委托给 ksys_mmap_pgoff，参数包括 addr, len, prot, flags, fd, pgoff
 SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
 		unsigned long, prot, unsigned long, flags,
 		unsigned long, fd, unsigned long, pgoff)
@@ -662,6 +694,8 @@ static inline unsigned long stack_guard_placement(vm_flags_t vm_flags)
  * - is at least the desired size.
  * - satisfies (begin_addr & align_mask) == (align_offset & align_mask)
  */
+// 备注：空闲虚拟地址查找的顶层接口
+// 备注：根据 VM_UNMAPPED_AREA_TOPDOWN 标志选择自顶向下或自底向上搜索策略
 unsigned long vm_unmapped_area(struct vm_unmapped_area_info *info)
 {
 	unsigned long addr;
@@ -686,6 +720,9 @@ unsigned long vm_unmapped_area(struct vm_unmapped_area_info *info)
  *
  * This function "knows" that -ENOMEM has the bits set.
  */
+// 备注：通用的自底向上空闲地址分配器
+// 备注：从 mm->mmap_base 向高地址 (mmap_end) 搜索足够大的空闲区间
+// 备注：优先使用 hint addr，不可用时自动分配
 unsigned long
 generic_get_unmapped_area(struct file *filp, unsigned long addr,
 			  unsigned long len, unsigned long pgoff,
@@ -735,6 +772,9 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
  * This mmap-allocator allocates new areas top-down from below the
  * stack's low limit (the base):
  */
+// 备注：通用的自顶向下空闲地址分配器（默认分配策略）
+// 备注：从栈底向下搜索最高可用地址，有利于减少堆和栈之间的碎片
+// 备注：分配失败时自动回退到底部搜索 (bottom-up)
 unsigned long
 generic_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
 				  unsigned long len, unsigned long pgoff,
@@ -881,6 +921,8 @@ EXPORT_SYMBOL(mm_get_unmapped_area);
  * Returns: The first VMA within the provided range, %NULL otherwise.  Assumes
  * start_addr < end_addr.
  */
+// 备注：查找与指定地址区间 [start_addr, end_addr) 相交的第一个 VMA
+// 备注：基于 maple tree 的范围查询 (mt_find) 实现
 struct vm_area_struct *find_vma_intersection(struct mm_struct *mm,
 					     unsigned long start_addr,
 					     unsigned long end_addr)
@@ -900,6 +942,8 @@ EXPORT_SYMBOL(find_vma_intersection);
  * Returns: The VMA associated with addr, or the next VMA.
  * May return %NULL in the case of no VMA at addr or above.
  */
+// 备注：查找指定地址所在的 VMA，若无精确匹配则返回下一个 VMA
+// 备注：核心 VMA 查找函数，被内核各处广泛调用
 struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
 {
 	unsigned long index = addr;
@@ -1023,6 +1067,9 @@ struct vm_area_struct *find_extend_vma_locked(struct mm_struct *mm, unsigned lon
  * If no vma is found or it can't be expanded, it returns NULL and has
  * dropped the lock.
  */
+// 备注：缺页处理中的栈自动扩展接口
+// 备注：先以读锁查找 VMA，如需要扩展则升级为写锁
+// 备注：根据架构调用 expand_downwards() 或 expand_upwards()
 struct vm_area_struct *expand_stack(struct mm_struct *mm, unsigned long addr)
 {
 	struct vm_area_struct *vma, *prev;
@@ -1059,6 +1106,9 @@ success:
  *
  * Return: 0 on success, error otherwise.
  */
+// 备注：munmap 核心实现 — 从进程地址空间移除指定区间的所有映射
+// 备注：此为包装函数，实际工作由 do_vmi_munmap() 完成
+// 备注：负责 VMA 分裂、页表释放和 VMA 结构销毁
 int do_munmap(struct mm_struct *mm, unsigned long start, size_t len,
 	      struct list_head *uf)
 {
@@ -1073,6 +1123,8 @@ int vm_munmap(unsigned long start, size_t len)
 }
 EXPORT_SYMBOL(vm_munmap);
 
+// 备注：munmap 系统调用入口
+// 备注：对 addr 进行 untagged 处理后委托 __vm_munmap()
 SYSCALL_DEFINE2(munmap, unsigned long, addr, size_t, len)
 {
 	addr = untagged_addr(addr);
@@ -1269,6 +1321,9 @@ unsigned long tear_down_vmas(struct mm_struct *mm, struct vma_iterator *vmi,
 	return nr_accounted;
 }
 
+// 备注：进程退出时释放所有内存映射
+// 备注：执行顺序：mmu_notifier_release → unmap_vmas (释放页表) →
+// 备注：free_pgtables (释放页表结构) → tear_down_vmas (销毁 VMA)
 /* Release all mmaps. */
 void exit_mmap(struct mm_struct *mm)
 {
@@ -1728,6 +1783,9 @@ bool mmap_read_lock_maybe_expand(struct mm_struct *mm,
 	return true;
 }
 
+// 备注：fork 时复制父进程的完整地址空间到子进程
+// 备注：通过 __mt_dup() 高效复制 maple tree 结构，
+// 备注：然后逐 VMA 复制属性、anon_vma、文件引用和页表内容
 __latent_entropy int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
 {
 	struct vm_area_struct *mpnt, *tmp;

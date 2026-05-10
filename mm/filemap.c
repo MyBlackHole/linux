@@ -10,6 +10,50 @@
  * most "normal" filesystems (but you don't /have/ to use this:
  * the NFS filesystem used to do this differently, for example)
  */
+
+//
+// Page Cache 体系结构图：
+//
+//   文件数据在内存中的组织结构 —— mmap 持久化的数据基础：
+//
+//   inode (磁盘索引节点)
+//     │
+//     └── i_mapping (struct address_space)
+//             │                               ←── 页缓存的核心管理者
+//             ├── host  ──────→ 指向所属 inode
+//             │
+//             ├── i_pages ────→ xarray (页缓存索引树)
+//             │       │
+//             │       ├── index=0 ──→ folio (文件偏移 0)
+//             │       │                 ├── ->flags     位标志 (PG_dirty, PG_uptodate ...)
+//             │       │                 ├── ->mapping   指回 address_space
+//             │       │                 ├── ->index     文件页偏移 (0)
+//             │       │                 ├── ->lru       LRU 链表节点
+//             │       │                 ├── ->_refcount 引用计数
+//             │       │                 └── 页面数据 ───→ 真正的文件内容 (4K)
+//             │       │
+//             │       ├── index=N ──→ folio (文件偏移 N*PAGE_SIZE)
+//             │       │
+//             │       └── xarray 标签 (快速查找特定状态的页面):
+//             │             PAGECACHE_TAG_DIRTY     ←── 脏页
+//             │             PAGECACHE_TAG_WRITEBACK ←── 正在回写
+//             │             PAGECACHE_TAG_TOWRITE   ←── 待回写
+//             │
+//             ├── a_ops ──→ address_space_operations (文件系统方法表)
+//             │      ├── read_folio  从磁盘读入页面到 page cache
+//             │      ├── writepages  将 page cache 中的脏页刷出到磁盘
+//             │      └── dirty_folio 标记页面为脏 (folio_mark_dirty 的底层回调)
+//             │
+//             ├── 用户进程 1 (mmap)
+//             │      ├── 虚拟地址空间 ─→ PTE ─→ folio
+//             │      └── 读/写直接操作 folio 页面数据
+//             │
+//             └── 用户进程 2 (mmap, 共享同一文件)
+//                    └── 虚拟地址 ─→ PTE ─→ 同一个 folio (共享 page cache)
+//
+//   mmap 持久化的核心原理：所有文件 I/O 都通过 Page Cache 中转
+//   写 = 写入 page cache (内存操作) → 标记脏 → 后台/显式回写 → 磁盘持久化
+//
 #include <linux/export.h>
 #include <linux/compiler.h>
 #include <linux/dax.h>
@@ -3985,6 +4029,53 @@ out:
 }
 EXPORT_SYMBOL(filemap_map_pages);
 
+//
+// mmap 持久化 —— 首次写入数据流图：
+//
+//   用户空间首次写入 mmap 地址
+//     │
+//     ▼
+//   CPU 触发写保护缺页 (page fault)
+//     │
+//     ▼
+//   handle_pte_fault()              mm/memory.c
+//     │  PTE 不可写
+//     ▼
+//   do_wp_page()
+//     │  VM_SHARED
+//     ▼
+//   wp_page_shared()
+//     │
+//     ├── do_page_mkwrite()
+//     │       │
+//     │       ▼
+//     │   ┌──────────────────────────────────────────────┐
+//     │   │ filemap_page_mkwrite()  ←────── 当前函数      │
+//     │   │                                              │
+//     │   │  1. file_update_time()   更新文件 mtime       │
+//     │   │  2. folio_lock()         加锁 folio           │
+//     │   │  3. folio_mark_dirty()   标记脏页 ←── 核心!   │
+//     │   │  4. folio_wait_stable()  等待回写稳定          │
+//     │   └──────────────────────────────────────────────┘
+//     │
+//     └── fault_dirty_shared_page()
+//             │
+//             ├── folio_mark_dirty()    再次确保脏标记
+//             ├── balance_dirty_pages() 脏页限速
+//             └── 返回 → PTE 设为可写+脏
+//             │
+//             ▼
+//   CPU 下次写入直接走 store 指令 (无需进入内核)
+//     │
+//     ▼
+//   flusher 线程 / msync 将脏页写入磁盘
+//
+// 备注：mmap 共享映射首次写入时的回调 —— 标记页面脏并等待回写稳定
+// 备注：这是 mmap 持久化的关键入口：用户写 mmap 页面 → 写保护缺页 → page_mkwrite
+// 备注：file_update_time() 更新文件 mtime 时间戳
+// 备注：folio_mark_dirty() 将 folio 标记为脏，加入 PAGECACHE_TAG_DIRTY
+// 备注：folio_wait_stable() 等待正在进行的回写完成，避免并发冲突
+// 备注：文件系统冻结时也通过此处的脏标记确保回写不会遗漏
 vm_fault_t filemap_page_mkwrite(struct vm_fault *vmf)
 {
 	struct address_space *mapping = vmf->vma->vm_file->f_mapping;
@@ -4011,6 +4102,35 @@ out:
 	return ret;
 }
 
+//
+// 通用文件 mmap 映射生命周期：
+//
+//   mmap(file, addr, length, PROT_READ|PROT_WRITE, MAP_SHARED)
+//     │
+//     ├── generic_file_mmap()           mmap 初始化
+//     │       │                            注册 vm_ops
+//     │       └── vma->vm_ops = &generic_file_vm_ops
+//     │
+//     ├── 首次读访问
+//     │       │
+//     │       └── filemap_fault()       读缺页 → 从 page cache 读入
+//     │
+//     ├── 首次写访问
+//     │       │
+//     │       └── filemap_page_mkwrite() 写通知 → 标记脏页 (持久化关键!)
+//     │
+//     ├── 后续读写
+//     │       │
+//     │       └── 直接 CPU 访存，不再缺页
+//     │
+//     └── msync() / flusher 线程
+//             │
+//             └── 脏页 → 磁盘
+//
+// 备注：通用文件映射的 VMA 操作表
+// 备注：.fault — 读缺页时从 page cache 读取文件数据
+// 备注：.map_pages — 批量建立页表映射（readahead 优化）
+// 备注：.page_mkwrite — 首次写入时标记脏页（mmap 持久化的核心钩子）
 const struct vm_operations_struct generic_file_vm_ops = {
 	.fault		= filemap_fault,
 	.map_pages	= filemap_map_pages,
@@ -4019,6 +4139,9 @@ const struct vm_operations_struct generic_file_vm_ops = {
 
 /* This is used for a general mmap of a disk file */
 
+// 备注：通用文件 mmap 处理函数
+// 备注：将 vm_ops 设为 generic_file_vm_ops，注册缺页和写通知回调
+// 备注：映射建立后，读访问触发 filemap_fault，写访问触发 filemap_page_mkwrite
 int generic_file_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct address_space *mapping = file->f_mapping;

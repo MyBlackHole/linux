@@ -562,6 +562,10 @@ int account_locked_vm(struct mm_struct *mm, unsigned long pages, bool inc)
 }
 EXPORT_SYMBOL_GPL(account_locked_vm);
 
+// 备注：vm_mmap_pgoff() — 内核模块可调用的 mmap 封装
+// 备注：执行安全审计 (security_mmap_file) 和文件系统通知 (fsnotify_mmap_perm)，
+// 备注：然后获取 mmap_lock 写锁，调用 do_mmap() 执行实际映射
+// 备注：最后处理 userfaultfd 事件和内存填充 (MAP_POPULATE)
 unsigned long vm_mmap_pgoff(struct file *file, unsigned long addr,
 	unsigned long len, unsigned long prot,
 	unsigned long flag, unsigned long pgoff)
@@ -578,10 +582,12 @@ unsigned long vm_mmap_pgoff(struct file *file, unsigned long addr,
 	if (!ret) {
 		if (mmap_write_lock_killable(mm))
 			return -EINTR;
+		// 备注：持有 mmap_lock 写锁，执行 mmap 核心映射逻辑
 		ret = do_mmap(file, addr, len, prot, flag, 0, pgoff, &populate,
 			      &uf);
 		mmap_write_unlock(mm);
 		userfaultfd_unmap_complete(mm, &uf);
+		// 备注：如果映射设置了 MAP_POPULATE 或 VM_LOCKED，立即触发缺页填充物理内存
 		if (populate)
 			mm_populate(ret, populate);
 	}
@@ -605,6 +611,9 @@ unsigned long vm_mmap_pgoff(struct file *file, unsigned long addr,
  * Returns either an error, or the address at which the requested mapping has
  * been performed.
  */
+// 备注：vm_mmap() — 兼容接口，接收字节偏移而非页偏移
+// 备注：对 offset 进行页对齐验证和溢出检查后，转换为 pgoff 并调用 vm_mmap_pgoff
+// 备注：EXPORT_SYMBOL 导出，可供内核模块直接使用
 unsigned long vm_mmap(struct file *file, unsigned long addr,
 	unsigned long len, unsigned long prot,
 	unsigned long flag, unsigned long offset)

@@ -2729,6 +2729,13 @@ static bool can_set_ksm_flags_early(struct mmap_state *map)
 	return false;
 }
 
+// 备注：实际执行 VMA 映射创建的内部核心函数
+// 备注：执行流程：
+// 备注：  1) __mmap_setup — 解除目标区间的旧映射并准备 VMA 参数
+// 备注：  2) call_mmap_prepare — 调用文件系统的 mmap_prepare 钩子
+// 备注：  3) vma_merge_new_range — 尝试与相邻 VMA 合并以减少碎片
+// 备注：  4) __mmap_new_vma — 合并失败则分配新的 VMA 结构
+// 备注：  5) __mmap_complete — 完成页表设置和统计信息更新
 static unsigned long __mmap_region(struct file *file, unsigned long addr,
 		unsigned long len, vma_flags_t vma_flags,
 		unsigned long pgoff, struct list_head *uf)
@@ -2763,11 +2770,14 @@ static unsigned long __mmap_region(struct file *file, unsigned long addr,
 	if (map.prev || map.next) {
 		VMG_MMAP_STATE(vmg, &map, /* vma = */ NULL);
 
+		// 备注：尝试与已有的前/后 VMA 合并，避免 VMA 碎片化
+		// 备注：只在 map.prev 或 map.next 存在时才进行合并尝试
 		vma = vma_merge_new_range(&vmg);
 	}
 
 	/* ...but if we can't, allocate a new VMA. */
 	if (!vma) {
+		// 备注：无法与现有 VMA 合并，分配新的 VMA 结构并插入 maple tree
 		error = __mmap_new_vma(&map, &vma, &desc.action);
 		if (error)
 			goto unacct_error;
@@ -2777,6 +2787,7 @@ static unsigned long __mmap_region(struct file *file, unsigned long addr,
 	if (have_mmap_prepare)
 		set_vma_user_defined_fields(vma, &map);
 
+	// 备注：完成映射设置：更新页表访问权限、统计信息、触发 perf_event_mmap
 	__mmap_complete(&map, vma);
 
 	if (have_mmap_prepare && allocated_new) {
@@ -2827,6 +2838,9 @@ abort_munmap:
  * Returns: Either an error, or the address at which the requested mapping has
  * been performed.
  */
+// 备注：mmap_region() — 创建用户态内存映射的对外接口
+// 备注：完成 MDWE (deny write+exec) 安全检查、架构标志验证、
+// 备注：可写文件映射的引用计数管理，然后委托 __mmap_region 执行
 unsigned long mmap_region(struct file *file, unsigned long addr,
 			  unsigned long len, vm_flags_t vm_flags,
 			  unsigned long pgoff, struct list_head *uf)
@@ -2878,6 +2892,9 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
  *
  * Returns: %0 on success, or otherwise an error.
  */
+// 备注：brk 系统调用的底层实现 — 扩展或创建进程堆 (heap) 区域
+// 备注：优先尝试扩展现有 brk VMA (vma_merge_new_range)，
+// 备注：若失败则分配新的匿名 VMA
 int do_brk_flags(struct vma_iterator *vmi, struct vm_area_struct *vma,
 		 unsigned long addr, unsigned long len, vma_flags_t vma_flags)
 {
@@ -2962,6 +2979,9 @@ unacct_fail:
  *
  * Return: A memory address or -ENOMEM.
  */
+// 备注：自底向上搜索空闲虚拟地址区间
+// 备注：在 [low_limit, high_limit) 范围内查找首个足够大的空闲区域，
+// 备注：考虑对齐要求 (align_mask/align_offset) 和栈保护间隙 (start_gap)
 unsigned long unmapped_area(struct vm_unmapped_area_info *info)
 {
 	unsigned long length, gap;
@@ -2979,6 +2999,7 @@ unsigned long unmapped_area(struct vm_unmapped_area_info *info)
 		low_limit = mmap_min_addr;
 	high_limit = info->high_limit;
 retry:
+	// 备注：在 maple tree 中查找满足长度要求的最低可用地址间隙
 	if (vma_iter_area_lowest(&vmi, low_limit, high_limit, length))
 		return -ENOMEM;
 
@@ -3020,6 +3041,9 @@ retry:
  *
  * Return: A memory address or -ENOMEM.
  */
+// 备注：自顶向下搜索空闲虚拟地址区间（默认分配策略）
+// 备注：从 high_limit 向下查找满足条件的最高可用地址，
+// 备注：可有效减少堆区域与栈区域之间的地址空间碎片
 unsigned long unmapped_area_topdown(struct vm_unmapped_area_info *info)
 {
 	unsigned long length, gap, gap_end;
@@ -3037,6 +3061,7 @@ unsigned long unmapped_area_topdown(struct vm_unmapped_area_info *info)
 		low_limit = mmap_min_addr;
 	high_limit = info->high_limit;
 retry:
+	// 备注：在 maple tree 中查找满足长度要求的最高可用地址间隙
 	if (vma_iter_area_highest(&vmi, low_limit, high_limit, length))
 		return -ENOMEM;
 
